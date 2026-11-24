@@ -1,7 +1,7 @@
 -- Simula o mínimo do Supabase (schema auth, auth.uid() e papéis) para testar a
 -- migração num Postgres comum. Não vai para produção.
 create schema if not exists auth;
-create table if not exists auth.users (id uuid primary key, email text);
+create table if not exists auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
 create or replace function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '')::uuid
 $$;

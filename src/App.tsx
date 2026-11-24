@@ -4,9 +4,15 @@ import { BarraSuperior } from './components/BarraSuperior'
 import { Inicio } from './pages/Inicio'
 import { FormularioPublico } from './pages/FormularioPublico'
 import { EmConstrucao } from './pages/EmConstrucao'
-import { ProvedorSessao } from './lib/sessao'
+import { Entrar } from './pages/Entrar'
+import { PrimeiroAcesso } from './pages/PrimeiroAcesso'
+import { ProvedorSessao, useSessao } from './lib/sessao'
 
 function Painel() {
+  const { estado } = useSessao()
+  if (estado === 'carregando') return <div className="carregando">Carregando…</div>
+  if (estado === 'deslogado') return <Entrar />
+  if (estado === 'primeiro_acesso') return <PrimeiroAcesso />
   return (
     <div className="app">
       <Menu />

@@ -1,0 +1,13 @@
+.entrar { min-height: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+.entrar__marca { background: var(--painel); color: #fff; padding: 56px; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+.entrar__logo { height: 56px; width: auto; align-self: flex-start; filter: brightness(0) invert(1); margin-bottom: 24px; }
+.entrar__marca h1 { color: #fff; max-width: 460px; }
+.entrar__marca p { color: var(--texto-sobre-escuro); max-width: 420px; }
+.entrar__painel { display: grid; place-items: center; padding: 32px 16px; }
+.entrar__cartao { width: 100%; max-width: 380px; background: var(--superficie); border: 1px solid var(--borda); border-radius: 24px; padding: 32px; display: flex; flex-direction: column; gap: 16px; }
+.entrar__links { display: flex; justify-content: space-between; gap: 8px; }
+.entrar__links button { background: none; border: 0; color: var(--marca); font-weight: 600; font-size: 13px; cursor: pointer; padding: 0; }
+.entrar__aviso { font-size: 13px; padding: 10px 12px; border-radius: 10px; }
+.entrar__aviso--erro { background: rgb(229 72 77 / 0.1); color: var(--perigo); }
+.entrar__aviso--ok { background: rgb(18 161 95 / 0.12); color: var(--sucesso); }
+@media (max-width: 860px) { .entrar { grid-template-columns: 1fr; } .entrar__marca { padding: 32px 24px; } }

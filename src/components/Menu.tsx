@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   BadgeCheck, Briefcase, CalendarDays, ChartLine, ChevronDown, Columns3, Home, Inbox, Lightbulb, ListChecks,
-  QrCode, Send, SlidersHorizontal, Users, Wallet, Handshake,
+  LogOut, QrCode, Send, SlidersHorizontal, Users, Wallet, Handshake,
 } from 'lucide-react'
 import logo from '../assets/luminy-logo.svg'
 import { Avatar } from './ui'
@@ -42,18 +43,34 @@ function Link({ item }: { item: Item }) {
 }
 
 export function Menu() {
-  const { usuario, cliente, ehProprietario, acessoLeads } = useSessao()
+  const { usuario, cliente, clientes, trocarCliente, ehProprietario, acessoLeads, sair } = useSessao()
+  const [aberto, setAberto] = useState(false)
   return (
     <nav className="menu" aria-label="Navegação principal">
       <div className="menu__logo"><img src={logo} alt="Luminy" /></div>
-      <button className="seletor-cliente" type="button">
-        <Avatar nome={cliente.nome} cor="var(--perigo)" />
-        <span className="seletor-cliente__texto">
-          <span className="pequeno" style={{ display: 'block' }}>Cliente</span>
-          <span className="forte">{cliente.nome}</span>
-        </span>
-        <ChevronDown size={16} aria-hidden />
-      </button>
+      <div className="seletor">
+        <button className="seletor-cliente" type="button" aria-expanded={aberto} aria-haspopup="listbox"
+          onClick={() => clientes.length > 1 && setAberto(!aberto)}>
+          <Avatar nome={cliente.nome} cor={cliente.cor} />
+          <span className="seletor-cliente__texto">
+            <span className="pequeno" style={{ display: 'block' }}>Cliente</span>
+            <span className="forte">{cliente.nome}</span>
+          </span>
+          {clientes.length > 1 && <ChevronDown size={16} aria-hidden />}
+        </button>
+        {aberto && (
+          <ul className="seletor__lista" role="listbox" aria-label="Trocar de cliente">
+            {clientes.map((c) => (
+              <li key={c.id}>
+                <button type="button" role="option" aria-selected={c.id === cliente.id}
+                  onClick={() => { trocarCliente(c.id); setAberto(false) }}>
+                  <Avatar nome={c.nome} cor={c.cor} tamanho={24} /> {c.nome}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div className="menu__grupo rotulo">Meu espaço</div>
       {MEU_ESPACO.map((i) => <Link key={i.para} item={i} />)}
@@ -72,10 +89,13 @@ export function Menu() {
       <Link item={{ para: '/configuracoes', rotulo: 'Configurações', icone: SlidersHorizontal }} />
       <div className="menu__usuario">
         <Avatar nome={usuario.nome} cor="var(--marca)" />
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div className="forte">{usuario.nome}</div>
           <div className="pequeno">{ehProprietario ? 'Proprietário' : 'Equipe'}</div>
         </div>
+        <button className="icone-botao" style={{ width: 32, height: 32, border: 0 }} type="button" aria-label="Sair" title="Sair" onClick={() => void sair()}>
+          <LogOut size={16} aria-hidden />
+        </button>
       </div>
     </nav>
   )

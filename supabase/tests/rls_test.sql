@@ -150,4 +150,37 @@ select t.ok((select count(*) from clientes) = 0, 'pessoa de fora não vê nenhum
 select t.ok((select count(*) from demandas) = 0, 'pessoa de fora não vê demandas');
 reset role;
 
+-- ---------------------------------------------------------------- Login, sessão e equipe
+select t.ok((select count(*) from perfis) = 5, 'perfil é criado automaticamente no cadastro');
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000d11a"}', false);
+select t.ok(iniciar_agencia('Outra') = '10000000-0000-0000-0000-000000000001', 'iniciar agência não cria uma segunda agência para o mesmo dono');
+select t.ok((minha_sessao()->'agencia'->>'nome') = 'Luminy', 'sessão do proprietário traz a agência');
+select t.ok(jsonb_array_length(minha_sessao()->'clientes') = 2, 'sessão do proprietário traz os 2 clientes');
+select criar_cliente('10000000-0000-0000-0000-000000000001', 'Clínica Vitalis');
+select t.ok((select slug from clientes where nome = 'Clínica Vitalis') = 'clinica-vitalis', 'cliente novo ganha endereço sem acento');
+select t.ok((select count(*) from quadros q join clientes c on c.id = q.cliente_id where c.slug = 'clinica-vitalis') = 1, 'cliente novo já nasce com o quadro de redes sociais');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000a9e1"}', false);
+select t.ok((minha_sessao()->'clientes'->0->>'acesso_leads')::boolean = false, 'sessão do jovem aprendiz indica sem acesso a leads');
+select t.ok(minha_sessao()->'agencia' = 'null'::jsonb, 'jovem aprendiz não tem agência');
+do $$ begin
+  perform adicionar_membro('20000000-0000-0000-0000-000000000001', 'fora@exemplo.com');
+  raise exception 'FALHOU: membro comum adicionou pessoa';
+exception when others then
+  if sqlerrm like 'FALHOU%' then raise; end if;
+  raise notice 'ok - só administradores adicionam pessoas ao cliente';
+end $$;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+select adicionar_membro('20000000-0000-0000-0000-000000000001', 'FORA@exemplo.com', 'membro', false);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f07a"}', false);
+select t.ok((select count(*) from clientes) = 1 and (select count(*) from leads) = 0, 'pessoa adicionada sem acesso a leads vê o cliente, mas não os leads');
+reset role;
+set role anon;
+do $$ begin
+  perform minha_sessao();
+  raise exception 'FALHOU: visitante chamou minha_sessao';
+exception when insufficient_privilege then raise notice 'ok - visitante anônimo não acessa funções internas';
+end $$;
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'
