@@ -183,4 +183,52 @@ exception when insufficient_privilege then raise notice 'ok - visitante anônimo
 end $$;
 reset role;
 
+-- ---------------------------------------------------------------- Convites
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+insert into convites (cliente_id, email, papel, acesso_leads)
+  values ('20000000-0000-0000-0000-000000000001', 'aprendiz2@exemplo.com', 'membro', false);
+insert into convites (id, cliente_id, papel) values ('40000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'membro');
+select t.ok((select count(*) from convites) = 2, 'admin do cliente cria e vê convites');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+select t.ok((select count(*) from convites) = 0, 'membro comum não vê os convites (tokens ficam protegidos)');
+do $$ begin
+  insert into convites (cliente_id) values ('20000000-0000-0000-0000-000000000001');
+  raise exception 'FALHOU: membro comum criou convite';
+exception when insufficient_privilege then raise notice 'ok - só administradores convidam';
+end $$;
+reset role;
+-- pessoa convidada por e-mail cria a conta: entra sozinha no cliente, sem leads
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000a9e22', 'Aprendiz2@exemplo.com');
+select t.ok((select acesso_leads = false from membros_cliente where usuario_id = '00000000-0000-0000-0000-0000000a9e22'), 'convite por e-mail é aceito sozinho no cadastro, com as permissões definidas');
+-- convite por link
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000111a1', 'link@exemplo.com');
+select token as tk from convites where id = '40000000-0000-0000-0000-000000000001' \gset
+set role anon;
+select t.ok((ver_convite(:'tk')->>'cliente') = 'Hospital Santa Marta', 'visitante vê o nome do cliente no convite antes de entrar');
+reset role;
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000111a1"}', false);
+select t.ok((select count(*) from clientes) = 0, 'conta nova não vê nenhum cliente antes de aceitar convite');
+
+reset role;
+do $$ declare v_token text; begin
+  select token into v_token from convites where id = '40000000-0000-0000-0000-000000000001';
+  perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000111a1"}', false);
+  set local role authenticated;
+  perform aceitar_convite(v_token);
+  perform t.ok((select count(*) from clientes) = 1, 'aceitar convite pelo link dá acesso ao cliente');
+end $$;
+do $$ declare v_token text; begin
+  select token into v_token from convites where id = '40000000-0000-0000-0000-000000000001';
+  perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f07a"}', false);
+  set local role authenticated;
+  perform aceitar_convite(v_token);
+  raise exception 'FALHOU: convite usado duas vezes';
+exception when others then
+  if sqlerrm like 'FALHOU%' then raise; end if;
+  raise notice 'ok - convite por link só pode ser usado uma vez';
+end $$;
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'

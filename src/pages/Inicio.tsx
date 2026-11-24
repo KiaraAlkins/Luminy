@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, Check, Clock, Sparkles } from 'lucide-react'
 import { Avatar, Botao, Cartao, Chip } from '../components/ui'
 import { useSessao } from '../lib/sessao'
@@ -33,11 +34,38 @@ function saudacao(d: Date) {
 }
 
 export function Inicio() {
-  const { usuario, acessoLeads } = useSessao()
+  const { usuario, acessoLeads, cliente, ehProprietario, agencia } = useSessao()
   const [hoje] = useState(() => new Date())
   const dataLonga = hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
   const totalLeads = ORIGENS.reduce((s, o) => s + o.total, 0)
   const diaSemana = (hoje.getDay() + 6) % 7
+
+  if (!cliente) {
+    return (
+      <div className="corpo">
+        <div className="saudacao"><div>
+          <div className="rotulo">{dataLonga}</div>
+          <h1>{saudacao(hoje)}, {usuario.nome.split(' ')[0]}</h1>
+          <p className="texto-2">{agencia ? `Sua agência ${agencia.nome} está pronta.` : 'Sua conta está pronta.'}</p>
+        </div></div>
+        <Cartao titulo="Primeiros passos">
+          <ol className="passos">
+            <li className="feito"><strong>Criar a conta</strong><span className="pequeno">Feito</span></li>
+            {ehProprietario ? (
+              <>
+                <li><strong>Cadastrar o primeiro cliente</strong><span className="pequeno">Cada cliente tem Kanban, calendário, campanhas e equipe próprios.</span>
+                  <Link className="botao botao--primario" to="/clientes">Cadastrar cliente</Link></li>
+                <li><strong>Convidar a equipe</strong><span className="pequeno">Por link no WhatsApp ou por e-mail, em Configurações.</span></li>
+                <li><strong>Criar a primeira campanha com QR Code</strong><span className="pequeno">Para captar leads em eventos.</span></li>
+              </>
+            ) : (
+              <li><strong>Entrar numa equipe</strong><span className="pequeno">Peça o link do convite ao administrador da equipe.</span></li>
+            )}
+          </ol>
+        </Cartao>
+      </div>
+    )
+  }
 
   return (
     <div className="corpo">

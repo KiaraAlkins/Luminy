@@ -45,3 +45,14 @@
 .semana__pontos i.vazio { background: var(--borda); }
 .sugestao { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--raio-m); background: var(--superficie-2); color: var(--texto-2); }
 .sugestao svg { color: var(--marca); flex: none; }
+.passos { margin: 0; padding: 0; list-style: none; counter-reset: passo; display: flex; flex-direction: column; gap: 14px; }
+.passos li { counter-increment: passo; display: grid; grid-template-columns: 32px 1fr auto; column-gap: 12px; align-items: center; }
+.passos li::before { content: counter(passo); grid-row: span 2; width: 28px; height: 28px; border-radius: 50%; background: var(--superficie-2); color: var(--marca); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+.passos li.feito::before { content: '✓'; background: var(--marca); color: #fff; }
+.passos li .pequeno { grid-column: 2; }
+.passos li .botao { grid-column: 3; grid-row: 1 / span 2; }
+.grade-clientes { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.cartao-cliente { align-items: center; text-align: center; cursor: pointer; font: inherit; color: inherit; }
+.cartao-cliente:hover { border-color: var(--marca); }
+.convite-gerado { background: var(--superficie-2); border-radius: var(--raio-m); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.convite-gerado code { background: var(--superficie); padding: 8px 10px; border-radius: 8px; font-size: 12px; word-break: break-all; }

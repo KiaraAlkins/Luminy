@@ -17,6 +17,7 @@ type Pendente = { card: Card; coluna: Coluna; posicao: number }
 
 export function Kanban() {
   const { cliente } = useSessao()
+  const clienteId = cliente?.id
   const [quadro, setQuadro] = useState<Quadro | null | undefined>(undefined)
   const [erro, setErro] = useState<string | null>(null)
   const [arrastando, setArrastando] = useState<string | null>(null)
@@ -26,8 +27,9 @@ export function Kanban() {
   const [novoEm, setNovoEm] = useState<string | null>(null)
 
   const recarregar = useCallback(async () => {
-    try { setQuadro(await carregarQuadro(cliente.id)) } catch { setErro('Não foi possível carregar o quadro.') }
-  }, [cliente.id])
+    if (!clienteId) { setQuadro(null); return }
+    try { setQuadro(await carregarQuadro(clienteId)) } catch { setErro('Não foi possível carregar o quadro.') }
+  }, [clienteId])
 
   useEffect(() => { void Promise.resolve().then(recarregar) }, [recarregar])
 
@@ -79,7 +81,7 @@ export function Kanban() {
       <div className="kanban-topo">
         <div>
           <h2>Kanban · Redes sociais</h2>
-          <p className="pequeno">Quadro oficial do {cliente.nome} · {quadro.cards.length} cards</p>
+          <p className="pequeno">Quadro oficial do {cliente?.nome} · {quadro.cards.length} cards</p>
         </div>
         <Botao icone={<Plus size={16} aria-hidden />} onClick={() => setNovoEm(quadro.colunas[0]?.id ?? null)}>Novo card</Botao>
       </div>
