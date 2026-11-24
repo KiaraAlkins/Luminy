@@ -1,0 +1,11 @@
+// Publicação na Cloudflare (Workers com arquivos estáticos).
+// O build do Vite gera a pasta dist; qualquer endereço desconhecido (ex.: /kanban, /q/dh26-cartaz)
+// devolve o index.html para o React decidir a tela.
+{
+  "name": "luminy",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
