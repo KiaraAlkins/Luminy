@@ -2,6 +2,7 @@ import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom'
 import { Menu } from './components/Menu'
 import { BarraSuperior } from './components/BarraSuperior'
 import { Inicio } from './pages/Inicio'
+import { Kanban } from './pages/Kanban'
 import { FormularioPublico } from './pages/FormularioPublico'
 import { EmConstrucao } from './pages/EmConstrucao'
 import { Entrar } from './pages/Entrar'
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/q/:slug" element={<FormularioPublico />} />
           <Route element={<Painel />}>
             <Route index element={<Inicio />} />
+            <Route path="kanban" element={<Kanban />} />
             <Route path="*" element={<EmConstrucao />} />
           </Route>
         </Routes>

@@ -1,0 +1,32 @@
+.kanban-pagina { padding-right: 0; }
+.kanban-topo { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-right: 40px; }
+.quadro { display: flex; gap: 16px; overflow-x: auto; padding: 0 40px 16px 0; align-items: flex-start; }
+.coluna { flex: 0 0 272px; background: rgb(236 232 255 / 0.6); border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 10px; border: 2px solid transparent; transition: border-color .15s; }
+.coluna--alvo { border-color: var(--marca-clara); }
+.coluna__topo { display: flex; align-items: center; gap: 8px; padding: 4px 6px; }
+.coluna__topo strong { flex: 0 1 auto; }
+.coluna__topo .pequeno { flex: 1; }
+.coluna__ponto { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.coluna__mais { background: none; border: 0; color: var(--texto-3); cursor: pointer; display: grid; place-items: center; padding: 2px; border-radius: 6px; }
+.coluna__mais:hover { background: var(--superficie); }
+.coluna__adicionar { background: none; border: 0; color: var(--texto-3); font-weight: 600; text-align: left; padding: 6px 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 10px; }
+.coluna__adicionar:hover { background: var(--superficie); color: var(--marca); }
+.card { background: var(--superficie); border: 1px solid var(--borda); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: grab; }
+.card:hover { border-color: var(--marca-clara); }
+.card--arrastando { opacity: 0.4; }
+.card__etiquetas { display: flex; flex-wrap: wrap; gap: 6px; }
+.card__impedimento { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: rgb(229 72 77 / 0.1); color: var(--perigo); font-size: 12px; }
+.card__impedimento svg { flex: none; margin-top: 2px; }
+.card__rodape { display: flex; align-items: center; gap: 6px; }
+.novo-card { display: flex; flex-direction: column; gap: 8px; }
+.novo-card textarea { resize: none; background: var(--superficie); }
+.janela-fundo { position: fixed; inset: 0; background: rgb(23 20 46 / 0.45); display: grid; place-items: center; padding: 24px; z-index: 50; }
+.janela { width: 100%; background: var(--superficie); border-radius: 24px; box-shadow: 0 24px 64px rgb(23 20 46 / 0.25); max-height: calc(100vh - 48px); overflow-y: auto; }
+.janela__topo { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
+.janela__topo h3 { font-size: 13px; font-family: var(--fonte-texto); font-weight: 600; color: var(--texto-3); }
+.janela__corpo { padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 16px; }
+.editar-card__titulo { font-family: var(--fonte-titulo); font-size: 28px; font-weight: 600; border: 0; padding: 0; background: none; outline: none; width: 100%; }
+.editar-card__grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.opcao { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--borda); background: var(--fundo); cursor: pointer; font-weight: 500; }
+.opcao.marcada { background: var(--marca); border-color: var(--marca); color: #fff; }
+@media (max-width: 860px) { .kanban-topo, .quadro { padding-right: 16px; } .editar-card__grade { grid-template-columns: 1fr; } }
