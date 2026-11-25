@@ -14,6 +14,8 @@ import { Agenda } from './pages/eventos/Agenda'
 import { Campanhas } from './pages/eventos/Campanhas'
 import { CampanhaEditor } from './pages/eventos/CampanhaEditor'
 import { Leads } from './pages/eventos/Leads'
+import { PlanosSaude } from './pages/eventos/PlanosSaude'
+import { ProvedorConvenios } from './lib/convenios'
 import { Convite } from './pages/Convite'
 import { FormularioPublico } from './pages/FormularioPublico'
 import { EmConstrucao } from './pages/EmConstrucao'
@@ -56,7 +58,7 @@ function Painel() {
   if (estado === 'deslogado') return <Entrar />
   if (estado === 'primeiro_acesso') return <PrimeiroAcesso />
   return (
-    <ProvedorFoco>
+    <ProvedorFoco><ProvedorConvenios>
       <div className={`app${recolhido ? ' app--recolhido' : ''}${expandindo ? ' app--expandindo' : ''}`}>
         <Menu recolhido={recolhido} alternar={alternarMenu} />
         <div className="conteudo">
@@ -66,7 +68,7 @@ function Painel() {
         </div>
       </div>
       <FocoFlutuante />
-    </ProvedorFoco>
+    </ProvedorConvenios></ProvedorFoco>
   )
 }
 
@@ -94,6 +96,7 @@ export default function App() {
               <Route path="campanhas" element={<SoComLeads><Campanhas /></SoComLeads>} />
               <Route path="campanhas/:id" element={<SoComLeads><CampanhaEditor /></SoComLeads>} />
               <Route path="leads" element={<SoComLeads><Leads /></SoComLeads>} />
+              <Route path="planos" element={<PlanosSaude />} />
             </Route>
             <Route path="estoque" element={<Estoque />} />
             <Route path="configuracoes" element={<Equipe />} />

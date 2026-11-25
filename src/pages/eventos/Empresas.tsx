@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlarmClock, PenLine, Plus, Search, Snowflake } from 'lucide-react'
+import { AlarmClock, Camera, PenLine, Plus, Search, Snowflake } from 'lucide-react'
 import { Botao, Chip } from '../../components/ui'
 import { Janela } from '../../components/Janela'
 import { useSessao } from '../../lib/sessao'
 import {
-  CONVENIOS_SUGERIDOS, ETAPAS, TRILHA, corEtapa, criarEmpresa, diasDesde, esfriando, haQuanto, listarEmpresas, prazo,
+  ETAPAS, enviarFotoEmpresa, TRILHA, corEtapa, criarEmpresa, diasDesde, esfriando, haQuanto, listarEmpresas, prazo,
   type Empresa, type Etapa, type Resumo,
 } from '../../lib/parcerias'
-import { CampoConvenios } from './CampoConvenios'
+import { FotoEmpresa } from '../../components/Empresa'
+import { ChipConvenio, SeletorConvenios } from '../../components/Convenio'
 import { RegistroRapido } from './RegistroRapido'
 import { TrilhaMini } from './TrilhaEtapa'
 
@@ -98,9 +99,12 @@ export function Empresas() {
           return (
             <Link key={e.id} to={`/eventos/empresas/${e.id}`} className="linha-empresa" role="row">
               <span className="linha-empresa__nome">
-                <strong>{e.nome}</strong>
-                <span className="pequeno">{[e.segmento, e.funcionarios ? `${e.funcionarios} funcionários` : null].filter(Boolean).join(' · ')}</span>
-                {e.convenios.length > 0 && <span className="chips">{e.convenios.map((c) => <Chip key={c} tom="neutro">{c}</Chip>)}</span>}
+                <span className="linha-empresa__id">
+                  <FotoEmpresa empresa={e} tamanho={42} />
+                  <span><strong>{e.nome}</strong>
+                    <span className="pequeno" style={{ display: 'block' }}>{[e.segmento, e.funcionarios ? `${e.funcionarios} funcionários` : null].filter(Boolean).join(' · ')}</span></span>
+                </span>
+                {e.convenios.length > 0 && <span className="chips">{e.convenios.map((c) => <ChipConvenio key={c} nome={c} />)}</span>}
               </span>
               <TrilhaMini etapa={e.etapa} />
               <span>
@@ -132,8 +136,9 @@ export function Empresas() {
       )}
 
       {nova && cliente && (
-        <NovaEmpresa onFechar={() => setNova(false)} onCriar={async (dados) => {
+        <NovaEmpresa onFechar={() => setNova(false)} onCriar={async ({ foto, ...dados }) => {
           const id = await criarEmpresa(cliente.id, dados)
+          if (foto) await enviarFotoEmpresa({ id, cliente_id: cliente.id, foto_url: null }, foto).catch(() => null)
           setNova(false); navegar(`/eventos/empresas/${id}`)
         }} />
       )}
@@ -141,27 +146,34 @@ export function Empresas() {
   )
 }
 
-function NovaEmpresa({ onFechar, onCriar }: { onFechar: () => void; onCriar: (d: { nome: string; segmento: string | null; funcionarios: number | null; convenios: string[]; etapa: Etapa }) => Promise<void> }) {
+function NovaEmpresa({ onFechar, onCriar }: { onFechar: () => void; onCriar: (d: { nome: string; segmento: string | null; funcionarios: number | null; convenios: string[]; etapa: Etapa; foto: File | null }) => Promise<void> }) {
   const [nome, setNome] = useState('')
   const [segmento, setSegmento] = useState('')
   const [funcionarios, setFuncionarios] = useState('')
   const [convenios, setConvenios] = useState<string[]>([])
   const [etapa, setEtapa] = useState<Etapa>('prospeccao')
+  const [foto, setFoto] = useState<File | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   async function enviar(e: FormEvent) {
     e.preventDefault()
-    try { await onCriar({ nome: nome.trim(), segmento: segmento.trim() || null, funcionarios: funcionarios ? Number(funcionarios) : null, convenios, etapa }) }
+    try { await onCriar({ nome: nome.trim(), segmento: segmento.trim() || null, funcionarios: funcionarios ? Number(funcionarios) : null, convenios, etapa, foto }) }
     catch { setErro('Não foi possível cadastrar a empresa.') }
   }
   return (
     <Janela titulo="Nova empresa parceira" onFechar={onFechar} largura={560}>
       <form className="janela__corpo" onSubmit={enviar}>
-        <div className="campo"><label htmlFor="emp-nome">Nome da empresa</label><input id="emp-nome" className="entrada" autoFocus required value={nome} onChange={(e) => setNome(e.target.value)} /></div>
+        <div className="linha" style={{ alignItems: 'flex-end', flexWrap: 'nowrap' }}>
+          <label className="escolher-foto" title="Logo ou foto da fachada">
+            {foto ? <img src={URL.createObjectURL(foto)} alt="" /> : <><Camera size={20} /><span>Foto</span></>}
+            <input type="file" accept="image/*" hidden onChange={(e) => setFoto(e.target.files?.[0] ?? null)} aria-label="Logo ou foto da fachada" />
+          </label>
+          <div className="campo" style={{ flex: 1 }}><label htmlFor="emp-nome">Nome da empresa</label><input id="emp-nome" className="entrada" autoFocus required value={nome} onChange={(e) => setNome(e.target.value)} /></div>
+        </div>
         <div className="grade-2">
           <div className="campo"><label htmlFor="emp-seg">Segmento</label><input id="emp-seg" className="entrada" value={segmento} onChange={(e) => setSegmento(e.target.value)} placeholder="Ex.: Indústria" /></div>
           <div className="campo"><label htmlFor="emp-func">Funcionários</label><input id="emp-func" className="entrada" type="number" min={0} value={funcionarios} onChange={(e) => setFuncionarios(e.target.value)} /></div>
         </div>
-        <CampoConvenios valor={convenios} onMudar={setConvenios} sugestoes={CONVENIOS_SUGERIDOS} />
+        <SeletorConvenios valor={convenios} onMudar={setConvenios} />
         <div className="campo"><label htmlFor="emp-etapa">Etapa da parceria</label>
           <select id="emp-etapa" className="entrada" value={etapa} onChange={(e) => setEtapa(e.target.value as Etapa)}>{ETAPAS.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</select></div>
         {erro && <p className="pequeno" style={{ color: 'var(--perigo)' }}>{erro}</p>}

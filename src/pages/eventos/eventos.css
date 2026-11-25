@@ -151,3 +151,40 @@
   .funil__etapa, .registro__tipo, .trilha__bola { transition: none; }
   .trilha__passo.agora .trilha__bola, .registro__detalhe, .sugestao, .aviso-flutuante { animation: none; }
 }
+
+/* ---------- Fotos das empresas ---------- */
+.linha-empresa__id { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.linha-empresa__id strong { display: block; }
+.linha-empresa__nome .chips { margin-left: 54px; }
+.card__empresa { display: flex; align-items: center; gap: 10px; }
+.empresa-link { display: inline-flex; align-items: center; gap: 6px; }
+.escolher-foto { width: 64px; height: 64px; flex: none; border-radius: 16px; border: 2px dashed var(--marca-clara); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--marca); font-size: 11px; font-weight: 700; cursor: pointer; overflow: hidden; transition: background .18s; }
+.escolher-foto:hover { background: var(--marca-suave); }
+.escolher-foto img { width: 100%; height: 100%; object-fit: cover; }
+.foto-da-empresa { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.foto-da-empresa__botao { position: relative; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 22px; transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
+.foto-da-empresa__botao:hover { transform: scale(1.04); }
+.foto-da-empresa__botao.enviando { opacity: .5; animation: pulso 1s ease-in-out infinite; }
+.foto-da-empresa__camera { position: absolute; right: -4px; bottom: -4px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--marca); color: #fff; border: 3px solid var(--superficie); }
+.foto-da-empresa__tirar { border: 0; background: none; font: inherit; font-size: 11px; color: var(--texto-3); cursor: pointer; padding: 2px; }
+.foto-da-empresa__tirar:hover { color: var(--perigo); }
+@keyframes pulso { 50% { opacity: .35; } }
+
+/* ---------- Planos de saúde ---------- */
+.novo-plano { flex-direction: row; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.novo-plano > .botao { align-self: flex-start; margin-top: 22px; }
+.novo-plano__logo { width: 72px; height: 72px; border-radius: 50%; border: 2px dashed var(--marca-clara); background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--marca); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; overflow: hidden; flex: none; }
+.novo-plano__logo:hover { background: var(--marca-suave); }
+.novo-plano__logo img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.grade-planos { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.plano { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 20px 14px 16px; text-align: center; background: var(--superficie); border: 1px solid var(--borda); border-radius: 20px; animation: pagina-entra .3s ease-out both; transition: transform .2s cubic-bezier(.2,.8,.3,1.2), box-shadow .2s; }
+.plano:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -18px rgb(23 20 46 / .4); }
+.plano__logo { position: relative; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; }
+.plano__logo .logo-convenio { border-radius: 50% !important; }
+.plano__logo.enviando { opacity: .5; }
+.plano__trocar { position: absolute; right: -2px; bottom: -2px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--marca); color: #fff; border: 3px solid var(--superficie); opacity: 0; transform: scale(.6); transition: opacity .18s, transform .25s cubic-bezier(.34,1.56,.64,1); }
+.plano:hover .plano__trocar { opacity: 1; transform: none; }
+.plano__nome { font-size: 15px; }
+.plano__acoes { position: absolute; top: 6px; right: 6px; display: flex; opacity: 0; transition: opacity .18s; }
+.plano:hover .plano__acoes, .plano:focus-within .plano__acoes { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .plano, .foto-da-empresa__botao { animation: none; transition: none; } }

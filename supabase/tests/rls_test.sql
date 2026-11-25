@@ -304,6 +304,27 @@ insert into estoque_itens (cliente_id, nome, unidade) values ('20000000-0000-000
 select t.ok(true, 'dá para recadastrar um item com o mesmo nome de um excluído');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
 select t.ok((select count(*) from estoque_itens) = 0, 'quem não é da equipe não vê o estoque');
+select t.ok((select count(*) from convenios) = 0, 'quem não é da equipe não vê os planos de saúde do cliente');
+do $$ begin
+  insert into convenios (cliente_id, nome) values ('20000000-0000-0000-0000-000000000001', 'Plano Intruso');
+  raise exception 'FALHOU: estranho cadastrou plano';
+exception when insufficient_privilege then raise notice 'ok - quem não é da equipe não cadastra plano de saúde';
+end $$;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000a9e1"}', false);
+insert into convenios (cliente_id, nome) values ('20000000-0000-0000-0000-000000000001', 'Unimed');
+select t.ok((select count(*) from convenios) = 1, 'equipe cadastra e vê os planos de saúde (inclusive jovem aprendiz)');
+do $$ begin
+  insert into convenios (cliente_id, nome) values ('20000000-0000-0000-0000-000000000001', 'UNIMED');
+  raise exception 'FALHOU: plano duplicado';
+exception when unique_violation then raise notice 'ok - não cadastra o mesmo plano duas vezes';
+end $$;
+reset role;
+update empresas set convenios = array['Unimed', 'Cassi'] where id = (select id from empresas where cliente_id = '20000000-0000-0000-0000-000000000001' limit 1);
+set role authenticated;
+update convenios set nome = 'Unimed Brasília' where nome = 'Unimed';
+reset role;
+select t.ok((select 'Unimed Brasília' = any (convenios) and not 'Unimed' = any (convenios) from empresas where cliente_id = '20000000-0000-0000-0000-000000000001' and 'Cassi' = any (convenios) limit 1), 'renomear o plano atualiza o nome nas empresas');
+set role authenticated;
 
 -- ---------------------------------------------------------------- Fazendo agora e TV
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);

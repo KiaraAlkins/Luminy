@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Building2, CalendarDays, Check, EyeOff, Plus, QrCode } from 'lucide-react'
+import { CalendarDays, Check, EyeOff, Plus, QrCode } from 'lucide-react'
 import { Botao, Chip } from '../../components/ui'
 import { Janela } from '../../components/Janela'
 import { useSessao } from '../../lib/sessao'
+import { FotoEmpresa, SeletorEmpresa } from '../../components/Empresa'
 import { dataBr, listarEmpresas, listarEventos, type Empresa, type Evento } from '../../lib/parcerias'
 import {
   CAMPOS_BASE, CAMPOS_PRONTOS, criarCampanha, listarCampanhas,
@@ -74,7 +75,7 @@ export function Campanhas() {
               <div>
                 <h3>{c.nome}</h3>
                 <p className="pequeno campanha-card__meta">
-                  {emp && <span><Building2 size={13} /> {emp.nome}</span>}
+                  {emp && <span><FotoEmpresa empresa={emp} tamanho={18} /> {emp.nome}</span>}
                   {(c.inicio || c.fim) && <span><CalendarDays size={13} /> {c.inicio ? dataBr(c.inicio) : '…'} até {c.fim ? dataBr(c.fim) : 'sem data'}</span>}
                 </p>
               </div>
@@ -139,9 +140,7 @@ function NovaCampanha({ empresas, eventos, onFechar, onCriar }: {
           <input id="cp-nome" className="entrada" autoFocus required value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Dia do Homem na Empresa X" /></div>
         <div className="grade-2">
           <div className="campo"><label htmlFor="cp-emp">É para uma empresa parceira?</label>
-            <select id="cp-emp" className="entrada" value={empresaId} onChange={(e) => { setEmpresaId(e.target.value); setEventoId('') }}>
-              <option value="">Não, é aberta ao público</option>{empresas.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
-            </select></div>
+            <SeletorEmpresa id="cp-emp" empresas={empresas} valor={empresaId} semEmpresa="Não, é aberta ao público" onMudar={(v) => { setEmpresaId(v); setEventoId('') }} /></div>
           <div className="campo"><label htmlFor="cp-ev">Ligada a um evento?</label>
             <select id="cp-ev" className="entrada" value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
               <option value="">Nenhum</option>{eventosDaEmpresa.map((v) => <option key={v.id} value={v.id}>{v.nome} · {dataBr(v.data)}</option>)}

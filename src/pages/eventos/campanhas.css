@@ -150,3 +150,8 @@
 @media (prefers-reduced-motion: reduce) {
   .campanha-card, .campo-linha, .peca, .celular__tela .campo, .barra-salvar, .fila__atual, .etapas-lead__item.marcado, .pulso { animation: none; }
 }
+
+/* ---------- Pergunta de plano de saúde (com logos) ---------- */
+.planos-do-campo { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.planos-do-campo .pequeno { margin-left: 6px; }
+.lead-plano { display: inline-flex; vertical-align: -2px; margin-right: 6px; }

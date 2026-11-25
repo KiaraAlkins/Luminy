@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, Gift, Handshake, Mail, MessageSquare, Phone, QrCode, Snowflake, Sparkles, Star, Trash2, Undo2, Users, X } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Camera, Gift, Handshake, Mail, MessageSquare, Phone, QrCode, Snowflake, Sparkles, Star, Trash2, Undo2, Users, X } from 'lucide-react'
 import { Botao, Cartao, Chip } from '../../components/ui'
 import { useSessao } from '../../lib/sessao'
 import {
-  CONVENIOS_SUGERIDOS, adicionarContato, dataBr, esfriando, etapaSugerida, excluirEmpresa, excluirInteracao, haQuanto,
+  adicionarContato, enviarFotoEmpresa, removerFotoEmpresa, dataBr, esfriando, etapaSugerida, excluirEmpresa, excluirInteracao, haQuanto,
   nomeEtapa, nomeTipo, obterEmpresa, prazo, removerContato, salvarEmpresa, somarDias,
   type Contato, type Empresa, type Etapa, type Evento, type Interacao, type TipoInteracao,
 } from '../../lib/parcerias'
-import { CampoConvenios } from './CampoConvenios'
+import { FotoEmpresa } from '../../components/Empresa'
+import { ChipConvenio, SeletorConvenios } from '../../components/Convenio'
 import { RegistroRapido } from './RegistroRapido'
 import { TrilhaEtapa } from './TrilhaEtapa'
 
@@ -53,9 +54,12 @@ export function EmpresaDetalhe() {
       <Link to="/eventos" className="linha pequeno" style={{ color: 'var(--texto-2)' }}><ArrowLeft size={14} /> Empresas</Link>
       <div className="ficha-topo">
         <div className="ficha-topo__titulo">
-          <div>
+          <div className="linha" style={{ gap: 16, flexWrap: 'nowrap' }}>
+            <FotoDaEmpresa empresa={empresa} onMudou={carregar} />
+            <div>
             <h2>{empresa.nome}</h2>
             <p className="pequeno">{[empresa.segmento, empresa.funcionarios ? `${empresa.funcionarios} funcionários` : null].filter(Boolean).join(' · ')}</p>
+            </div>
           </div>
           <div className="ficha-topo__sinais">
             {ultima ? <span className="sinal">Último registro <strong>{haQuanto(ultima)}</strong></span> : <span className="sinal">Nenhum registro ainda</span>}
@@ -72,7 +76,7 @@ export function EmpresaDetalhe() {
             {editando ? <EditarDados empresa={empresa} onSalvar={async (c) => { await mudar(c); setEditando(false) }} /> : (
               <>
                 <div className="dado"><span>Planos de saúde dos funcionários</span>
-                  <span className="linha">{empresa.convenios.length ? empresa.convenios.map((c) => <Chip key={c} tom="neutro">{c}</Chip>) : 'Não informado'}</span></div>
+                  <span className="linha">{empresa.convenios.length ? empresa.convenios.map((c) => <ChipConvenio key={c} nome={c} />) : 'Não informado'}</span></div>
                 {empresa.cnpj && <div className="dado"><span>CNPJ</span><span>{empresa.cnpj}</span></div>}
                 {empresa.endereco && <div className="dado"><span>Endereço</span><span>{empresa.endereco}</span></div>}
                 {empresa.site && <div className="dado"><span>Site</span><a href={empresa.site.startsWith('http') ? empresa.site : `https://${empresa.site}`} target="_blank" rel="noreferrer">{empresa.site}</a></div>}
@@ -160,7 +164,7 @@ function EditarDados({ empresa, onSalvar }: { empresa: Empresa; onSalvar: (c: Pa
         <div className="campo"><label htmlFor="d-seg">Segmento</label><input id="d-seg" className="entrada" {...txt('segmento')} /></div>
         <div className="campo"><label htmlFor="d-func">Funcionários</label><input id="d-func" className="entrada" type="number" min={0} {...txt('funcionarios')} /></div>
       </div>
-      <CampoConvenios valor={d.convenios} onMudar={(convenios) => setD({ ...d, convenios })} sugestoes={CONVENIOS_SUGERIDOS} />
+      <SeletorConvenios valor={d.convenios} onMudar={(convenios) => setD({ ...d, convenios })} />
       <div className="campo"><label htmlFor="d-cnpj">CNPJ</label><input id="d-cnpj" className="entrada" {...txt('cnpj')} /></div>
       <div className="campo"><label htmlFor="d-end">Endereço</label><input id="d-end" className="entrada" {...txt('endereco')} /></div>
       <div className="campo"><label htmlFor="d-site">Site</label><input id="d-site" className="entrada" {...txt('site')} /></div>
@@ -228,5 +232,30 @@ function Contatos({ empresaId, contatos, onMudar }: { empresaId: string; contato
         </form>
       )}
     </Cartao>
+  )
+}
+
+/** Logo ou foto da fachada: clicar troca; aparece na lista, no quadro e ao escolher a empresa nas campanhas. */
+function FotoDaEmpresa({ empresa, onMudou }: { empresa: Empresa; onMudou: () => Promise<void> }) {
+  const entrada = useRef<HTMLInputElement>(null)
+  const [enviando, setEnviando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  async function trocar(f: File | undefined) {
+    if (!f) return
+    setEnviando(true); setErro(null)
+    try { await enviarFotoEmpresa(empresa, f); await onMudou() } catch (e) { setErro((e as Error).message) }
+    setEnviando(false)
+  }
+  return (
+    <div className="foto-da-empresa">
+      <button type="button" className={`foto-da-empresa__botao${enviando ? ' enviando' : ''}`} onClick={() => entrada.current?.click()}
+        title={empresa.foto_url ? 'Trocar logo ou foto da fachada' : 'Pôr logo ou foto da fachada'} aria-label="Trocar foto da empresa">
+        <FotoEmpresa empresa={empresa} tamanho={76} />
+        <span className="foto-da-empresa__camera"><Camera size={16} /></span>
+      </button>
+      <input ref={entrada} type="file" accept="image/*" hidden onChange={(e) => void trocar(e.target.files?.[0])} />
+      {empresa.foto_url && <button type="button" className="foto-da-empresa__tirar" onClick={() => void removerFotoEmpresa(empresa).then(onMudou)}>tirar foto</button>}
+      {erro && <span className="pequeno" style={{ color: 'var(--perigo)' }}>{erro}</span>}
+    </div>
   )
 }

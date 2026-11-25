@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import './formulario.css'
 
-type Campo = { chave: string; rotulo: string; tipo: string; modo: 'obrigatorio' | 'exibir'; opcoes?: string[] }
+type Campo = { chave: string; rotulo: string; tipo: string; modo: 'obrigatorio' | 'exibir'; opcoes?: string[]; fotos?: Record<string, string> }
 type Formulario =
   | { situacao: 'ativa'; cliente: string; cor: string; titulo: string; texto?: string; obrigado?: string; campos: Campo[] }
   | { situacao: 'encerrada' | 'inexistente'; cliente?: string }
@@ -16,6 +16,7 @@ const DEMO: Formulario = {
     { chave: 'nome', rotulo: 'Nome completo', tipo: 'texto', modo: 'obrigatorio' },
     { chave: 'whatsapp', rotulo: 'WhatsApp', tipo: 'telefone', modo: 'obrigatorio' },
     { chave: 'email', rotulo: 'E-mail', tipo: 'email', modo: 'exibir' },
+    { chave: 'convenio', rotulo: 'Qual o seu plano de saúde?', tipo: 'convenio', modo: 'exibir', opcoes: ['Unimed', 'Bradesco Saúde', 'Cassi', 'Amil', 'Não tenho / particular'] },
     { chave: 'interesse', rotulo: 'Interesse', tipo: 'escolha', modo: 'exibir', opcoes: ['Check-up masculino', 'Urologia', 'Cardiologia'] },
     { chave: 'diabetes', rotulo: 'Tem diabetes ou histórico na família?', tipo: 'sim_nao', modo: 'exibir' },
   ],
@@ -82,7 +83,17 @@ export function FormularioPublico() {
             {form.campos.map((c) => (
               <div className="campo" key={c.chave}>
                 <label htmlFor={c.chave}>{c.rotulo}{c.modo === 'obrigatorio' ? ' *' : ''}</label>
-                {c.tipo === 'escolha' || c.tipo === 'sim_nao' ? (
+                {c.tipo === 'convenio' ? (
+                  <div className="planos-publico" role="radiogroup" aria-label={c.rotulo}>
+                    {(c.opcoes ?? []).map((o) => (
+                      <button type="button" key={o} role="radio" aria-checked={respostas[c.chave] === o}
+                        className={`plano-publico${respostas[c.chave] === o ? ' marcado' : ''}`}
+                        onClick={() => setRespostas({ ...respostas, [c.chave]: o })}>
+                        {c.fotos?.[o] && <img src={c.fotos[o]} alt="" />}<span>{o}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : c.tipo === 'escolha' || c.tipo === 'sim_nao' ? (
                   <div className="opcoes" role="radiogroup" aria-labelledby={c.chave}>
                     {(c.tipo === 'sim_nao' ? ['Sim', 'Não'] : c.opcoes ?? []).map((o) => (
                       <button type="button" key={o} role="radio" aria-checked={respostas[c.chave] === o}

@@ -7,6 +7,7 @@ const TITULOS: [RegExp, string, string][] = [
   [/^\/eventos\/agenda/, 'Agenda de eventos', 'Mutirões, palestras e ações nas empresas parceiras'],
   [/^\/eventos\/campanhas\/.+/, '', ''],
   [/^\/eventos\/campanhas/, 'Campanhas QR', 'Monte o formulário, baixe o QR e acompanhe quantos viram lead'],
+  [/^\/eventos\/planos/, 'Planos de saúde', 'Os planos que o hospital atende, com logo, para escolher nas empresas, campanhas e leads'],
   [/^\/eventos\/leads/, 'Leads', 'Quem preencheu os formulários dos QR · dados sigilosos'],
   [/^\/eventos\/empresas\/.+/, '', ''],
   [/^\/eventos/, 'Empresas', 'Empresas parceiras, os planos de saúde dos funcionários e tudo que já foi feito com cada uma'],

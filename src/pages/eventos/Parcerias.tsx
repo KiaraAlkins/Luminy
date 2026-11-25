@@ -6,14 +6,16 @@ import { useSessao } from '../../lib/sessao'
 import { posicaoEntre, useArrastar, useColunasMinimizadas, type Vaga } from '../../lib/arrastar'
 import { CardVoando, FaixaColuna, VagaCard } from '../../components/Arrastar'
 import { ETAPAS, esfriando, haQuanto, listarEmpresas, prazo, salvarEmpresa, type Empresa, type Resumo } from '../../lib/parcerias'
+import { FotoEmpresa } from '../../components/Empresa'
+import { ChipConvenio } from '../../components/Convenio'
 import '../kanban.css'
 
 function ConteudoEmpresa({ emp, r }: { emp: Empresa; r?: Resumo }) {
   const p = emp.proximo_passo_em ? prazo(emp.proximo_passo_em) : null
   return (
     <>
-      <strong className="card__titulo">{emp.nome}</strong>
-      {emp.convenios.length > 0 && <div className="card__etiquetas">{emp.convenios.map((c) => <Chip key={c} tom="neutro">{c}</Chip>)}</div>}
+      <span className="card__empresa"><FotoEmpresa empresa={emp} tamanho={34} /><strong className="card__titulo">{emp.nome}</strong></span>
+      {emp.convenios.length > 0 && <div className="card__etiquetas">{emp.convenios.map((c) => <ChipConvenio key={c} nome={c} />)}</div>}
       <div className="card__empresa-meta">
         {r?.ultima_interacao
           ? <span className="pequeno">{esfriando(emp, r.ultima_interacao) && <Snowflake size={12} style={{ color: 'var(--info)', verticalAlign: -1 }} />} Último contato {haQuanto(r.ultima_interacao)}</span>

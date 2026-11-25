@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { apagarImagem, enviarImagem } from './imagens'
 
 export type Etapa = 'prospeccao' | 'primeiro_contato' | 'reuniao' | 'proposta' | 'parceira_ativa' | 'pausada' | 'encerrada'
 export type TipoInteracao = 'contato' | 'reuniao' | 'brinde' | 'evento' | 'coleta_leads' | 'campanha' | 'proposta' | 'outro'
@@ -33,6 +34,7 @@ export type Empresa = {
   id: string; cliente_id: string; nome: string; cnpj: string | null; segmento: string | null; funcionarios: number | null
   endereco: string | null; site: string | null; convenios: string[]; etapa: Etapa; posicao: number
   proximo_passo: string | null; proximo_passo_em: string | null; observacoes: string | null; atualizado_em: string
+  foto_url?: string | null
 }
 export type Resumo = { empresa_id: string; ultima_interacao: string | null; ultima_descricao: string | null; total_interacoes: number; total_leads: number | null }
 export type Contato = { id: string; empresa_id: string; nome: string; cargo: string | null; email: string | null; telefone: string | null; principal: boolean }
@@ -226,3 +228,18 @@ export function etapaSugerida(atual: Etapa, tipo: TipoInteracao): Etapa | null {
 }
 
 export const somarDias = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10)
+
+// ---------------------------------------------------------------- foto da empresa (logo ou fachada)
+export async function enviarFotoEmpresa(empresa: Pick<Empresa, 'id' | 'cliente_id' | 'foto_url'>, arquivo: File): Promise<string> {
+  const url = await enviarImagem(`${empresa.cliente_id}/${empresa.id}`, arquivo)
+  if (!supabase) { const e = demo.empresas.find((x) => x.id === empresa.id); if (e) e.foto_url = url; return url }
+  await salvarEmpresa(empresa.id, { foto_url: url })
+  await apagarImagem(empresa.foto_url)
+  return url
+}
+
+export async function removerFotoEmpresa(empresa: Empresa) {
+  if (!supabase) { const e = demo.empresas.find((x) => x.id === empresa.id); if (e) e.foto_url = null; return }
+  await salvarEmpresa(empresa.id, { foto_url: null })
+  await apagarImagem(empresa.foto_url)
+}

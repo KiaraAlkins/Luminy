@@ -4,10 +4,11 @@ import { Download, Lock, MessageCircle, Search, Send, ShieldCheck, Tag } from 'l
 import { Botao, Chip } from '../../components/ui'
 import { useSessao } from '../../lib/sessao'
 import {
-  ETAPAS_LEAD, listarCampanhas, listarLeads, nomeEtapaLead, podeReceberCampanha, tempoRelativo,
+  ETAPAS_LEAD, SEM_PLANO, listarCampanhas, listarLeads, nomeEtapaLead, podeReceberCampanha, tempoRelativo,
   type Campanha, type EtapaLead, type Lead,
 } from '../../lib/campanhas'
 import { LeadDetalhe } from './LeadDetalhe'
+import { LogoConvenio } from '../../components/Convenio'
 import { EnvioEmMassa } from './EnvioEmMassa'
 import './campanhas.css'
 
@@ -120,7 +121,7 @@ export function Leads() {
                 onChange={() => { const n = new Set(marcados); if (n.has(l.id)) n.delete(l.id); else n.add(l.id); setMarcados(n) }} />
               <span className="linha-lead__nome">
                 <strong>{l.nome}</strong>
-                <span className="pequeno">{l.whatsapp ?? l.email ?? 'sem contato'}{!podeReceberCampanha(l) && <span title="Não aceitou receber campanhas"> · <Lock size={11} style={{ verticalAlign: -1 }} /> só contato</span>}</span>
+                <span className="pequeno">{l.dados.convenio && l.dados.convenio !== SEM_PLANO && <span className="lead-plano" title={l.dados.convenio}><LogoConvenio nome={l.dados.convenio} tamanho={14} /></span>}{l.whatsapp ?? l.email ?? 'sem contato'}{!podeReceberCampanha(l) && <span title="Não aceitou receber campanhas"> · <Lock size={11} style={{ verticalAlign: -1 }} /> só contato</span>}</span>
               </span>
               <span className="pequeno corta">{nomeCampanha(l.campanha_id)}</span>
               <span className="chips">{l.segmentos.map((s) => <Chip key={s} tom="alerta">{s}</Chip>)}</span>

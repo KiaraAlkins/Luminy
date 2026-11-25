@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link as RouterLink, NavLink, useLocation } from 'react-router-dom'
 import {
-  BadgeCheck, Boxes, Building2, CalendarDays, CalendarRange, ChevronDown, Columns3, FileSignature, Handshake, Home,
+  BadgeCheck, Boxes, Briefcase, Building2, CalendarDays, CalendarRange, ChevronDown, Columns3, FileSignature, Handshake, HeartPulse, Home,
   Inbox, LayoutGrid, Lightbulb, ListChecks, LogOut, Package, Palette, PanelLeftClose, PanelLeftOpen, QrCode, Send,
   SlidersHorizontal, Ticket, Users, Wallet, Waypoints,
 } from 'lucide-react'
@@ -34,12 +34,13 @@ const GUIAS: Guia[] = [
       { para: '/eventos', rotulo: 'Empresas', icone: Building2, fim: true, ativoEm: /^\/eventos(\/empresas\/.*)?$/ },
       { para: '/eventos/parcerias', rotulo: 'Parcerias', icone: Waypoints },
       { para: '/eventos/agenda', rotulo: 'Agenda de eventos', icone: CalendarRange },
+      { para: '/eventos/planos', rotulo: 'Planos de saúde', icone: HeartPulse },
       { para: '/eventos/campanhas', rotulo: 'Campanhas QR', icone: QrCode, somenteLeads: true },
       { para: '/eventos/leads', rotulo: 'Leads', icone: Users, somenteLeads: true },
     ],
   },
   {
-    id: 'financeiro', rotulo: 'Financeiro', icone: Wallet, somenteAdmin: true, itens: [
+    id: 'negocios', rotulo: 'Negócios', icone: Briefcase, somenteAdmin: true, itens: [
       { para: '/comercial', rotulo: 'Comercial', icone: Handshake },
       { para: '/financeiro', rotulo: 'Financeiro', icone: Wallet },
       { para: '/contratos', rotulo: 'Contratos', icone: FileSignature },

@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { CalendarCheck, Eye, Mail, MessageCircle, Phone, Send, ShieldCheck, Trash2, UserX } from 'lucide-react'
 import { Botao, Chip } from '../../components/ui'
 import { Janela } from '../../components/Janela'
+import { ChipConvenio } from '../../components/Convenio'
 import { useSessao } from '../../lib/sessao'
 import {
-  ETAPAS_LEAD, MOTIVOS_PERDA, abrirLead, excluirLead, nomeEtapaLead, numeroWhats, registrarEventoLead, salvarLead, tempoRelativo,
+  ETAPAS_LEAD, MOTIVOS_PERDA, SEM_PLANO, abrirLead, excluirLead, nomeEtapaLead, numeroWhats, registrarEventoLead, salvarLead, tempoRelativo,
   type Campanha, type EtapaLead, type EventoLead, type Lead,
 } from '../../lib/campanhas'
 
@@ -18,6 +19,7 @@ const DESCRICAO: Record<string, (d: EventoLead['detalhe']) => string> = {
   campanha: (d) => `Recebeu campanha por ${d.canal === 'email' ? 'e-mail' : 'WhatsApp'}${d.titulo ? `: ${d.titulo}` : ''}`,
   descadastro: () => 'Pediu para não receber mais campanhas',
 }
+const ehPlano = (chave: string) => /convenio|plano/.test(chave)
 const ICONE: Record<string, React.ElementType> = { aberto: Eye, whatsapp: MessageCircle, ligacao: Phone, email: Mail, campanha: Send, descadastro: UserX, etapa: CalendarCheck }
 
 /** Ficha do lead. Abrir registra o acesso. Ações de um toque: WhatsApp, ligar, mudar etapa. */
@@ -90,7 +92,7 @@ export function LeadDetalhe({ id, campanhas, podeExcluir, onFechar, onMudou }: {
             <dl className="respostas">
               {lead.whatsapp && <><dt>WhatsApp</dt><dd>{lead.whatsapp}</dd></>}
               {lead.email && <><dt>E-mail</dt><dd>{lead.email}</dd></>}
-              {Object.entries(lead.dados).map(([k, v]) => <div key={k} style={{ display: 'contents' }}><dt>{rotulo(k)}</dt><dd>{v}</dd></div>)}
+              {Object.entries(lead.dados).map(([k, v]) => <div key={k} style={{ display: 'contents' }}><dt>{rotulo(k)}</dt><dd>{ehPlano(k) && v !== SEM_PLANO ? <ChipConvenio nome={v} /> : v}</dd></div>)}
             </dl>
             <h4 style={{ marginTop: 16 }}>Consentimento (LGPD)</h4>
             <p className="pequeno linha" style={{ gap: 6 }}><ShieldCheck size={14} style={{ color: 'var(--sucesso)' }} /> Aceitou contato em {new Date(lead.aceite_contato_em).toLocaleString('pt-BR')}</p>

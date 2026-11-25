@@ -4,6 +4,7 @@ import { MapPin, Plus } from 'lucide-react'
 import { Botao, Chip } from '../../components/ui'
 import { Janela } from '../../components/Janela'
 import { useSessao } from '../../lib/sessao'
+import { FotoEmpresa, SeletorEmpresa } from '../../components/Empresa'
 import { SITUACOES_EVENTO, hojeIso, listarEmpresas, listarEventos, salvarEvento, type Empresa, type Evento, type SituacaoEvento } from '../../lib/parcerias'
 
 const TOM: Record<SituacaoEvento, 'marca' | 'sucesso' | 'neutro' | 'perigo'> = { planejado: 'neutro', confirmado: 'marca', realizado: 'sucesso', cancelado: 'perigo' }
@@ -38,7 +39,7 @@ export function Agenda() {
           <span className="pequeno linha">
             {v.hora && <span>{v.hora.slice(0, 5)}</span>}
             {v.local && <span className="linha"><MapPin size={12} /> {v.local}</span>}
-            {emp && <Link to={`/eventos/empresas/${emp.id}`} onClick={(e) => e.stopPropagation()}>{emp.nome}</Link>}
+            {emp && <Link className="empresa-link" to={`/eventos/empresas/${emp.id}`} onClick={(e) => e.stopPropagation()}><FotoEmpresa empresa={emp} tamanho={20} /> {emp.nome}</Link>}
           </span>
         </span>
         <Chip tom={TOM[v.situacao]}>{SITUACOES_EVENTO.find((s) => s.id === v.situacao)?.nome}</Chip>
@@ -84,9 +85,7 @@ function EditarEvento({ evento, empresas, onFechar, onSalvar }: {
           <div className="campo"><label htmlFor="ev-hora">Horário</label><input id="ev-hora" className="entrada" type="time" value={v.hora} onChange={(e) => setV({ ...v, hora: e.target.value })} /></div>
         </div>
         <div className="campo"><label htmlFor="ev-emp">Empresa parceira</label>
-          <select id="ev-emp" className="entrada" value={v.empresa_id} onChange={(e) => setV({ ...v, empresa_id: e.target.value })}>
-            <option value="">Sem empresa (evento do hospital)</option>{empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
-          </select></div>
+          <SeletorEmpresa id="ev-emp" empresas={empresas} valor={v.empresa_id} semEmpresa="Sem empresa (evento do hospital)" onMudar={(id) => setV({ ...v, empresa_id: id })} /></div>
         <div className="campo"><label htmlFor="ev-local">Local</label><input id="ev-local" className="entrada" value={v.local} onChange={(e) => setV({ ...v, local: e.target.value })} /></div>
         <div className="campo"><label htmlFor="ev-sit">Situação</label>
           <select id="ev-sit" className="entrada" value={v.situacao} onChange={(e) => setV({ ...v, situacao: e.target.value as SituacaoEvento })}>

@@ -8,9 +8,11 @@ import { Botao, Chip } from '../../components/ui'
 import { useSessao } from '../../lib/sessao'
 import { dataBr, listarEmpresas, type Empresa } from '../../lib/parcerias'
 import {
-  CAMPOS_PRONTOS, TIPOS_CAMPO, chaveDe, criarPeca, excluirCampanha, excluirPeca, linkPeca, obterCampanha, salvarCampanha,
+  CAMPOS_PRONTOS, SEM_PLANO, TIPOS_CAMPO, chaveDe, comPlanos, criarPeca, excluirCampanha, excluirPeca, linkPeca, obterCampanha, salvarCampanha,
   type Campanha, type Campo, type ModoCampo, type Peca, type SituacaoCampanha, type TipoCampo,
 } from '../../lib/campanhas'
+import { LogoConvenio } from '../../components/Convenio'
+import { useConvenios } from '../../lib/convenios'
 import '../formulario.css'
 import './campanhas.css'
 
@@ -29,6 +31,7 @@ export function CampanhaEditor() {
   const { id = '' } = useParams()
   const navegar = useNavigate()
   const { cliente, ehAdminCliente } = useSessao()
+  const { convenios } = useConvenios()
   const [campanha, setCampanha] = useState<Campanha | null | undefined>(undefined)
   const [pecas, setPecas] = useState<Peca[]>([])
   const [empresa, setEmpresa] = useState<Empresa | null>(null)
@@ -67,7 +70,8 @@ export function CampanhaEditor() {
     const problema = ed!.formulario.find((c) => c.modo === 'oculto' && !c.valor_fixo?.trim())
     if (problema) { avisar(`"${problema.rotulo}" está oculto: preencha o valor fixo.`); return }
     setSalvando(true)
-    await salvarCampanha(campanha!.id, { ...ed!, nome: ed!.nome.trim() || campanha!.nome })
+    // Pergunta de plano de saúde leva junto a lista e os logos dos planos cadastrados
+    await salvarCampanha(campanha!.id, { ...ed!, formulario: comPlanos(ed!.formulario, convenios), nome: ed!.nome.trim() || campanha!.nome })
     setSalvando(false); avisar('Campanha salva'); await carregar(true)
   }
 
@@ -160,7 +164,9 @@ export function CampanhaEditor() {
                   {ed.formulario.filter((c) => c.modo !== 'oculto').map((c) => (
                     <div className="campo" key={c.chave}>
                       <label>{c.rotulo}{c.modo === 'obrigatorio' ? ' *' : ''}</label>
-                      {c.tipo === 'escolha' || c.tipo === 'sim_nao'
+                      {c.tipo === 'convenio'
+                        ? <div className="planos-publico">{[...convenios.map((p) => p.nome), SEM_PLANO].map((o) => <span key={o} className="plano-publico">{o !== SEM_PLANO && <LogoConvenio nome={o} tamanho={28} />}<span>{o}</span></span>)}</div>
+                        : c.tipo === 'escolha' || c.tipo === 'sim_nao'
                         ? <div className="opcoes">{(c.tipo === 'sim_nao' ? ['Sim', 'Não'] : c.opcoes ?? []).map((o) => <span key={o} className="opcao">{o}</span>)}</div>
                         : <div className="entrada" style={{ height: 40 }} />}
                     </div>
@@ -195,8 +201,11 @@ function LinhaCampo({ campo: c, travado, primeiro, ultimo, empresa, onMudar, onR
   onMudar: (d: Partial<Campo>) => void; onRemover: () => void; onSubir: () => void; onDescer: () => void
 }) {
   const [opcoesTexto, setOpcoesTexto] = useState((c.opcoes ?? []).join(', '))
-  const sugestoes = c.modo === 'oculto' && empresa
-    ? [empresa.nome, ...(empresa.convenios.length ? [empresa.convenios.join(' / '), ...empresa.convenios] : [])].filter((v, i, a) => a.indexOf(v) === i && v !== c.valor_fixo)
+  const { convenios } = useConvenios()
+  const ehPlano = c.tipo === 'convenio' || /convenio|plano/.test(c.chave)
+  const sugestoes = c.modo === 'oculto'
+    ? [...(empresa && !ehPlano ? [empresa.nome] : []), ...(empresa?.convenios.length ? [empresa.convenios.join(' / '), ...empresa.convenios] : []), ...(ehPlano ? convenios.map((p) => p.nome) : [])]
+        .filter((v, i, a) => a.indexOf(v) === i && v !== c.valor_fixo)
     : []
   return (
     <li className={`campo-linha campo-linha--${c.modo}`}>
@@ -227,13 +236,14 @@ function LinhaCampo({ campo: c, travado, primeiro, ultimo, empresa, onMudar, onR
             <div className="valor-fixo">
               <label className="pequeno" htmlFor={`fixo-${c.chave}`}>Todo mundo que ler este QR vai com</label>
               <input id={`fixo-${c.chave}`} className="entrada" value={c.valor_fixo ?? ''} placeholder="Ex.: Empresa X" onChange={(e) => onMudar({ valor_fixo: e.target.value })} />
-              {sugestoes.length > 0 && <div className="linha" style={{ gap: 6 }}>{sugestoes.map((s) => <button key={s} type="button" className="opcao opcao--mini" onClick={() => onMudar({ valor_fixo: s })}>{s}</button>)}</div>}
+              {sugestoes.length > 0 && <div className="linha" style={{ gap: 6 }}>{sugestoes.map((s) => <button key={s} type="button" className="opcao opcao--mini opcao--com-logo" onClick={() => onMudar({ valor_fixo: s })}>{ehPlano && <LogoConvenio nome={s} tamanho={16} />}{s}</button>)}</div>}
             </div>
           ) : (
             <>
               <select className="entrada entrada--mini" value={c.tipo} aria-label="Tipo de resposta" onChange={(e) => onMudar({ tipo: e.target.value as TipoCampo })}>
                 {TIPOS_CAMPO.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
               </select>
+              {c.tipo === 'convenio' && <PlanosDoCampo />}
               {c.tipo === 'escolha' && (
                 <input className="entrada entrada--mini" style={{ flex: 1 }} value={opcoesTexto} placeholder="Opções separadas por vírgula"
                   aria-label="Opções" onChange={(e) => { setOpcoesTexto(e.target.value); onMudar({ opcoes: e.target.value.split(',').map((o) => o.trim()).filter(Boolean) }) }} />
@@ -296,5 +306,17 @@ function CartaoPeca({ peca, campanha, onExcluir, avisar }: { peca: Peca; campanh
       </div>
       {(peca.total_leads ?? 0) > 0 && <Chip tom="sucesso">{peca.total_leads}</Chip>}
     </div>
+  )
+}
+
+/** Mostra quais planos (com logo) o público vai poder tocar. */
+function PlanosDoCampo() {
+  const { convenios } = useConvenios()
+  return (
+    <span className="planos-do-campo">
+      {convenios.length
+        ? <>{convenios.slice(0, 8).map((p) => <LogoConvenio key={p.id} nome={p.nome} tamanho={22} />)}<span className="pequeno">{convenios.length} planos com logo + "{SEM_PLANO}" · <Link to="/eventos/planos">editar planos</Link></span></>
+        : <span className="pequeno">Cadastre os planos em <Link to="/eventos/planos">Planos de saúde</Link> para aparecerem aqui.</span>}
+    </span>
   )
 }

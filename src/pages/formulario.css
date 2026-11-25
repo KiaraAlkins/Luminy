@@ -10,3 +10,8 @@
 .aceite input { margin-top: 2px; accent-color: var(--marca); width: 16px; height: 16px; flex: none; }
 .publico__erro { color: var(--perigo); font-size: 13px; }
 .publico__rodape { text-align: center; }
+.planos-publico { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.plano-publico { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--borda); background: var(--fundo); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; color: var(--texto); transition: transform .15s, border-color .15s, background .15s; }
+.plano-publico img { width: 28px; height: 28px; border-radius: 6px; object-fit: contain; background: #fff; flex: none; }
+.plano-publico:active { transform: scale(.96); }
+.plano-publico.marcado { border-color: var(--marca); background: var(--marca-suave); }

@@ -2,10 +2,12 @@ import { supabase } from './supabase'
 
 // ---------------------------------------------------------------- tipos
 export type ModoCampo = 'obrigatorio' | 'exibir' | 'oculto'
-export type TipoCampo = 'texto' | 'telefone' | 'email' | 'data' | 'numero' | 'escolha' | 'sim_nao'
+export type TipoCampo = 'texto' | 'telefone' | 'email' | 'data' | 'numero' | 'escolha' | 'sim_nao' | 'convenio'
 export type Campo = {
   chave: string; rotulo: string; tipo: TipoCampo; modo: ModoCampo
   valor_fixo?: string; opcoes?: string[]; segmento?: string
+  /** Plano de saúde: logo de cada opção, para o público tocar no logo. */
+  fotos?: Record<string, string>
 }
 export type SituacaoCampanha = 'rascunho' | 'ativa' | 'encerrada'
 export type Campanha = {
@@ -36,13 +38,13 @@ export const MOTIVOS_PERDA = ['Não atende', 'Sem interesse', 'Já é paciente',
 
 export const TIPOS_CAMPO: { id: TipoCampo; nome: string }[] = [
   { id: 'texto', nome: 'Texto' }, { id: 'telefone', nome: 'Telefone' }, { id: 'email', nome: 'E-mail' }, { id: 'numero', nome: 'Número' },
-  { id: 'data', nome: 'Data' }, { id: 'escolha', nome: 'Escolha' }, { id: 'sim_nao', nome: 'Sim ou não' },
+  { id: 'data', nome: 'Data' }, { id: 'escolha', nome: 'Escolha' }, { id: 'sim_nao', nome: 'Sim ou não' }, { id: 'convenio', nome: 'Plano de saúde (logos)' },
 ]
 
 /** Campos prontos para adicionar com um clique. */
 export const CAMPOS_PRONTOS: (Campo & { dica: string })[] = [
   { chave: 'email', rotulo: 'E-mail', tipo: 'email', modo: 'exibir', dica: 'E-mail' },
-  { chave: 'convenio', rotulo: 'Plano de saúde', tipo: 'texto', modo: 'exibir', dica: 'Convênio' },
+  { chave: 'convenio', rotulo: 'Qual o seu plano de saúde?', tipo: 'convenio', modo: 'exibir', dica: 'Plano de saúde' },
   { chave: 'idade', rotulo: 'Idade', tipo: 'numero', modo: 'exibir', dica: 'Idade' },
   { chave: 'bairro', rotulo: 'Bairro', tipo: 'texto', modo: 'exibir', dica: 'Bairro' },
   { chave: 'empresa', rotulo: 'Empresa onde trabalha', tipo: 'texto', modo: 'exibir', dica: 'Empresa' },
@@ -239,4 +241,14 @@ export function tempoRelativo(iso: string) {
   if (d === 1) return 'ontem'
   if (d < 45) return `há ${d} dias`
   return new Date(iso).toLocaleDateString('pt-BR')
+}
+
+export const SEM_PLANO = 'Não tenho / particular'
+/** Preenche as opções e os logos dos campos de plano de saúde com os planos cadastrados no cliente. */
+export function comPlanos(campos: Campo[], planos: { nome: string; foto_url: string | null }[]): Campo[] {
+  return campos.map((c) => (c.tipo !== 'convenio' ? c : {
+    ...c,
+    opcoes: [...planos.map((p) => p.nome), SEM_PLANO],
+    fotos: Object.fromEntries(planos.filter((p) => p.foto_url && !p.foto_url.startsWith('data:')).map((p) => [p.nome, p.foto_url!])),
+  }))
 }
