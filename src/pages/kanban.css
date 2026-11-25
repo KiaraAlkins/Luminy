@@ -1,7 +1,7 @@
 .kanban-pagina { padding-right: 0; }
 .kanban-topo { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-right: 40px; }
 .quadro { display: flex; gap: 16px; overflow-x: auto; padding: 0 40px 16px 0; align-items: flex-start; }
-.coluna { flex: 0 0 272px; background: rgb(236 232 255 / 0.6); border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 10px; border: 2px solid transparent; transition: border-color .15s; }
+.coluna { flex: 0 0 272px; background: rgb(236 232 255 / 0.6); border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 10px; border: 2px solid transparent; transition: flex-basis .45s cubic-bezier(.34,1.4,.64,1), border-color .15s, background-color .2s; min-width: 0; }
 .coluna--alvo { border-color: var(--marca-clara); }
 .coluna__topo { display: flex; align-items: center; gap: 8px; padding: 4px 6px; }
 .coluna__topo strong { flex: 0 1 auto; }
@@ -11,9 +11,9 @@
 .coluna__mais:hover { background: var(--superficie); }
 .coluna__adicionar { background: none; border: 0; color: var(--texto-3); font-weight: 600; text-align: left; padding: 6px 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 10px; }
 .coluna__adicionar:hover { background: var(--superficie); color: var(--marca); }
-.card { background: var(--superficie); border: 1px solid var(--borda); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: grab; }
+.card { background: var(--superficie); border: 1px solid var(--borda); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; cursor: grab; user-select: none; transition: border-color .15s, transform .18s cubic-bezier(.2,.8,.3,1.2), box-shadow .18s; }
+.card:hover { transform: translateY(-1px); box-shadow: 0 6px 16px -10px rgb(23 20 46 / 0.3); }
 .card:hover { border-color: var(--marca-clara); }
-.card--arrastando { opacity: 0.4; }
 .card__etiquetas { display: flex; flex-wrap: wrap; gap: 6px; }
 .card__impedimento { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: rgb(229 72 77 / 0.1); color: var(--perigo); font-size: 12px; }
 .card__impedimento svg { flex: none; margin-top: 2px; }
@@ -30,3 +30,28 @@
 .opcao { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--borda); background: var(--fundo); cursor: pointer; font-weight: 500; }
 .opcao.marcada { background: var(--marca); border-color: var(--marca); color: #fff; }
 @media (max-width: 860px) { .kanban-topo, .quadro { padding-right: 16px; } .editar-card__grade { grid-template-columns: 1fr; } }
+
+/* ---------- Arrastar: o card sai com um pulinho, voa inclinado e quica ao chegar ---------- */
+body.arrastando-card, body.arrastando-card * { cursor: grabbing !important; user-select: none; }
+.card-voando { position: fixed; left: 0; top: 0; z-index: 70; pointer-events: none; will-change: transform; transition: transform .06s linear; }
+.card--no-ar { box-shadow: 0 22px 40px -12px rgb(23 20 46 / 0.35); border-color: var(--marca-clara); animation: card-sai .32s cubic-bezier(.34,1.56,.64,1) both; }
+.card-vaga { border-radius: 14px; border: 2px dashed var(--marca-clara); background: rgb(255 255 255 / 0.5); animation: vaga-abre .22s cubic-bezier(.34,1.56,.64,1); flex: none; }
+.card--chegou { animation: card-chega .55s cubic-bezier(.34,1.56,.64,1); }
+@keyframes card-sai { 0% { transform: scale(1); } 60% { transform: scale(1.07); } 100% { transform: scale(1.03); } }
+@keyframes card-chega { 0% { transform: scale(.92) rotate(-1.5deg); } 55% { transform: scale(1.035) rotate(.6deg); } 100% { transform: none; } }
+@keyframes vaga-abre { from { transform: scaleY(.6); opacity: 0; } }
+
+/* ---------- Colunas minimizadas na lateral (vazias ou por escolha) ---------- */
+.coluna--recolhida { flex-basis: 52px; padding: 6px; align-self: stretch; min-height: 320px; }
+.coluna__faixa { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0; background: none; border: 0; border-radius: 12px; cursor: pointer; font: inherit; color: var(--texto-2); animation: faixa-entra .3s ease-out; }
+.coluna__faixa:hover { background: var(--superficie); color: var(--marca); }
+.coluna__contagem { font-size: 12px; font-weight: 700; background: var(--superficie); border-radius: 999px; min-width: 22px; padding: 2px 6px; text-align: center; }
+.coluna__nome-vertical { writing-mode: vertical-rl; transform: rotate(180deg); font-weight: 700; white-space: nowrap; font-size: 14px; }
+.coluna--receptiva { background: rgb(236 232 255 / 0.95); border-color: var(--marca-clara); border-style: dashed; }
+.coluna--alvo { background: rgb(236 232 255 / 0.95); }
+@keyframes faixa-entra { from { opacity: 0; filter: blur(4px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .coluna, .card, .card-voando { transition: none; }
+  .card--no-ar, .card-vaga, .card--chegou, .coluna__faixa { animation: none; }
+}
