@@ -231,4 +231,39 @@ exception when others then
 end $$;
 reset role;
 
+-- ---------------------------------------------------------------- Eventos e parcerias
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+insert into empresas (id, cliente_id, nome, convenios, etapa) values
+  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Empresa X', '{Unimed,Bradesco Saúde}', 'reuniao');
+insert into contatos_empresa (empresa_id, nome, cargo, principal) values ('50000000-0000-0000-0000-000000000001', 'Ana RH', 'Gerente de RH', true);
+insert into interacoes (empresa_id, tipo, titulo) values ('50000000-0000-0000-0000-000000000001', 'brinde', 'Entrega de 50 kits Novembro Azul');
+insert into eventos (cliente_id, empresa_id, nome, data) values ('20000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 'Palestra saúde do homem', current_date + 7);
+select t.ok((select count(*) from empresas) = 1, 'membro da equipe cadastra e vê empresas parceiras');
+update empresas set etapa = 'parceira_ativa' where id = '50000000-0000-0000-0000-000000000001';
+select t.ok((select count(*) from interacoes where titulo like 'Etapa da parceria: Reunião → Parceira ativa') = 1, 'mudança de etapa fica registrada no histórico da empresa');
+do $$ begin
+  delete from empresas where id = '50000000-0000-0000-0000-000000000001';
+  if (select count(*) from empresas) = 1 then raise notice 'ok - membro comum não exclui empresa'; else raise exception 'FALHOU: membro excluiu empresa'; end if;
+end $$;
+reset role;
+update campanhas set empresa_id = '50000000-0000-0000-0000-000000000001' where id = '30000000-0000-0000-0000-000000000001';
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+select t.ok((select total_leads from resumo_empresas('20000000-0000-0000-0000-000000000001')) = 2, 'com acesso a leads, vê quantos leads vieram da empresa');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000a9e1"}', false);
+select t.ok((select count(*) from empresas) = 1 and (select count(*) from interacoes) = 2 and (select count(*) from eventos) = 1, 'jovem aprendiz vê empresas, histórico e eventos');
+select t.ok((select convenios from empresas limit 1) = '{Unimed,"Bradesco Saúde"}', 'planos de saúde da empresa ficam visíveis para a equipe');
+select t.ok((select total_leads is null from resumo_empresas('20000000-0000-0000-0000-000000000001')), 'jovem aprendiz NÃO vê a contagem de leads da empresa');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000f07a"}', false);
+select t.ok((select count(*) from empresas) = 1, 'pessoa adicionada à equipe também vê as parceiras');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000d11a"}', false);
+select t.ok((select count(*) from empresas e join clientes c on c.id = e.cliente_id where c.slug = 'cliente-privado') = 0, 'empresas ficam separadas por cliente');
+reset role;
+insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000e1e1e', 'estranho@exemplo.com');
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
+select t.ok((select count(*) from empresas) = 0 and (select count(*) from interacoes) = 0 and (select count(*) from contatos_empresa) = 0, 'quem não é da equipe não vê empresas, contatos nem histórico');
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'

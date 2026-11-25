@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link as RouterLink, NavLink } from 'react-router-dom'
 import {
   BadgeCheck, Briefcase, CalendarDays, ChartLine, ChevronDown, Columns3, Handshake, Home, Inbox, Lightbulb,
-  ListChecks, LogOut, Plus, QrCode, Send, SlidersHorizontal, Users, Wallet,
+  Building2, ListChecks, LogOut, Plus, Send, SlidersHorizontal, Wallet,
 } from 'lucide-react'
 import logo from '../assets/luminy-logo.svg'
 import { Avatar } from './ui'
@@ -20,8 +20,7 @@ const CLIENTE: Item[] = [
   { para: '/kanban', rotulo: 'Kanban redes sociais', icone: Columns3 },
   { para: '/aprovacoes', rotulo: 'Aprovações', icone: BadgeCheck },
   { para: '/agendamento', rotulo: 'Agendamento', icone: Send },
-  { para: '/campanhas', rotulo: 'Campanhas QR', icone: QrCode, somenteLeads: true },
-  { para: '/leads', rotulo: 'Leads', icone: Users, somenteLeads: true },
+  { para: '/eventos', rotulo: 'Eventos e parcerias', icone: Building2 },
   { para: '/pauta', rotulo: 'Acervo de Pauta', icone: Lightbulb },
 ]
 const AGENCIA: Item[] = [

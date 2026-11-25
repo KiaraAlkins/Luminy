@@ -140,3 +140,6 @@ a { color: var(--marca); text-decoration: none; }
   .barra, .corpo { padding-left: 16px; padding-right: 16px; }
   .busca { width: auto; flex: 1; }
 }
+.opcao { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--borda); background: var(--fundo); cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.opcao.marcada { background: var(--marca); border-color: var(--marca); color: #fff; }
+.linha { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

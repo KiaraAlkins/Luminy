@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type DragEvent, type FormEvent } from 'react'
-import { AlertTriangle, Clock, Plus, X } from 'lucide-react'
+import { AlertTriangle, Clock, Plus } from 'lucide-react'
 import { Botao, Chip } from '../components/ui'
+import { Janela } from '../components/Janela'
 import { useSessao } from '../lib/sessao'
 import {
   carregarQuadro, criarCard, dataCurta, excluirCard, moverCard, salvarCard, REDES, TIPOS,
@@ -159,22 +160,6 @@ function NovoCard({ onSalvar, onCancelar }: { onSalvar: (t: string) => void; onC
         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSalvar(titulo) } if (e.key === 'Escape') onCancelar() }} />
       <div className="linha"><Botao type="submit">Adicionar</Botao><Botao type="button" variante="fantasma" onClick={onCancelar}>Cancelar</Botao></div>
     </form>
-  )
-}
-
-function Janela({ titulo, onFechar, children, largura = 520 }: { titulo: string; onFechar: () => void; children: React.ReactNode; largura?: number }) {
-  useEffect(() => {
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onFechar() }
-    window.addEventListener('keydown', esc)
-    return () => window.removeEventListener('keydown', esc)
-  }, [onFechar])
-  return (
-    <div className="janela-fundo" onMouseDown={(e) => { if (e.target === e.currentTarget) onFechar() }}>
-      <div className="janela" role="dialog" aria-modal="true" aria-label={titulo} style={{ maxWidth: largura }}>
-        <header className="janela__topo"><h3>{titulo}</h3><button type="button" className="icone-botao" style={{ border: 0 }} aria-label="Fechar" onClick={onFechar}><X size={18} /></button></header>
-        {children}
-      </div>
-    </div>
   )
 }
 

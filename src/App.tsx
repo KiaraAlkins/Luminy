@@ -5,6 +5,11 @@ import { Inicio } from './pages/Inicio'
 import { Kanban } from './pages/Kanban'
 import { Clientes } from './pages/Clientes'
 import { Equipe } from './pages/Equipe'
+import { Eventos } from './pages/eventos/Eventos'
+import { Empresas } from './pages/eventos/Empresas'
+import { EmpresaDetalhe } from './pages/eventos/EmpresaDetalhe'
+import { Parcerias } from './pages/eventos/Parcerias'
+import { Agenda } from './pages/eventos/Agenda'
 import { Convite } from './pages/Convite'
 import { FormularioPublico } from './pages/FormularioPublico'
 import { EmConstrucao } from './pages/EmConstrucao'
@@ -41,6 +46,13 @@ export default function App() {
             <Route index element={<Inicio />} />
             <Route path="kanban" element={<Kanban />} />
             <Route path="clientes" element={<Clientes />} />
+            <Route path="eventos" element={<Eventos />}>
+              <Route index element={<Empresas />} />
+              <Route path="empresas/:id" element={<EmpresaDetalhe />} />
+              <Route path="parcerias" element={<Parcerias />} />
+              <Route path="agenda" element={<Agenda />} />
+              <Route path="*" element={<p className="texto-2">Campanhas QR e Leads entram aqui na próxima etapa.</p>} />
+            </Route>
             <Route path="configuracoes" element={<Equipe />} />
             <Route path="*" element={<EmConstrucao />} />
           </Route>
