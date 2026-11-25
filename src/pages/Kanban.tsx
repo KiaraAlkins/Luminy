@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { AlertTriangle, ChevronsLeft, Clock, Play, Plus } from 'lucide-react'
 import { Botao, Chip } from '../components/ui'
 import { Janela } from '../components/Janela'
@@ -8,6 +8,8 @@ import {
   carregarQuadro, criarCard, dataCurta, excluirCard, moverCard, salvarCard, REDES, TIPOS,
   type Card, type Coluna, type EdicaoCard, type Quadro,
 } from '../lib/kanban'
+import { posicaoEntre, useArrastar, useColunasMinimizadas, type Vaga } from '../lib/arrastar'
+import { CardVoando, FaixaColuna, VagaCard } from '../components/Arrastar'
 import './kanban.css'
 
 const COR_COLUNA: Record<string, string> = {
@@ -16,12 +18,6 @@ const COR_COLUNA: Record<string, string> = {
 }
 
 type Pendente = { card: Card; coluna: Coluna; posicao: number }
-type Arraste = { card: Card; largura: number; altura: number; dx: number; dy: number; x: number; y: number }
-type Vaga = { coluna: string; indice: number }
-type Preferencias = Record<string, 'r' | 'a'>  // r = minimizada por escolha; a = aberta mesmo vazia
-
-const lerPreferencias = (chave: string): Preferencias => { try { return JSON.parse(localStorage.getItem(chave) ?? '{}') as Preferencias } catch { return {} } }
-
 /** Conteúdo do card, usado na coluna e no card "voando" durante o arraste. */
 function CardConteudo({ card }: { card: Card }) {
   return (
@@ -48,10 +44,6 @@ export function Kanban() {
   const clienteId = cliente?.id
   const [quadro, setQuadro] = useState<Quadro | null | undefined>(undefined)
   const [erro, setErro] = useState<string | null>(null)
-  const [arraste, setArraste] = useState<Arraste | null>(null)
-  const [vaga, setVaga] = useState<Vaga | null>(null)
-  const [chegou, setChegou] = useState<string | null>(null)
-  const [preferencias, setPreferencias] = useState<Preferencias>({})
   const [motivoPara, setMotivoPara] = useState<Pendente | null>(null)
   const [aberto, setAberto] = useState<Card | null>(null)
   const [novoEm, setNovoEm] = useState<string | null>(null)
@@ -76,7 +68,7 @@ export function Kanban() {
     // Atualiza a tela na hora e confirma no banco em seguida.
     setQuadro({ ...quadro, cards: quadro.cards.map((c) => c.id === card.id
       ? { ...c, coluna_id: coluna.id, posicao, motivo_impedimento: motivo ?? null } : c) })
-    setChegou(card.id); setTimeout(() => setChegou((c) => (c === card.id ? null : c)), 700)
+    quicar(card.id)
     try { await moverCard(card, coluna.id, posicao, motivo) } catch { setErro('Não foi possível mover o card.') }
     await recarregar()
   }
@@ -87,90 +79,15 @@ export function Kanban() {
     if (!coluna) return
     const todos = porColuna.get(coluna.id) ?? []
     if (card.coluna_id === coluna.id && todos.findIndex((c) => c.id === card.id) === indice) return
-    const lista = todos.filter((c) => c.id !== card.id)
-    const antes = lista[indice - 1]; const depois = lista[indice]
-    const posicao = antes && depois ? (antes.posicao + depois.posicao) / 2 : depois ? depois.posicao - 1 : antes ? antes.posicao + 1 : 1
+    const posicao = posicaoEntre(todos.filter((c) => c.id !== card.id), indice)
     const pendente = { card, coluna, posicao }
     // Mover para Impedimento exige motivo (documento, seção 4.3)
     if (coluna.exige_motivo && card.coluna_id !== coluna.id) setMotivoPara(pendente)
     else void executarMovimento(pendente)
   }
 
-  // ---------------------------------------------------------------- arrastar com o mouse (inclina e quica)
-  const quadroRef = useRef<HTMLDivElement>(null)
-  const voando = useRef<HTMLDivElement>(null)
-  const inicio = useRef<{ card: Card; x: number; y: number; el: HTMLElement } | null>(null)
-  const arrasteRef = useRef<Arraste | null>(null)
-  const vagaRef = useRef<Vaga | null>(null)
-  const giro = useRef({ ultimoX: 0, angulo: 0 })
-  const suprimirClique = useRef(false)
-  const soltarRef = useRef(soltarEm)
-  useEffect(() => { soltarRef.current = soltarEm })
-
-  useEffect(() => {
-    function mover(e: PointerEvent) {
-      const ini = inicio.current
-      if (!ini) return
-      if (!arrasteRef.current) {
-        if (Math.hypot(e.clientX - ini.x, e.clientY - ini.y) < 6) return
-        const r = ini.el.getBoundingClientRect()
-        const a = { card: ini.card, largura: r.width, altura: r.height, dx: ini.x - r.left, dy: ini.y - r.top, x: e.clientX, y: e.clientY }
-        arrasteRef.current = a; giro.current = { ultimoX: e.clientX, angulo: 0 }
-        setArraste(a); document.body.classList.add('arrastando-card')
-      }
-      const a = arrasteRef.current
-      // Inclina mais quanto mais rápido o mouse anda para o lado
-      const g = giro.current
-      g.angulo = Math.max(-9, Math.min(9, g.angulo * 0.75 + (e.clientX - g.ultimoX) * 0.5)); g.ultimoX = e.clientX
-      if (voando.current) voando.current.style.transform = `translate(${e.clientX - a.dx}px, ${e.clientY - a.dy}px) rotate(${3 + g.angulo}deg)`
-
-      // Rola o quadro quando chega perto das bordas
-      const q = quadroRef.current?.getBoundingClientRect()
-      if (q && quadroRef.current) {
-        if (e.clientX > q.right - 70) quadroRef.current.scrollLeft += 16
-        else if (e.clientX < q.left + 70) quadroRef.current.scrollLeft -= 16
-      }
-
-      const col = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-coluna]')
-      if (!col) return
-      const cards = [...col.querySelectorAll<HTMLElement>('[data-card]')].filter((c) => c.dataset.card !== a.card.id)
-      let indice = cards.findIndex((c) => { const r = c.getBoundingClientRect(); return e.clientY < r.top + r.height / 2 })
-      if (indice < 0) indice = cards.length
-      const v = { coluna: col.dataset.coluna!, indice }
-      if (vagaRef.current?.coluna !== v.coluna || vagaRef.current.indice !== v.indice) { vagaRef.current = v; setVaga(v) }
-    }
-    function terminar(cancelado: boolean) {
-      const a = arrasteRef.current; const v = vagaRef.current
-      inicio.current = null; arrasteRef.current = null; vagaRef.current = null
-      if (!a) return
-      setArraste(null); setVaga(null); document.body.classList.remove('arrastando-card')
-      suprimirClique.current = true; setTimeout(() => { suprimirClique.current = false }, 0)
-      if (!cancelado && v) soltarRef.current(a.card, v)
-    }
-    const soltar = () => terminar(false)
-    const cancelar = () => terminar(true)
-    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') terminar(true) }
-    window.addEventListener('pointermove', mover)
-    window.addEventListener('pointerup', soltar)
-    window.addEventListener('pointercancel', cancelar)
-    window.addEventListener('keydown', tecla)
-    return () => {
-      window.removeEventListener('pointermove', mover); window.removeEventListener('pointerup', soltar)
-      window.removeEventListener('pointercancel', cancelar); window.removeEventListener('keydown', tecla)
-    }
-  }, [])
-
-  // ---------------------------------------------------------------- colunas minimizadas
-  const chavePref = quadro ? `luminy.kanban.colunas.${quadro.id}` : null
-  useEffect(() => { if (chavePref) void Promise.resolve().then(() => setPreferencias(lerPreferencias(chavePref))) }, [chavePref])
-  const estaRecolhida = (col: Coluna, n: number) => vaga?.coluna !== col.id && (preferencias[col.id] === 'r' || (n === 0 && preferencias[col.id] !== 'a'))
-  function alternarColuna(col: Coluna, n: number) {
-    const p = { ...preferencias }
-    if (estaRecolhida(col, n)) { if (n === 0) p[col.id] = 'a'; else delete p[col.id] }
-    else { if (n === 0) delete p[col.id]; else p[col.id] = 'r' }
-    setPreferencias(p)
-    try { if (chavePref) localStorage.setItem(chavePref, JSON.stringify(p)) } catch { /* sem armazenamento */ }
-  }
+  const { arraste, vaga, chegou, quadroRef, voandoRef, iniciar, acabouDeSoltar, quicar } = useArrastar<Card>({ idDe: (c) => c.id, aoSoltar: soltarEm })
+  const colunas = useColunasMinimizadas(quadro ? `luminy.kanban.colunas.${quadro.id}` : null, vaga)
 
   async function adicionar(coluna: Coluna, titulo: string) {
     if (!quadro || !titulo.trim()) return
@@ -197,22 +114,13 @@ export function Kanban() {
       <div className="quadro" aria-label="Quadro de redes sociais" ref={quadroRef}>
         {quadro.colunas.map((col) => {
           const cards = porColuna.get(col.id) ?? []
-          const visiveis = cards.filter((c) => c.id !== arraste?.card.id)
-          const recolhida = estaRecolhida(col, cards.length)
+          const visiveis = cards.filter((c) => c.id !== arraste?.id)
+          const recolhida = colunas.recolhida(col.id, cards.length)
           const cor = COR_COLUNA[col.nome] ?? 'var(--marca-clara)'
           const vagaAqui = arraste && vaga?.coluna === col.id ? vaga.indice : -1
-          const slot = <div key="vaga" className="card-vaga" style={{ height: arraste?.altura }} aria-hidden />
+          const slot = <VagaCard key="vaga" altura={arraste?.altura} />
 
-          if (recolhida) return (
-            <section key={col.id} data-coluna={col.id} className={`coluna coluna--recolhida${arraste ? ' coluna--receptiva' : ''}`}>
-              <button type="button" className="coluna__faixa" onClick={() => alternarColuna(col, cards.length)}
-                title={`Mostrar ${col.nome}`} aria-label={`Mostrar coluna ${col.nome} (${cards.length} cards)`}>
-                <span className="coluna__ponto" style={{ background: cor }} />
-                <span className="coluna__contagem">{cards.length}</span>
-                <span className="coluna__nome-vertical">{col.nome}</span>
-              </button>
-            </section>
-          )
+          if (recolhida) return <FaixaColuna key={col.id} id={col.id} nome={col.nome} cor={cor} total={cards.length} arrastando={!!arraste} onAbrir={() => colunas.alternar(col.id, cards.length)} />
 
           return (
             <section key={col.id} data-coluna={col.id} className={`coluna${vagaAqui >= 0 ? ' coluna--alvo' : ''}`}>
@@ -221,14 +129,14 @@ export function Kanban() {
                 <strong>{col.nome}</strong>
                 <span className="pequeno">{cards.length}</span>
                 <button className="coluna__mais" type="button" aria-label={`Novo card em ${col.nome}`} title="Novo card" onClick={() => setNovoEm(col.id)}><Plus size={16} /></button>
-                <button className="coluna__mais" type="button" aria-label={`Minimizar coluna ${col.nome}`} title="Minimizar coluna" onClick={() => alternarColuna(col, cards.length)}><ChevronsLeft size={16} /></button>
+                <button className="coluna__mais" type="button" aria-label={`Minimizar coluna ${col.nome}`} title="Minimizar coluna" onClick={() => colunas.alternar(col.id, cards.length)}><ChevronsLeft size={16} /></button>
               </header>
 
               {visiveis.map((card, i) => [
                 i === vagaAqui && slot,
                 <article key={card.id} data-card={card.id} className={`card${chegou === card.id ? ' card--chegou' : ''}`}
-                  onPointerDown={(e) => { if (e.button === 0) inicio.current = { card, x: e.clientX, y: e.clientY, el: e.currentTarget } }}
-                  onClick={() => { if (!suprimirClique.current) setAberto(card) }} tabIndex={0}
+                  onPointerDown={(e) => iniciar(e, card)}
+                  onClick={() => { if (!acabouDeSoltar()) setAberto(card) }} tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter') setAberto(card) }}>
                   <CardConteudo card={card} />
                 </article>,
@@ -246,10 +154,7 @@ export function Kanban() {
       </div>
 
       {arraste && (
-        <div ref={voando} className="card-voando" aria-hidden
-          style={{ width: arraste.largura, transform: `translate(${arraste.x - arraste.dx}px, ${arraste.y - arraste.dy}px) rotate(3deg)` }}>
-          <div className="card card--no-ar"><CardConteudo card={arraste.card} /></div>
-        </div>
+        <CardVoando arraste={arraste} voandoRef={voandoRef}><CardConteudo card={arraste.item} /></CardVoando>
       )}
 
       {motivoPara && (
