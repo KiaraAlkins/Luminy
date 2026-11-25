@@ -1,0 +1,23 @@
+/* Pílula do "Fazendo agora": canto inferior direito, por cima de tudo, sem cobrir conteúdo importante */
+.foco { position: fixed; right: 20px; bottom: 20px; z-index: 40; width: 320px; background: var(--painel); color: #fff; border-radius: 18px; padding: 14px 16px; box-shadow: 0 16px 40px rgb(23 20 46 / 0.3); display: flex; flex-direction: column; gap: 8px; }
+.foco__topo { display: flex; align-items: center; justify-content: space-between; }
+.foco__titulo { font-weight: 600; font-size: 15px; line-height: 1.35; }
+.foco__tempo { font-size: 12px; color: var(--texto-sobre-escuro); }
+.foco__acoes, .foco__form { display: flex; align-items: center; gap: 6px; }
+.foco__concluir { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; border-radius: 10px; border: 0; background: var(--marca); color: #fff; font-weight: 600; cursor: pointer; }
+.foco__concluir:hover:not(:disabled) { background: var(--marca-forte); }
+.foco__concluir:disabled { opacity: 0.5; cursor: not-allowed; }
+.foco__form .foco__concluir { flex: none; width: 38px; padding: 9px 0; }
+.foco__icone { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; border: 0; background: rgb(255 255 255 / 0.08); color: #fff; cursor: pointer; flex: none; }
+.foco__icone:hover { background: rgb(255 255 255 / 0.16); }
+.foco__entrada { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 1px solid rgb(255 255 255 / 0.16); background: rgb(255 255 255 / 0.06); color: #fff; }
+.foco__entrada::placeholder { color: var(--texto-sobre-escuro); }
+.foco__entrada:focus { outline: 2px solid var(--marca-clara); outline-offset: 0; }
+.foco__parabens { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 10px; background: rgb(18 161 95 / 0.25); font-size: 13px; font-weight: 600; }
+.foco--mini { width: auto; max-width: 300px; flex-direction: row; align-items: center; gap: 10px; padding: 10px 14px; border: 0; cursor: pointer; font: inherit; color: #fff; border-radius: 999px; }
+.foco__mini-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.foco__ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--texto-3); flex: none; }
+.foco__ponto.ativo { background: var(--sucesso); box-shadow: 0 0 0 4px rgb(18 161 95 / 0.25); }
+/* Deixa espaço no fim das páginas para a pílula não cobrir o último conteúdo */
+.app main { padding-bottom: 96px; }
+@media (max-width: 860px) { .foco { right: 12px; bottom: 12px; left: 12px; width: auto; } .foco--mini { left: auto; } }

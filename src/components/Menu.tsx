@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link as RouterLink, NavLink } from 'react-router-dom'
 import {
   BadgeCheck, Briefcase, CalendarDays, ChartLine, ChevronDown, Columns3, Handshake, Home, Inbox, Lightbulb,
-  Building2, ListChecks, LogOut, Plus, Send, SlidersHorizontal, Wallet,
+  Building2, ListChecks, Package, LogOut, Plus, Send, SlidersHorizontal, Wallet,
 } from 'lucide-react'
 import logo from '../assets/luminy-logo.svg'
 import { Avatar } from './ui'
@@ -21,6 +21,7 @@ const CLIENTE: Item[] = [
   { para: '/aprovacoes', rotulo: 'Aprovações', icone: BadgeCheck },
   { para: '/agendamento', rotulo: 'Agendamento', icone: Send },
   { para: '/eventos', rotulo: 'Eventos e parcerias', icone: Building2 },
+  { para: '/estoque', rotulo: 'Estoque', icone: Package },
   { para: '/pauta', rotulo: 'Acervo de Pauta', icone: Lightbulb },
 ]
 const AGENCIA: Item[] = [

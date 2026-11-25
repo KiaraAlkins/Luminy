@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Copy, Link2, MessageCircle, Trash2 } from 'lucide-react'
+import { Copy, Link2, MessageCircle, RefreshCw, Trash2, Tv } from 'lucide-react'
 import { Avatar, Botao, Cartao, Chip } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { useSessao } from '../lib/sessao'
@@ -102,6 +102,8 @@ export function Equipe() {
         {membros.length === 0 && <p className="texto-2">Ninguém foi adicionado ainda. Como dono da agência, você já tem acesso total.</p>}
       </Cartao>
 
+      {ehAdminCliente && <LinkTv clienteId={cliente.id} />}
+
       {ehAdminCliente && convites.length > 0 && (
         <Cartao titulo="Convites pendentes">
           {convites.map((c) => (
@@ -115,5 +117,41 @@ export function Equipe() {
         </Cartao>
       )}
     </div>
+  )
+}
+
+/** Link secreto do painel da TV do marketing (abre sem login, em tela cheia). */
+function LinkTv({ clienteId }: { clienteId: string }) {
+  const [token, setToken] = useState<string | null | undefined>(undefined)
+  const [copiado, setCopiado] = useState(false)
+  const carregar = useCallback(async () => {
+    if (!supabase) { setToken('demonstracao'); return }
+    const { data } = await supabase.from('paineis_tv').select('token').eq('cliente_id', clienteId).maybeSingle()
+    setToken((data?.token as string | undefined) ?? null)
+  }, [clienteId])
+  useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
+
+  async function gerar() {
+    if (!supabase) return
+    // Trocar o link desativa o anterior (a TV antiga para de mostrar)
+    await supabase.from('paineis_tv').delete().eq('cliente_id', clienteId)
+    await supabase.from('paineis_tv').insert({ cliente_id: clienteId })
+    setCopiado(false); await carregar()
+  }
+  const link = token ? `${window.location.origin}/tv/${token}` : ''
+  return (
+    <Cartao titulo="Painel da TV do marketing">
+      <p className="texto-2">Mostra o "Fazendo agora" de cada pessoa e comemora quando alguém conclui. Abra o link no navegador da TV e deixe em tela cheia. Quem tiver o link vê só o primeiro nome e a tarefa marcada.</p>
+      {token === undefined ? <p className="pequeno">Carregando…</p> : token ? (
+        <div className="convite-gerado">
+          <code>{link}</code>
+          <div className="linha">
+            <Botao variante="secundario" icone={<Copy size={16} />} onClick={() => { void navigator.clipboard.writeText(link); setCopiado(true) }}>{copiado ? 'Copiado!' : 'Copiar link'}</Botao>
+            <a className="botao botao--secundario" href={link} target="_blank" rel="noreferrer"><Tv size={16} /> Abrir painel</a>
+            <Botao variante="fantasma" icone={<RefreshCw size={16} />} onClick={() => { if (confirm('Gerar um novo link? O link atual para de funcionar.')) void gerar() }}>Trocar link</Botao>
+          </div>
+        </div>
+      ) : <Botao icone={<Tv size={16} />} onClick={() => void gerar()}>Criar link da TV</Botao>}
+    </Cartao>
   )
 }

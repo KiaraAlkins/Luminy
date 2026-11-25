@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type DragEvent, type FormEvent } from 'react'
-import { AlertTriangle, Clock, Plus } from 'lucide-react'
+import { AlertTriangle, Clock, Play, Plus } from 'lucide-react'
 import { Botao, Chip } from '../components/ui'
 import { Janela } from '../components/Janela'
+import { useFoco } from '../lib/foco'
 import { useSessao } from '../lib/sessao'
 import {
   carregarQuadro, criarCard, dataCurta, excluirCard, moverCard, salvarCard, REDES, TIPOS,
@@ -190,6 +191,7 @@ function EditarCard({ card, coluna, onFechar, onSalvar, onExcluir }:
     entrega_em: card.entrega_em, postagem_em: card.postagem_em, prioridade: card.prioridade,
   })
   const [salvando, setSalvando] = useState(false)
+  const { foco, definir } = useFoco()
   async function enviar(e: FormEvent) { e.preventDefault(); setSalvando(true); await onSalvar(ed) }
   const alternarRede = (r: string) => setEd({ ...ed, redes: ed.redes.includes(r) ? ed.redes.filter((x) => x !== r) : [...ed.redes, r] })
 
@@ -219,6 +221,8 @@ function EditarCard({ card, coluna, onFechar, onSalvar, onExcluir }:
         <div className="campo"><label htmlFor="briefing">Briefing</label>
           <textarea id="briefing" className="entrada" rows={5} value={ed.briefing ?? ''} onChange={(e) => setEd({ ...ed, briefing: e.target.value || null })} /></div>
         <div className="linha" style={{ justifyContent: 'space-between' }}>
+          <Botao type="button" variante="secundario" icone={<Play size={14} />}
+            onClick={() => { void definir(card.titulo, card.id); onFechar() }}>{foco?.card_id === card.id ? 'Você está fazendo agora' : 'Fazer agora'}</Botao>
           <Botao type="button" variante="fantasma" style={{ color: 'var(--perigo)' }} onClick={() => { if (confirm('Excluir este card? Esta ação não pode ser desfeita.')) void onExcluir() }}>Excluir</Botao>
           <div className="linha"><Botao type="button" variante="secundario" onClick={onFechar}>Cancelar</Botao><Botao type="submit" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar'}</Botao></div>
         </div>

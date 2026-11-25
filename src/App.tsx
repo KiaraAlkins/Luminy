@@ -16,6 +16,10 @@ import { EmConstrucao } from './pages/EmConstrucao'
 import { Entrar } from './pages/Entrar'
 import { PrimeiroAcesso } from './pages/PrimeiroAcesso'
 import { ProvedorSessao, useSessao } from './lib/sessao'
+import { ProvedorFoco } from './lib/foco'
+import { FocoFlutuante } from './components/FocoFlutuante'
+import { Estoque } from './pages/Estoque'
+import { PainelTv } from './pages/PainelTv'
 
 function Painel() {
   const { estado, aviso } = useSessao()
@@ -23,14 +27,17 @@ function Painel() {
   if (estado === 'deslogado') return <Entrar />
   if (estado === 'primeiro_acesso') return <PrimeiroAcesso />
   return (
-    <div className="app">
-      <Menu />
-      <div className="conteudo">
-        <BarraSuperior />
-        {aviso && <p className="faixa-aviso" role="status">{aviso}</p>}
-        <main><Outlet /></main>
+    <ProvedorFoco>
+      <div className="app">
+        <Menu />
+        <div className="conteudo">
+          <BarraSuperior />
+          {aviso && <p className="faixa-aviso" role="status">{aviso}</p>}
+          <main><Outlet /></main>
+        </div>
       </div>
-    </div>
+      <FocoFlutuante />
+    </ProvedorFoco>
   )
 }
 
@@ -42,6 +49,7 @@ export default function App() {
           {/* Páginas abertas, sem o menu: formulário do QR e convite de equipe */}
           <Route path="/q/:slug" element={<FormularioPublico />} />
           <Route path="/convite/:token" element={<Convite />} />
+          <Route path="/tv/:token" element={<PainelTv />} />
           <Route element={<Painel />}>
             <Route index element={<Inicio />} />
             <Route path="kanban" element={<Kanban />} />
@@ -53,6 +61,7 @@ export default function App() {
               <Route path="agenda" element={<Agenda />} />
               <Route path="*" element={<p className="texto-2">Campanhas QR e Leads entram aqui na próxima etapa.</p>} />
             </Route>
+            <Route path="estoque" element={<Estoque />} />
             <Route path="configuracoes" element={<Equipe />} />
             <Route path="*" element={<EmConstrucao />} />
           </Route>

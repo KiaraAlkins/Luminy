@@ -266,4 +266,58 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select t.ok((select count(*) from empresas) = 0 and (select count(*) from interacoes) = 0 and (select count(*) from contatos_empresa) = 0, 'quem não é da equipe não vê empresas, contatos nem histórico');
 reset role;
 
+-- ---------------------------------------------------------------- Estoque
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000a9e1"}', false);
+insert into estoque_itens (id, cliente_id, nome, categoria, unidade, minimo) values
+  ('60000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Fitas de glicemia', 'Saúde', 'caixa', 5);
+insert into estoque_movimentos (item_id, tipo, quantidade, motivo) values ('60000000-0000-0000-0000-000000000001', 'entrada', 20, 'Compra');
+insert into estoque_movimentos (item_id, tipo, quantidade, motivo) values ('60000000-0000-0000-0000-000000000001', 'saida', 8, 'Mutirão');
+select t.ok((select quantidade from estoque_itens where id = '60000000-0000-0000-0000-000000000001') = 12, 'entradas e saídas atualizam o saldo (jovem aprendiz também registra)');
+do $$ begin
+  insert into estoque_movimentos (item_id, tipo, quantidade) values ('60000000-0000-0000-0000-000000000001', 'saida', 50);
+  raise exception 'FALHOU: saiu mais do que tinha';
+exception when check_violation then raise notice 'ok - saída maior que o saldo é recusada';
+end $$;
+do $$ begin
+  update estoque_itens set quantidade = 999 where id = '60000000-0000-0000-0000-000000000001';
+  raise exception 'FALHOU: mudou saldo sem movimento';
+exception when check_violation then raise notice 'ok - saldo só muda por entrada, saída ou ajuste';
+end $$;
+insert into estoque_movimentos (item_id, tipo, quantidade, motivo) values ('60000000-0000-0000-0000-000000000001', 'ajuste', 10, 'Contagem');
+select t.ok((select quantidade from estoque_itens where id = '60000000-0000-0000-0000-000000000001') = 10, 'ajuste de inventário grava a contagem real');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
+select t.ok((select count(*) from estoque_itens) = 0, 'quem não é da equipe não vê o estoque');
+
+-- ---------------------------------------------------------------- Fazendo agora e TV
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+select definir_foco('20000000-0000-0000-0000-000000000001', 'Arte da vacinação');
+select definir_foco('20000000-0000-0000-0000-000000000001', 'Carrossel Novembro Azul');
+select t.ok((select count(*) from focos where usuario_id = auth.uid() and concluido_em is null and trocado_em is null) = 1, 'cada pessoa tem um único "Fazendo agora" por cliente');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+select t.ok((select count(*) from focos where titulo = 'Carrossel Novembro Azul') = 1, 'a equipe vê o "Fazendo agora" dos colegas');
+select t.ok((select count(*) from tarefas) = 0, 'tarefas pessoais continuam privadas');
+do $$ begin
+  update focos set titulo = 'mexi' where titulo = 'Carrossel Novembro Azul';
+  if exists (select 1 from focos where titulo = 'mexi') then raise exception 'FALHOU: alterou foco de outra pessoa'; end if;
+  raise notice 'ok - ninguém altera o "Fazendo agora" de outra pessoa';
+end $$;
+insert into paineis_tv (cliente_id) values ('20000000-0000-0000-0000-000000000001');
+reset role;
+select token as tvtk from paineis_tv limit 1 \gset
+set role anon;
+select set_config('request.jwt.claims', '{}', false);
+select t.ok((painel_tv(:'tvtk')->>'cliente') = 'Hospital Santa Marta', 'TV abre pelo link secreto sem login');
+select t.ok(position('Carrossel Novembro Azul' in painel_tv(:'tvtk')::text) > 0, 'TV mostra o "Fazendo agora" de cada pessoa');
+select t.ok(painel_tv('token-errado') is null, 'link errado da TV não mostra nada');
+select t.ok((select count(*) from focos) = 0 and (select count(*) from paineis_tv) = 0, 'visitante não lê focos nem o token da TV direto');
+reset role;
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+select concluir_foco((select id from focos where titulo = 'Carrossel Novembro Azul'));
+reset role;
+set role anon;
+select t.ok(jsonb_array_length(painel_tv(:'tvtk')->'concluidos') = 1, 'tarefa concluída aparece para a TV comemorar');
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'

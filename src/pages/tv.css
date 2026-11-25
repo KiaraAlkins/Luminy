@@ -1,0 +1,29 @@
+/* Painel da TV: fundo escuro, letras grandes, legível de longe */
+.tv { min-height: 100vh; background: radial-gradient(circle at 20% 0%, #2a2460 0%, #17142e 55%); color: #fff; padding: 3vw 4vw; display: flex; flex-direction: column; gap: 3vw; font-size: clamp(14px, 1.2vw, 22px); overflow: hidden; }
+.tv__topo { display: flex; align-items: center; gap: 2vw; }
+.tv__logo { height: clamp(36px, 3.4vw, 64px); filter: brightness(0) invert(1); }
+.tv__cliente { flex: 1; display: flex; flex-direction: column; }
+.tv__cliente span { color: var(--marca-clara); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.85em; }
+.tv__cliente strong { font-family: var(--fonte-titulo); font-size: 2.6em; line-height: 1.05; }
+.tv__hora { text-align: right; display: flex; flex-direction: column; }
+.tv__hora strong { font-family: var(--fonte-titulo); font-size: 3em; line-height: 1; }
+.tv__hora span { color: var(--texto-sobre-escuro); }
+.tv__grade { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 26vw), 1fr)); gap: 1.6vw; align-content: start; }
+.tv__pessoa { background: rgb(255 255 255 / 0.06); border: 1px solid rgb(255 255 255 / 0.1); border-radius: 1.6vw; padding: 1.6vw; display: flex; gap: 1.2vw; align-items: flex-start; }
+.tv__avatar { width: 3.6vw; height: 3.6vw; min-width: 48px; min-height: 48px; border-radius: 50%; background: var(--marca); display: grid; place-items: center; font-family: var(--fonte-titulo); font-weight: 600; font-size: 1.6em; flex: none; }
+.tv__pessoa-texto { display: flex; flex-direction: column; gap: 0.3em; min-width: 0; }
+.tv__nome { color: var(--marca-clara); font-weight: 700; font-size: 1.05em; }
+.tv__tarefa { font-family: var(--fonte-titulo); font-size: 1.6em; line-height: 1.2; font-weight: 500; }
+.tv__tempo { color: var(--texto-sobre-escuro); font-size: 0.9em; }
+.tv__rodape { display: flex; flex-direction: column; gap: 0.8em; color: var(--texto-sobre-escuro); }
+.tv__rotulo { font-weight: 700; color: #fff; margin-right: 0.8em; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.06em; }
+.tv__feitas { display: flex; flex-wrap: wrap; gap: 0.5em 1.4em; align-items: baseline; }
+.tv__feita { color: #7ee2ad; }
+.tv__aviso { color: var(--texto-sobre-escuro); font-size: 1.4em; }
+.tv__festa { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1vw; background: rgb(23 20 46 / 0.94); backdrop-filter: blur(6px); z-index: 50; text-align: center; animation: tv-entra .5s ease-out; }
+.tv__festa h1 { font-size: clamp(48px, 7vw, 140px); color: #fff; }
+.tv__festa p { font-size: clamp(20px, 2.2vw, 44px); color: var(--marca-clara); max-width: 70vw; }
+.tv__festa svg { color: #ffd166; animation: tv-pula 0.8s ease-in-out infinite alternate; }
+@keyframes tv-entra { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes tv-pula { from { transform: rotate(-10deg) scale(1); } to { transform: rotate(10deg) scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .tv__festa, .tv__festa svg { animation: none; } }
