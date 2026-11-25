@@ -5,7 +5,7 @@ const NOMES: Record<string, string> = {
   '/tarefas': 'Minhas tarefas', '/calendario': 'Calendário', '/demandas': 'Demandas', '/kanban': 'Kanban redes sociais',
   '/aprovacoes': 'Aprovações', '/agendamento': 'Agendamento', '/campanhas': 'Campanhas QR', '/leads': 'Leads',
   '/pauta': 'Acervo de Pauta', '/clientes': 'Clientes', '/comercial': 'Comercial', '/financeiro': 'Financeiro',
-  '/relatorios': 'Relatórios', '/configuracoes': 'Configurações',
+  '/contratos': 'Contratos', '/configuracoes': 'Configurações',
 }
 
 export function EmConstrucao() {

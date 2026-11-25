@@ -54,7 +54,7 @@ export function Inicio() {
             {ehProprietario ? (
               <>
                 <li><strong>Cadastrar o primeiro cliente</strong><span className="pequeno">Cada cliente tem Kanban, calendário, campanhas e equipe próprios.</span>
-                  <Link className="botao botao--primario" to="/clientes">Cadastrar cliente</Link></li>
+                  <Link className="botao botao--primario" to="/principal">Cadastrar cliente</Link></li>
                 <li><strong>Convidar a equipe</strong><span className="pequeno">Por link no WhatsApp ou por e-mail, em Configurações.</span></li>
                 <li><strong>Criar a primeira campanha com QR Code</strong><span className="pequeno">Para captar leads em eventos.</span></li>
               </>

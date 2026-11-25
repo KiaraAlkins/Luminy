@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { BrowserRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { Menu } from './components/Menu'
 import { BarraSuperior } from './components/BarraSuperior'
 import { Inicio } from './pages/Inicio'
 import { Kanban } from './pages/Kanban'
-import { Clientes } from './pages/Clientes'
+import { Principal } from './pages/Principal'
 import { Equipe } from './pages/Equipe'
 import { Eventos } from './pages/eventos/Eventos'
 import { Empresas } from './pages/eventos/Empresas'
@@ -33,6 +33,15 @@ function SoComLeads({ children }: { children: React.ReactNode }) {
 
 const CHAVE_MENU = 'luminy.menu.recolhido'
 function lerMenu() { try { return localStorage.getItem(CHAVE_MENU) === '1' } catch { return false } }
+
+/** Página principal: exige login, mas fica fora do menu do cliente. */
+function SoLogado() {
+  const { estado } = useSessao()
+  if (estado === 'carregando') return <div className="carregando">Carregando…</div>
+  if (estado === 'deslogado') return <Entrar />
+  if (estado === 'primeiro_acesso') return <PrimeiroAcesso />
+  return <Outlet />
+}
 
 function Painel() {
   const { estado, aviso } = useSessao()
@@ -70,10 +79,13 @@ export default function App() {
           <Route path="/q/:slug" element={<FormularioPublico />} />
           <Route path="/convite/:token" element={<Convite />} />
           <Route path="/tv/:token" element={<PainelTv />} />
+          <Route element={<SoLogado />}>
+            <Route path="/principal" element={<Principal />} />
+          </Route>
           <Route element={<Painel />}>
             <Route index element={<Inicio />} />
             <Route path="kanban" element={<Kanban />} />
-            <Route path="clientes" element={<Clientes />} />
+            <Route path="clientes" element={<Navigate to="/principal" replace />} />
             <Route path="eventos" element={<Eventos />}>
               <Route index element={<Empresas />} />
               <Route path="empresas/:id" element={<EmpresaDetalhe />} />

@@ -201,3 +201,41 @@ a { color: var(--marca); text-decoration: none; }
 }
 .botao--perigo { background: var(--perigo); color: #fff; }
 .botao--perigo:not(:disabled):hover { background: #c93a3f; box-shadow: 0 6px 18px -6px rgb(229 72 77 / 0.55); }
+
+/* ---------- Guias do cliente no menu lateral (Design, Eventos, Financeiro, Organização) ---------- */
+.guia { position: relative; }
+.guia__topo { width: 100%; display: flex; align-items: center; gap: 12px; padding: 9px 12px; border: 0; background: none; border-radius: var(--raio-p); font: inherit; font-weight: 700; color: var(--texto); cursor: pointer; text-align: left; transition: background .18s; }
+.guia__topo:hover { background: var(--fundo); }
+.guia__topo .menu__texto { flex: 1; }
+.guia--ativa > .guia__topo { color: var(--marca); }
+.guia__seta { color: var(--texto-3); transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+.guia--aberta .guia__seta { transform: rotate(180deg); }
+.guia__corpo { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s cubic-bezier(.34,1.2,.64,1); }
+.guia--aberta .guia__corpo { grid-template-rows: 1fr; }
+.guia__itens { overflow: hidden; display: flex; flex-direction: column; gap: 2px; margin-left: 20px; padding-left: 10px; border-left: 1.5px solid var(--borda); }
+.guia--aberta .guia__itens { padding-top: 2px; padding-bottom: 6px; }
+.guia__itens .menu__item { opacity: 0; transform: translateX(-6px); transition: opacity .2s, transform .25s cubic-bezier(.2,.8,.3,1.2), background-color .18s, color .18s; }
+.guia--aberta .guia__itens .menu__item { opacity: 1; transform: none; }
+.guia--aberta .guia__itens .menu__item:nth-child(2) { transition-delay: .03s; }
+.guia--aberta .guia__itens .menu__item:nth-child(3) { transition-delay: .06s; }
+.guia--aberta .guia__itens .menu__item:nth-child(4) { transition-delay: .09s; }
+.guia--aberta .guia__itens .menu__item:nth-child(5) { transition-delay: .12s; }
+.menu__item--sub { padding: 7px 10px; font-size: 14px; gap: 10px; }
+.guia__flutuante { display: none; }
+.seletor__divisor { height: 1px; background: var(--borda); margin: 4px 6px; }
+.menu__logo a { display: block; border-radius: 8px; }
+
+/* Menu recolhido: a guia vira um ícone; as páginas aparecem num menu flutuante ao passar o mouse */
+.app--recolhido .guia__topo { justify-content: center; padding: 11px 0; }
+.app--recolhido .guia__seta, .app--recolhido .guia__corpo { display: none; }
+.app--recolhido .guia--ativa > .guia__topo { background: var(--marca-suave); }
+.app--recolhido .guia__flutuante { display: flex; flex-direction: column; gap: 2px; position: absolute; left: calc(100% + 10px); top: -6px; z-index: 30; min-width: 210px; padding: 10px; border-radius: 16px; background: var(--superficie); border: 1px solid var(--borda); box-shadow: 0 16px 36px -12px rgb(23 20 46 / .3); opacity: 0; visibility: hidden; transform: translateX(-6px) scale(.97); transform-origin: left top; transition: opacity .18s, transform .22s cubic-bezier(.34,1.56,.64,1), visibility 0s .2s; }
+.app--recolhido .guia__flutuante::before { content: ''; position: absolute; left: -14px; top: 0; bottom: 0; width: 14px; }
+.app--recolhido .guia:hover .guia__flutuante, .app--recolhido .guia:focus-within .guia__flutuante { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.app--recolhido .guia__flutuante .rotulo { padding: 2px 10px 6px; }
+.app--recolhido .guia__flutuante .menu__texto { display: inline; }
+.app--recolhido .guia__flutuante .menu__item { justify-content: flex-start; padding: 8px 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .guia__corpo, .guia__seta, .guia__itens .menu__item, .app--recolhido .guia__flutuante { transition: none; }
+}
+.app--recolhido .menu { z-index: 25; }
