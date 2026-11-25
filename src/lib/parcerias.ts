@@ -182,3 +182,47 @@ export async function salvarEvento(clienteId: string, ev: Omit<Evento, 'id' | 'c
 
 export const dataBr = (iso: string | null) => (iso ? new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '')
 export const hojeIso = () => new Date().toISOString().slice(0, 10)
+
+// ---------------------------------------------------------------- ajudas para a tela
+/** As 5 etapas do caminho normal (Pausada e Encerrada ficam fora da trilha). */
+export const TRILHA: Etapa[] = ['prospeccao', 'primeiro_contato', 'reuniao', 'proposta', 'parceira_ativa']
+export const corEtapa = (e: Etapa) => ETAPAS.find((x) => x.id === e)?.cor ?? 'var(--texto-3)'
+
+const meioDia = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00`).getTime()
+/** Dias desde a data (0 = hoje). */
+export const diasDesde = (iso: string) => Math.round((meioDia(hojeIso()) - meioDia(iso)) / 86_400_000)
+
+/** "hoje", "ontem", "há 5 dias", "há 2 meses" */
+export function haQuanto(iso: string) {
+  const d = diasDesde(iso)
+  if (d <= 0) return 'hoje'
+  if (d === 1) return 'ontem'
+  if (d < 45) return `há ${d} dias`
+  return `há ${Math.round(d / 30)} meses`
+}
+/** Prazo do próximo passo: atrasado, hoje, amanhã, em X dias. */
+export function prazo(iso: string): { texto: string; tom: 'perigo' | 'alerta' | 'neutro' } {
+  const d = -diasDesde(iso)
+  if (d < 0) return { texto: d === -1 ? 'atrasado 1 dia' : `atrasado ${-d} dias`, tom: 'perigo' }
+  if (d === 0) return { texto: 'hoje', tom: 'alerta' }
+  if (d === 1) return { texto: 'amanhã', tom: 'alerta' }
+  return { texto: `em ${d} dias`, tom: 'neutro' }
+}
+/** Sem nenhum registro há mais de 30 dias em etapas que ainda estão andando. */
+export const DIAS_ESFRIANDO = 30
+export function esfriando(e: Empresa, ultima: string | null | undefined) {
+  if (e.etapa === 'pausada' || e.etapa === 'encerrada') return false
+  return !ultima || diasDesde(ultima) > DIAS_ESFRIANDO
+}
+
+/** Que etapa um registro sugere (ex.: registrou reunião numa empresa em "Primeiro contato" → sugere "Reunião"). */
+export function etapaSugerida(atual: Etapa, tipo: TipoInteracao): Etapa | null {
+  const alvo: Partial<Record<TipoInteracao, Etapa>> = { contato: 'primeiro_contato', reuniao: 'reuniao', proposta: 'proposta' }
+  const e = alvo[tipo]
+  if (!e) return null
+  const i = TRILHA.indexOf(atual)
+  if (atual === 'encerrada' || (i >= 0 && TRILHA.indexOf(e) <= i)) return null
+  return e
+}
+
+export const somarDias = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10)

@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 export type Item = {
   id: string; cliente_id: string; nome: string; categoria: string | null; unidade: string; quantidade: number; minimo: number
   local: string | null; validade: string | null; observacoes: string | null; atualizado_em: string
+  arquivado_em?: string | null; motivo_arquivamento?: string | null; arquivado_por?: string | null; arquivado_por_nome?: string
 }
 export type TipoMovimento = 'entrada' | 'saida' | 'ajuste'
 export type Movimento = { id: number; item_id: string; tipo: TipoMovimento; quantidade: number; motivo: string | null; evento_id: string | null; autor_id: string; criado_em: string; autor?: string }
@@ -20,16 +21,26 @@ let itensDemo: Item[] = [
 ].map(([nome, categoria, unidade, quantidade, minimo, local, validade], i) => ({
   id: `it${i}`, cliente_id: 'hospital', nome, categoria, unidade, quantidade, minimo, local, validade, observacoes: null, atualizado_em: new Date().toISOString(),
 })) as Item[]
+itensDemo.push({ id: 'itx', cliente_id: 'hospital', nome: 'Folder Outubro Rosa 2025', categoria: 'Papelaria', unidade: 'un', quantidade: 0, minimo: 0, local: null, validade: null, observacoes: null,
+  atualizado_em: new Date().toISOString(), arquivado_em: new Date(Date.now() - 20 * 86_400_000).toISOString(), motivo_arquivamento: 'Campanha antiga, não usamos mais', arquivado_por_nome: 'Kiara' })
 let movDemo: Movimento[] = [
   { id: 1, item_id: 'it0', tipo: 'saida', quantidade: 8, motivo: 'Mutirão de glicemia na Empresa X', evento_id: null, autor_id: 'demo', autor: 'Braion', criado_em: new Date(Date.now() - 86_400_000).toISOString() },
   { id: 2, item_id: 'it0', tipo: 'entrada', quantidade: 10, motivo: 'Compra', evento_id: null, autor_id: 'demo', autor: 'Kiara', criado_em: new Date(Date.now() - 9 * 86_400_000).toISOString() },
 ]
 
-export async function listarItens(clienteId: string): Promise<Item[]> {
-  if (!supabase) return [...itensDemo]
+/** Itens em uso e itens excluídos (arquivados com o motivo). */
+export async function listarItens(clienteId: string): Promise<{ ativos: Item[]; excluidos: Item[] }> {
+  if (!supabase) return { ativos: itensDemo.filter((i) => !i.arquivado_em), excluidos: itensDemo.filter((i) => i.arquivado_em) }
   const { data, error } = await supabase.from('estoque_itens').select('*').eq('cliente_id', clienteId).order('nome')
   if (error) throw error
-  return (data as Item[]).map((i) => ({ ...i, quantidade: Number(i.quantidade), minimo: Number(i.minimo) }))
+  const itens = (data as Item[]).map((i) => ({ ...i, quantidade: Number(i.quantidade), minimo: Number(i.minimo) }))
+  const autores = [...new Set(itens.map((i) => i.arquivado_por).filter(Boolean))] as string[]
+  if (autores.length) {
+    const p = await supabase.from('perfis').select('id, nome').in('id', autores)
+    const nomes = new Map((p.data ?? []).map((x: { id: string; nome: string }) => [x.id, x.nome]))
+    itens.forEach((i) => { if (i.arquivado_por) i.arquivado_por_nome = nomes.get(i.arquivado_por) })
+  }
+  return { ativos: itens.filter((i) => !i.arquivado_em), excluidos: itens.filter((i) => i.arquivado_em) }
 }
 
 export async function criarItem(clienteId: string, dados: Omit<Item, 'id' | 'cliente_id' | 'quantidade' | 'atualizado_em'>, inicial: number) {
@@ -39,20 +50,30 @@ export async function criarItem(clienteId: string, dados: Omit<Item, 'id' | 'cli
     return
   }
   const { data, error } = await supabase.from('estoque_itens').insert({ ...dados, cliente_id: clienteId }).select('id').single()
-  if (error) throw error
+  if (error) throw new Error(error.code === '23505' ? 'Já existe um item com esse nome.' : 'Não foi possível cadastrar.')
   if (inicial > 0) await movimentar(data.id as string, 'entrada', inicial, 'Saldo inicial')
 }
 
-export async function editarItem(id: string, dados: Partial<Omit<Item, 'id' | 'cliente_id' | 'quantidade'>>) {
+export type DadosItem = Pick<Item, 'nome' | 'categoria' | 'unidade' | 'minimo' | 'local' | 'validade' | 'observacoes'>
+export async function editarItem(id: string, dados: Partial<DadosItem>) {
   if (!supabase) { itensDemo = itensDemo.map((i) => (i.id === id ? { ...i, ...dados } : i)); return }
   const { error } = await supabase.from('estoque_itens').update(dados).eq('id', id)
+  if (error) throw new Error(error.code === '23505' ? 'Já existe outro item com esse nome.' : 'Não foi possível salvar.')
+}
+
+export const MOTIVOS_EXCLUSAO = ['Não usamos mais', 'Produto descontinuado', 'Cadastrado errado ou duplicado', 'Acabou e não vamos repor']
+
+/** Tira o item da lista registrando o porquê. Saldo e histórico ficam guardados; dá para restaurar. */
+export async function excluirItem(id: string, motivo: string) {
+  if (!supabase) { itensDemo = itensDemo.map((i) => (i.id === id ? { ...i, arquivado_em: new Date().toISOString(), motivo_arquivamento: motivo, arquivado_por_nome: 'Você' } : i)); return }
+  const { error } = await supabase.from('estoque_itens').update({ arquivado_em: new Date().toISOString(), motivo_arquivamento: motivo }).eq('id', id)
   if (error) throw error
 }
 
-export async function excluirItem(id: string) {
-  if (!supabase) { itensDemo = itensDemo.filter((i) => i.id !== id); return }
-  const { error } = await supabase.from('estoque_itens').delete().eq('id', id)
-  if (error) throw error
+export async function restaurarItem(id: string) {
+  if (!supabase) { itensDemo = itensDemo.map((i) => (i.id === id ? { ...i, arquivado_em: null, motivo_arquivamento: null } : i)); return }
+  const { error } = await supabase.from('estoque_itens').update({ arquivado_em: null }).eq('id', id)
+  if (error) throw new Error(error.code === '23505' ? 'Já existe um item em uso com esse nome.' : 'Não foi possível restaurar.')
 }
 
 export async function movimentar(itemId: string, tipo: TipoMovimento, quantidade: number, motivo: string | null, eventoId: string | null = null) {

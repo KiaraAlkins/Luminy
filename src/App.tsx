@@ -28,8 +28,10 @@ function lerMenu() { try { return localStorage.getItem(CHAVE_MENU) === '1' } cat
 function Painel() {
   const { estado, aviso } = useSessao()
   const [recolhido, setRecolhido] = useState(lerMenu)
+  const [expandindo, setExpandindo] = useState(false)
   const { pathname } = useLocation()
   function alternarMenu() {
+    if (recolhido) { setExpandindo(true); setTimeout(() => setExpandindo(false), 700) }
     setRecolhido((r) => { try { localStorage.setItem(CHAVE_MENU, r ? '0' : '1') } catch { /* sem armazenamento */ } return !r })
   }
   if (estado === 'carregando') return <div className="carregando">Carregando…</div>
@@ -37,7 +39,7 @@ function Painel() {
   if (estado === 'primeiro_acesso') return <PrimeiroAcesso />
   return (
     <ProvedorFoco>
-      <div className={`app${recolhido ? ' app--recolhido' : ''}`}>
+      <div className={`app${recolhido ? ' app--recolhido' : ''}${expandindo ? ' app--expandindo' : ''}`}>
         <Menu recolhido={recolhido} alternar={alternarMenu} />
         <div className="conteudo">
           <BarraSuperior />

@@ -69,7 +69,8 @@ a { color: var(--marca); text-decoration: none; }
 .texto-2 { color: var(--texto-2); }
 
 /* ---- Estrutura ---- */
-.app { display: grid; grid-template-columns: 256px 1fr; min-height: 100%; transition: grid-template-columns .25s ease; }
+.app { display: grid; grid-template-columns: 256px 1fr; min-height: 100%; transition: grid-template-columns .45s cubic-bezier(.34,1.45,.64,1); }
+.app--recolhido { transition-timing-function: cubic-bezier(.4,0,.2,1); transition-duration: .3s; }
 .conteudo { min-width: 0; display: flex; flex-direction: column; }
 .corpo { padding: 8px 40px 40px; display: flex; flex-direction: column; gap: 24px; }
 
@@ -182,3 +183,21 @@ a { color: var(--marca); text-decoration: none; }
   .botao:hover, .botao:active, .icone-botao:hover, .icone-botao:active, .opcao:active, .menu__item:hover svg { transform: none; }
   .pagina-entra, .menu__item.ativo svg { animation: none; }
 }
+
+/* Menu: os textos não quebram durante a mudança de largura e entram com desfoque depois que o menu abre */
+.menu { overflow-x: hidden; }
+.menu__item, .menu__grupo, .seletor-cliente__texto, .menu__usuario .menu__texto { white-space: nowrap; }
+.menu__item .menu__texto, .menu__usuario .menu__texto, .seletor-cliente__texto { overflow: hidden; text-overflow: ellipsis; }
+.app--expandindo .menu__texto, .app--expandindo .menu__grupo, .app--expandindo .seletor-cliente__texto,
+.app--expandindo .seletor-cliente > svg:last-child, .app--expandindo .menu__logo img {
+  animation: menu-texto-entra .38s .14s cubic-bezier(.2,.8,.3,1) both;
+}
+.app--recolhido .menu__item svg, .app--recolhido .menu__logo img { animation: menu-icone-assenta .4s cubic-bezier(.34,1.56,.64,1); }
+@keyframes menu-texto-entra { from { opacity: 0; filter: blur(6px); transform: translateX(-8px); } to { opacity: 1; filter: none; transform: none; } }
+@keyframes menu-icone-assenta { from { transform: scale(.82); } }
+@media (prefers-reduced-motion: reduce) {
+  .app--expandindo .menu__texto, .app--expandindo .menu__grupo, .app--expandindo .seletor-cliente__texto,
+  .app--expandindo .seletor-cliente > svg:last-child, .app--expandindo .menu__logo img, .app--recolhido .menu__item svg, .app--recolhido .menu__logo img { animation: none; }
+}
+.botao--perigo { background: var(--perigo); color: #fff; }
+.botao--perigo:not(:disabled):hover { background: #c93a3f; box-shadow: 0 6px 18px -6px rgb(229 72 77 / 0.55); }

@@ -8,7 +8,7 @@
 .filtros .busca-local { flex: 1; min-width: 240px; }
 
 .tabela-empresas { background: var(--superficie); border: 1px solid var(--borda); border-radius: 18px; overflow: hidden; }
-.linha-empresa { display: grid; grid-template-columns: minmax(200px, 1.4fr) minmax(160px, 1fr) 150px minmax(200px, 1.3fr) 70px; gap: 16px; align-items: center; padding: 14px 18px; border-top: 1px solid var(--borda); color: inherit; }
+.linha-empresa { display: grid; grid-template-columns: minmax(220px, 1.5fr) 170px minmax(150px, 1fr) minmax(180px, 1.2fr) 56px 40px; gap: 16px; align-items: center; padding: 14px 18px; border-top: 1px solid var(--borda); color: inherit; }
 .linha-empresa:first-child { border-top: 0; }
 .linha-empresa:hover:not(.cabecalho) { background: var(--fundo); }
 .linha-empresa.cabecalho { background: var(--fundo); padding: 10px 18px; }
@@ -28,8 +28,6 @@
 .marcador--brinde { background: rgb(232 137 12 / 0.14); color: #b86a00; }
 .marcador--coleta_leads { background: rgb(18 161 95 / 0.12); color: var(--sucesso); }
 .marcador--evento { background: rgb(46 144 250 / 0.12); color: var(--info); }
-.nova-interacao { display: grid; grid-template-columns: 180px 1fr 150px; gap: 10px; }
-.nova-interacao textarea { grid-column: 1 / -1; resize: vertical; }
 .proximo-passo { background: var(--superficie-2); border-radius: var(--raio-m); padding: 14px; display: flex; flex-direction: column; gap: 8px; }
 
 .quadro-parcerias .card { cursor: grab; }
@@ -47,7 +45,109 @@
   .linha-empresa { grid-template-columns: 1fr 1fr; }
   .linha-empresa.cabecalho { display: none; }
 }
-@media (max-width: 860px) { .nova-interacao, .grade-2 { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .grade-2 { grid-template-columns: 1fr; } }
 .linha-tempo strong { display: block; }
 .card__empresa-meta .linha { flex-wrap: nowrap; align-items: flex-start; }
 .card__empresa-meta .linha svg { flex: none; margin-top: 2px; }
+
+/* ---------- Funil (filtro por etapa) ---------- */
+.funil { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+.funil__etapa { --cor: var(--texto-3); position: relative; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 14px 16px 14px 18px; border-radius: 16px; border: 1px solid var(--borda); background: var(--superficie); cursor: pointer; font: inherit; color: inherit; overflow: hidden; transition: transform .16s cubic-bezier(.2,.8,.3,1.2), border-color .18s, box-shadow .18s; }
+.funil__etapa::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cor); }
+.funil__etapa strong { font-family: var(--fonte-titulo); font-size: 26px; line-height: 1.05; }
+.funil__etapa span { font-size: 13px; color: var(--texto-2); font-weight: 600; }
+.funil__etapa:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -12px rgb(23 20 46 / 0.35); }
+.funil__etapa.marcada { border-color: var(--cor); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cor) 20%, transparent); }
+.funil__etapa--parada { --cor: var(--borda); background: var(--fundo); }
+.funil__etapa--parada.marcada { --cor: var(--texto-3); }
+
+.atencao { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; border: 1px solid rgb(232 137 12 / 0.35); background: rgb(232 137 12 / 0.08); color: #8a5000; font: inherit; text-align: left; cursor: pointer; }
+.atencao span:nth-child(2) { flex: 1; }
+.atencao__ver { font-weight: 700; color: var(--marca); }
+.atencao.marcada { background: rgb(232 137 12 / 0.16); }
+
+.linha-empresa__nome { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.linha-empresa__nome .chips { margin-top: 3px; }
+.linha-empresa__registrar { width: 36px; height: 36px; opacity: .55; }
+.linha-empresa:hover .linha-empresa__registrar { opacity: 1; }
+.quando { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.quando--frio { color: var(--info); }
+.corta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+
+.trilha-mini { display: flex; flex-direction: column; gap: 6px; }
+.trilha-mini__pontos { display: flex; gap: 4px; }
+.trilha-mini__pontos i { width: 22px; height: 6px; border-radius: 3px; background: var(--borda); }
+.trilha-mini__pontos i.cheio { background: var(--marca); }
+.trilha-mini__nome { font-size: 13px; font-weight: 600; }
+
+/* ---------- Ficha: topo com trilha de etapas ---------- */
+.ficha-topo { background: var(--superficie); border: 1px solid var(--borda); border-radius: 20px; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
+.ficha-topo__titulo { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.ficha-topo__sinais { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.sinal { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 6px 10px; border-radius: 10px; background: var(--fundo); color: var(--texto-2); }
+.sinal strong { color: var(--texto); }
+.sinal--frio { background: rgb(46 144 250 / 0.1); color: #1d6fc7; }
+.sinal--perigo { background: rgb(229 72 77 / 0.1); color: var(--perigo); }
+.sinal--perigo strong { color: var(--perigo); }
+.sinal--alerta { background: rgb(232 137 12 / 0.12); color: #8a5000; }
+
+.trilha { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.trilha__passos { list-style: none; margin: 0; padding: 0; display: flex; flex: 1; min-width: 520px; }
+.trilha__passo { flex: 1; position: relative; }
+.trilha__passo:not(:last-child)::after { content: ''; position: absolute; top: 17px; left: calc(50% + 22px); right: calc(-50% + 22px); height: 3px; border-radius: 2px; background: var(--borda); transition: background .3s; }
+.trilha__passo.feito::after { background: var(--marca); }
+.trilha__passo button { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: 0; cursor: pointer; font: inherit; color: var(--texto-3); padding: 0 4px; }
+.trilha__bola { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; border: 2px solid var(--borda); background: var(--superficie); transition: transform .2s cubic-bezier(.34,1.56,.64,1), background .2s, border-color .2s; }
+.trilha__nome { font-size: 13px; font-weight: 600; text-align: center; }
+.trilha__passo button:hover .trilha__bola { transform: scale(1.12); border-color: var(--marca-clara); }
+.trilha__passo.feito .trilha__bola { background: var(--marca); border-color: var(--marca); color: var(--sobre-marca); }
+.trilha__passo.feito .trilha__nome { color: var(--texto-2); }
+.trilha__passo.agora .trilha__bola { background: var(--marca); border-color: var(--marca); color: var(--sobre-marca); box-shadow: 0 0 0 6px var(--marca-suave); animation: trilha-agora 2.4s ease-in-out infinite; }
+.trilha__passo.agora .trilha__nome { color: var(--marca); font-weight: 700; }
+.trilha--parada .trilha__passos { opacity: .45; }
+.trilha__acoes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.trilha__mini { color: var(--texto-3); padding: 8px 10px; }
+.trilha__mini:hover { color: var(--texto); }
+.trilha__selo { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; padding: 8px 12px; border-radius: 10px; background: var(--fundo); color: var(--texto-2); text-transform: none; }
+.trilha__selo--encerrada { color: var(--perigo); background: rgb(229 72 77 / 0.08); }
+@keyframes trilha-agora { 50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--marca-suave) 50%, transparent); } }
+
+/* ---------- Registro rápido ---------- */
+.registro { display: flex; flex-direction: column; gap: 10px; padding-bottom: 6px; }
+.registro__pergunta { font-weight: 700; font-size: 14px; }
+.registro__botoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.registro__tipo { display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; border-radius: 12px; border: 1px solid var(--borda); background: var(--superficie); font: inherit; font-weight: 600; font-size: 14px; color: var(--texto-2); cursor: pointer; transition: transform .16s cubic-bezier(.2,.8,.3,1.2), background .18s, border-color .18s, color .18s; }
+.registro__tipo svg { color: var(--marca); }
+.registro__tipo:hover { transform: translateY(-1px); border-color: var(--marca-clara); color: var(--texto); }
+.registro__tipo:active { transform: scale(.95); }
+.registro__tipo.marcado { background: var(--marca); border-color: var(--marca); color: var(--sobre-marca); }
+.registro__tipo.marcado svg { color: var(--sobre-marca); }
+.registro__tipo--brinde svg { color: #b86a00; }
+.registro__tipo--coleta_leads svg { color: var(--sucesso); }
+.registro__tipo--evento svg { color: var(--info); }
+.registro__detalhe { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 12px; border-radius: 14px; background: var(--superficie-2); animation: registro-abre .22s cubic-bezier(.2,.8,.3,1); }
+.registro__detalhe .entrada { background: var(--superficie); }
+.registro__quando { display: flex; gap: 6px; align-items: center; }
+.registro__data { width: 150px; padding: 8px 10px; }
+.registro__data.marcada { border-color: var(--marca); }
+.registro__atalho { grid-column: 1 / -1; font-size: 12px; color: var(--texto-3); margin-top: -4px; }
+.registro--compacto .registro__detalhe { grid-template-columns: 1fr; }
+@keyframes registro-abre { from { opacity: 0; transform: translateY(-4px); } }
+
+.sugestao { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--marca-suave); color: var(--marca-forte); animation: registro-abre .25s ease-out; }
+.sugestao span { flex: 1; }
+.opcao--mini { padding: 5px 10px; font-size: 13px; }
+
+.aviso-flutuante { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 18px; border-radius: 14px; background: var(--painel); color: #fff; box-shadow: 0 14px 34px rgb(23 20 46 / 0.3); animation: aviso-sobe .3s cubic-bezier(.34,1.56,.64,1); }
+.aviso-flutuante button { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; color: var(--marca-clara); font: inherit; font-weight: 700; cursor: pointer; padding: 4px 6px; border-radius: 8px; }
+.aviso-flutuante button:hover { background: rgb(255 255 255 / 0.08); }
+@keyframes aviso-sobe { from { opacity: 0; transform: translate(-50%, 12px); } }
+
+@media (max-width: 1100px) {
+  .funil { grid-template-columns: repeat(3, 1fr); }
+  .trilha__passos { min-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .funil__etapa, .registro__tipo, .trilha__bola { transition: none; }
+  .trilha__passo.agora .trilha__bola, .registro__detalhe, .sugestao, .aviso-flutuante { animation: none; }
+}

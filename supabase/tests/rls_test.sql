@@ -286,6 +286,18 @@ exception when check_violation then raise notice 'ok - saldo só muda por entrad
 end $$;
 insert into estoque_movimentos (item_id, tipo, quantidade, motivo) values ('60000000-0000-0000-0000-000000000001', 'ajuste', 10, 'Contagem');
 select t.ok((select quantidade from estoque_itens where id = '60000000-0000-0000-0000-000000000001') = 10, 'ajuste de inventário grava a contagem real');
+do $$ begin
+  update estoque_itens set arquivado_em = now() where id = '60000000-0000-0000-0000-000000000001';
+  raise exception 'FALHOU: excluiu sem motivo';
+exception when check_violation then raise notice 'ok - excluir item do estoque exige o motivo';
+end $$;
+update estoque_itens set arquivado_em = now(), motivo_arquivamento = 'Não usamos mais', arquivado_por = '00000000-0000-0000-0000-0000000e1e1e'
+  where id = '60000000-0000-0000-0000-000000000001';
+select t.ok((select arquivado_por = '00000000-0000-0000-0000-00000000a9e1' and quantidade = 10 from estoque_itens where id = '60000000-0000-0000-0000-000000000001'),
+  'item excluído guarda quem excluiu (não dá para forjar) e mantém o saldo');
+select t.ok((select count(*) from estoque_movimentos where item_id = '60000000-0000-0000-0000-000000000001') = 3, 'o histórico de movimentações continua guardado');
+insert into estoque_itens (cliente_id, nome, unidade) values ('20000000-0000-0000-0000-000000000001', 'fitas de glicemia', 'caixa');
+select t.ok(true, 'dá para recadastrar um item com o mesmo nome de um excluído');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
 select t.ok((select count(*) from estoque_itens) = 0, 'quem não é da equipe não vê o estoque');
 

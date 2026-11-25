@@ -1,7 +1,7 @@
 .estoque-alertas { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 16px; background: rgb(232 137 12 / 0.12); color: #8a4f00; }
 .estoque-alertas svg { flex: none; margin-top: 2px; }
 .estoque-tabela { background: var(--superficie); border: 1px solid var(--borda); border-radius: 18px; overflow: hidden; }
-.estoque-linha { display: grid; grid-template-columns: minmax(200px, 1.6fr) 140px minmax(120px, 1fr) 120px 272px; gap: 16px; align-items: center; padding: 12px 18px; border-top: 1px solid var(--borda); }
+.estoque-linha { display: grid; grid-template-columns: minmax(200px, 1.6fr) 140px minmax(120px, 1fr) 120px 316px; gap: 16px; align-items: center; padding: 12px 18px; border-top: 1px solid var(--borda); }
 .estoque-linha:first-child { border-top: 0; }
 .estoque-linha.cabecalho { background: var(--fundo); padding: 10px 18px; }
 .estoque-acoes { display: flex; gap: 6px; justify-content: flex-end; }
@@ -28,3 +28,13 @@
 .saldo__minimo { font-size: 12px; color: var(--texto-3); }
 .saldo--baixo .saldo__numero { color: #b86a00; }
 .saldo--zerado .saldo__numero { color: var(--perigo); }
+
+.excluir-item { display: flex; flex-direction: column; gap: 12px; }
+.excluir-item__motivos { display: flex; flex-wrap: wrap; gap: 8px; }
+.excluidos { display: flex; flex-direction: column; gap: 10px; }
+.excluidos__abrir { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; font: inherit; font-weight: 600; color: var(--texto-2); cursor: pointer; padding: 6px 0; }
+.excluidos__abrir:hover { color: var(--marca); }
+.excluidos__lista { list-style: none; margin: 0; padding: 0; background: var(--superficie); border: 1px dashed var(--borda); border-radius: 16px; }
+.excluidos__lista li { display: flex; gap: 16px; align-items: center; padding: 14px 18px; border-top: 1px solid var(--borda); animation: pagina-entra .25s ease-out; }
+.excluidos__lista li:first-child { border-top: 0; }
+.excluidos__lista p { margin: 2px 0; }

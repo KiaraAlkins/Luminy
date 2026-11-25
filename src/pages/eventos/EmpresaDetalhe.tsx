@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CalendarDays, Gift, Handshake, Mail, MessageSquare, Phone, QrCode, Star, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Gift, Handshake, Mail, MessageSquare, Phone, QrCode, Snowflake, Sparkles, Star, Trash2, Undo2, Users, X } from 'lucide-react'
 import { Botao, Cartao, Chip } from '../../components/ui'
 import { useSessao } from '../../lib/sessao'
 import {
-  CONVENIOS_SUGERIDOS, ETAPAS, TIPOS_INTERACAO, adicionarContato, dataBr, excluirEmpresa, excluirInteracao, hojeIso,
-  nomeTipo, obterEmpresa, registrarInteracao, removerContato, salvarEmpresa,
+  CONVENIOS_SUGERIDOS, adicionarContato, dataBr, esfriando, etapaSugerida, excluirEmpresa, excluirInteracao, haQuanto,
+  nomeEtapa, nomeTipo, obterEmpresa, prazo, removerContato, salvarEmpresa, somarDias,
   type Contato, type Empresa, type Etapa, type Evento, type Interacao, type TipoInteracao,
 } from '../../lib/parcerias'
 import { CampoConvenios } from './CampoConvenios'
+import { RegistroRapido } from './RegistroRapido'
+import { TrilhaEtapa } from './TrilhaEtapa'
 
 const ICONE: Record<TipoInteracao, React.ElementType> = {
   contato: Phone, reuniao: Users, brinde: Gift, evento: CalendarDays, coleta_leads: QrCode, campanha: Star, proposta: Handshake, outro: MessageSquare,
@@ -21,6 +23,9 @@ export function EmpresaDetalhe() {
   const { ehAdminCliente } = useSessao()
   const [dados, setDados] = useState<{ empresa: Empresa | null; contatos: Contato[]; interacoes: Interacao[]; eventos: Evento[] } | null>(null)
   const [editando, setEditando] = useState(false)
+  const [aviso, setAviso] = useState<{ texto: string; desfazer?: () => void } | null>(null)
+  const [sugestao, setSugestao] = useState<Etapa | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const carregar = useCallback(async () => setDados(await obterEmpresa(id)), [id])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
@@ -30,22 +35,35 @@ export function EmpresaDetalhe() {
   if (!empresa) return <p className="texto-2">Empresa não encontrada. <Link to="/eventos">Voltar para empresas</Link></p>
 
   async function mudar(campos: Partial<Empresa>) { await salvarEmpresa(empresa!.id, campos); await carregar() }
+  function avisar(texto: string, desfazer?: () => void) {
+    setAviso({ texto, desfazer }); clearTimeout(timer.current)
+    timer.current = setTimeout(() => setAviso(null), 7000)
+  }
+  async function mudarEtapa(nova: Etapa) {
+    const antes = empresa!.etapa
+    setSugestao(null)
+    await mudar({ etapa: nova })
+    avisar(`Etapa alterada para ${nomeEtapa(nova)}`, () => { void mudar({ etapa: antes }); setAviso(null) })
+  }
+  const ultima = interacoes[0]?.data ?? null
+  const frio = esfriando(empresa, ultima)
 
   return (
     <>
       <Link to="/eventos" className="linha pequeno" style={{ color: 'var(--texto-2)' }}><ArrowLeft size={14} /> Empresas</Link>
-      <div className="linha" style={{ justifyContent: 'space-between' }}>
-        <div>
-          <h2>{empresa.nome}</h2>
-          <p className="pequeno">{[empresa.segmento, empresa.funcionarios ? `${empresa.funcionarios} funcionários` : null, `atualizado em ${dataBr(empresa.atualizado_em)}`].filter(Boolean).join(' · ')}</p>
+      <div className="ficha-topo">
+        <div className="ficha-topo__titulo">
+          <div>
+            <h2>{empresa.nome}</h2>
+            <p className="pequeno">{[empresa.segmento, empresa.funcionarios ? `${empresa.funcionarios} funcionários` : null].filter(Boolean).join(' · ')}</p>
+          </div>
+          <div className="ficha-topo__sinais">
+            {ultima ? <span className="sinal">Último registro <strong>{haQuanto(ultima)}</strong></span> : <span className="sinal">Nenhum registro ainda</span>}
+            {frio && <span className="sinal sinal--frio"><Snowflake size={14} /> Esfriando: faz tempo que ninguém fala com eles</span>}
+            {empresa.proximo_passo_em && <span className={`sinal sinal--${prazo(empresa.proximo_passo_em).tom}`}>Próximo passo <strong>{prazo(empresa.proximo_passo_em).texto}</strong></span>}
+          </div>
         </div>
-        <div className="linha">
-          <label className="pequeno" htmlFor="etapa">Etapa</label>
-          <select id="etapa" className="entrada" style={{ width: 'auto', background: 'var(--superficie)' }} value={empresa.etapa}
-            onChange={(e) => void mudar({ etapa: e.target.value as Etapa })}>
-            {ETAPAS.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
-          </select>
-        </div>
+        <TrilhaEtapa etapa={empresa.etapa} onMudar={(e) => void mudarEtapa(e)} />
       </div>
 
       <div className="detalhe">
@@ -81,7 +99,18 @@ export function EmpresaDetalhe() {
         </div>
 
         <Cartao titulo={`Histórico · ${interacoes.length} registros`}>
-          <NovaInteracao empresaId={empresa.id} onRegistrar={carregar} />
+          <RegistroRapido empresaId={empresa.id} onRegistrado={async (tipo) => {
+            await carregar(); avisar('Registrado no histórico')
+            setSugestao(etapaSugerida(empresa.etapa, tipo))
+          }} />
+          {sugestao && (
+            <div className="sugestao" role="status">
+              <Sparkles size={16} aria-hidden />
+              <span>Isso parece <strong>{nomeEtapa(sugestao)}</strong>. Mover a etapa?</span>
+              <button type="button" className="botao botao--primario" onClick={() => void mudarEtapa(sugestao)}>Mover</button>
+              <button type="button" className="botao botao--fantasma" onClick={() => setSugestao(null)}>Agora não</button>
+            </div>
+          )}
           <ol className="linha-tempo">
             {interacoes.map((i) => {
               const Icone = ICONE[i.tipo]
@@ -91,17 +120,25 @@ export function EmpresaDetalhe() {
                   <div>
                     <strong>{i.titulo}</strong>
                     {i.descricao && <p className="texto-2" style={{ whiteSpace: 'pre-wrap' }}>{i.descricao}</p>}
-                    <span className="pequeno">{nomeTipo(i.tipo)} · {dataBr(i.data)}{i.autor ? ` · ${i.autor}` : ''}</span>
+                    <span className="pequeno">{nomeTipo(i.tipo)} · {haQuanto(i.data)} ({dataBr(i.data)}){i.autor ? ` · ${i.autor}` : ''}</span>
                   </div>
                   <button type="button" aria-label="Excluir registro" className="icone-botao" style={{ border: 0, width: 32, height: 32 }}
                     onClick={() => { if (confirm('Excluir este registro do histórico?')) void excluirInteracao(i.id).then(carregar) }}><Trash2 size={14} /></button>
                 </li>
               )
             })}
-            {interacoes.length === 0 && <li style={{ display: 'block' }} className="texto-2">Nada registrado ainda. Registre o primeiro contato acima.</li>}
+            {interacoes.length === 0 && <li style={{ display: 'block' }} className="texto-2">Nada registrado ainda. Toque em um dos botões acima para registrar o primeiro contato.</li>}
           </ol>
         </Cartao>
       </div>
+
+      {aviso && (
+        <div className="aviso-flutuante" role="status">
+          <span>{aviso.texto}</span>
+          {aviso.desfazer && <button type="button" onClick={aviso.desfazer}><Undo2 size={14} /> Desfazer</button>}
+          <button type="button" aria-label="Fechar aviso" onClick={() => setAviso(null)}><X size={14} /></button>
+        </div>
+      )}
     </>
   )
 }
@@ -141,10 +178,18 @@ function ProximoPasso({ empresa, onSalvar }: { empresa: Empresa; onSalvar: (c: P
     <div className="proximo-passo">
       <span className="rotulo" style={{ color: 'var(--marca)' }}>Próximo passo</span>
       <input className="entrada" style={{ background: 'var(--superficie)' }} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Ex.: levar o mutirão de glicemia" aria-label="Próximo passo" />
+      <div className="linha" style={{ gap: 6 }}>
+        {[['Amanhã', 1], ['1 semana', 7], ['15 dias', 15], ['1 mês', 30]].map(([r, n]) => (
+          <button key={r} type="button" className={`opcao opcao--mini${data === somarDias(n as number) ? ' marcada' : ''}`} onClick={() => setData(somarDias(n as number))}>{r}</button>
+        ))}
+      </div>
       <div className="linha">
         <input className="entrada" style={{ flex: 1, background: 'var(--superficie)' }} type="date" value={data} onChange={(e) => setData(e.target.value)} aria-label="Data do próximo passo" />
         {mudou && <Botao onClick={() => void onSalvar({ proximo_passo: texto.trim() || null, proximo_passo_em: data || null })}>Salvar</Botao>}
       </div>
+      {empresa.proximo_passo && !mudou && (
+        <button type="button" className="botao botao--secundario" onClick={() => { setTexto(''); setData(''); void onSalvar({ proximo_passo: null, proximo_passo_em: null }) }}>✓ Feito, limpar</button>
+      )}
     </div>
   )
 }
@@ -183,28 +228,5 @@ function Contatos({ empresaId, contatos, onMudar }: { empresaId: string; contato
         </form>
       )}
     </Cartao>
-  )
-}
-
-function NovaInteracao({ empresaId, onRegistrar }: { empresaId: string; onRegistrar: () => Promise<void> }) {
-  const [tipo, setTipo] = useState<TipoInteracao>('contato')
-  const [titulo, setTitulo] = useState('')
-  const [descricao, setDescricao] = useState('')
-  const [data, setData] = useState(hojeIso())
-  async function enviar(e: FormEvent) {
-    e.preventDefault()
-    await registrarInteracao({ empresa_id: empresaId, tipo, titulo: titulo.trim(), descricao: descricao.trim() || null, data })
-    setTitulo(''); setDescricao(''); await onRegistrar()
-  }
-  return (
-    <form className="nova-interacao" onSubmit={enviar}>
-      <select className="entrada" aria-label="Tipo de registro" value={tipo} onChange={(e) => setTipo(e.target.value as TipoInteracao)}>
-        {TIPOS_INTERACAO.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
-      </select>
-      <input className="entrada" required aria-label="O que foi feito" placeholder="O que foi feito? Ex.: entrega de 50 kits Novembro Azul" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
-      <input className="entrada" type="date" aria-label="Data" value={data} onChange={(e) => setData(e.target.value)} />
-      {titulo && <textarea className="entrada" rows={2} placeholder="Detalhes (opcional)" aria-label="Detalhes" value={descricao} onChange={(e) => setDescricao(e.target.value)} />}
-      {titulo && <div style={{ gridColumn: '1 / -1' }}><Botao type="submit">Registrar</Botao></div>}
-    </form>
   )
 }

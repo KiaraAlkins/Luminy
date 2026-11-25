@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, ClipboardCheck, History, Plus, Search, Trash2 } from 'lucide-react'
+import { AlertTriangle, ArchiveRestore, ArrowDownToLine, ArrowUpFromLine, ChevronDown, ClipboardCheck, History, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { Botao, Chip } from '../components/ui'
 import { Janela } from '../components/Janela'
 import { useSessao } from '../lib/sessao'
 import { listarEventos, hojeIso, type Evento } from '../lib/parcerias'
 import {
-  CATEGORIAS, UNIDADES, criarItem, editarItem, excluirItem, fmt, historicoItem, listarItens, movimentar, situacao, venceEmDias,
-  type Item, type Movimento, type TipoMovimento,
+  CATEGORIAS, MOTIVOS_EXCLUSAO, UNIDADES, criarItem, editarItem, excluirItem, fmt, historicoItem, listarItens, movimentar, restaurarItem, situacao, venceEmDias,
+  type DadosItem, type Item, type Movimento, type TipoMovimento,
 } from '../lib/estoque'
 import './estoque.css'
 
 /** Estoque de materiais: brindes, papel, pilhas, fitas de glicemia, luvas… com entradas, saídas e avisos. */
 export function Estoque() {
-  const { cliente, ehAdminCliente } = useSessao()
+  const { cliente } = useSessao()
   const [itens, setItens] = useState<Item[] | null>(null)
+  const [excluidos, setExcluidos] = useState<Item[]>([])
+  const [verExcluidos, setVerExcluidos] = useState(false)
+  const [editar, setEditar] = useState<Item | null>(null)
   const [eventos, setEventos] = useState<Evento[]>([])
   const [busca, setBusca] = useState('')
   const [categoria, setCategoria] = useState('')
@@ -25,7 +28,7 @@ export function Estoque() {
   const carregar = useCallback(async () => {
     if (!cliente) return
     const [i, e] = await Promise.all([listarItens(cliente.id), listarEventos(cliente.id)])
-    setItens(i); setEventos(e.filter((x) => x.data >= hojeIso()))
+    setItens(i.ativos); setExcluidos(i.excluidos); setEventos(e.filter((x) => x.data >= hojeIso()))
   }, [cliente])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
 
@@ -90,6 +93,7 @@ export function Estoque() {
                 <button type="button" className="botao botao--secundario" onClick={() => setMov({ item: i, tipo: 'saida' })} title="Registrar saída"><ArrowUpFromLine size={15} /> Saída</button>
                 <button type="button" className="icone-botao" aria-label={`Contagem de ${i.nome}`} title="Ajustar pela contagem" onClick={() => setMov({ item: i, tipo: 'ajuste' })}><ClipboardCheck size={16} /></button>
                 <button type="button" className="icone-botao" aria-label={`Histórico de ${i.nome}`} title="Histórico" onClick={() => setHist(i)}><History size={16} /></button>
+                <button type="button" className="icone-botao" aria-label={`Editar ${i.nome}`} title="Editar ou excluir" onClick={() => setEditar(i)}><Pencil size={15} /></button>
               </span>
             </div>
           )
@@ -98,9 +102,33 @@ export function Estoque() {
 
       {novo && <NovoItem onFechar={() => setNovo(false)} onCriar={async (d, ini) => { await criarItem(cliente.id, d, ini); setNovo(false); await carregar() }} />}
       {mov && <Movimentar item={mov.item} tipo={mov.tipo} eventos={eventos} onFechar={() => setMov(null)} onFeito={async () => { setMov(null); await carregar() }} />}
-      {hist && <Historico item={hist} podeExcluir={ehAdminCliente} onFechar={() => setHist(null)}
-        onSalvar={async (d) => { await editarItem(hist.id, d); setHist(null); await carregar() }}
-        onExcluir={async () => { await excluirItem(hist.id); setHist(null); await carregar() }} />}
+      {hist && <Historico item={hist} onFechar={() => setHist(null)} onEditar={() => { setEditar(hist); setHist(null) }} />}
+      {editar && <EditarItem item={editar} onFechar={() => setEditar(null)}
+        onSalvar={async (d) => { await editarItem(editar.id, d); setEditar(null); await carregar() }}
+        onExcluir={async (motivo) => { await excluirItem(editar.id, motivo); setEditar(null); await carregar() }} />}
+
+      {excluidos.length > 0 && (
+        <section className="excluidos">
+          <button type="button" className="excluidos__abrir" aria-expanded={verExcluidos} onClick={() => setVerExcluidos(!verExcluidos)}>
+            <ChevronDown size={16} style={{ transform: verExcluidos ? 'rotate(180deg)' : undefined, transition: 'transform .2s' }} aria-hidden />
+            Itens excluídos ({excluidos.length})
+          </button>
+          {verExcluidos && (
+            <ul className="excluidos__lista">
+              {excluidos.map((i) => (
+                <li key={i.id}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <strong>{i.nome}</strong>
+                    <p className="texto-2">Motivo: {i.motivo_arquivamento}</p>
+                    <span className="pequeno">Excluído em {new Date(i.arquivado_em!).toLocaleDateString('pt-BR')}{i.arquivado_por_nome ? ` por ${i.arquivado_por_nome}` : ''}{i.quantidade > 0 ? ` · ficaram ${fmt(i.quantidade)} ${i.unidade}` : ''}</span>
+                  </div>
+                  <button type="button" className="botao botao--secundario" onClick={() => void restaurarItem(i.id).then(carregar).catch((e: Error) => alert(e.message))}><ArchiveRestore size={15} /> Restaurar</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </div>
   )
 }
@@ -112,7 +140,7 @@ function NovoItem({ onFechar, onCriar }: { onFechar: () => void; onCriar: (d: Om
     e.preventDefault()
     try {
       await onCriar({ nome: d.nome.trim(), categoria: d.categoria || null, unidade: d.unidade, minimo: Number(d.minimo) || 0, local: d.local.trim() || null, validade: d.validade || null, observacoes: null }, Number(d.inicial) || 0)
-    } catch (err) { setErro(/duplicate|unique/i.test(String((err as Error).message)) ? 'Já existe um item com este nome.' : 'Não foi possível cadastrar.') }
+    } catch (err) { setErro((err as Error).message) }
   }
   return (
     <Janela titulo="Novo item no estoque" onFechar={onFechar} largura={560}>
@@ -167,22 +195,12 @@ function Movimentar({ item, tipo, eventos, onFechar, onFeito }: { item: Item; ti
   )
 }
 
-function Historico({ item, podeExcluir, onFechar, onSalvar, onExcluir }: {
-  item: Item; podeExcluir: boolean; onFechar: () => void; onSalvar: (d: Partial<Item>) => Promise<void>; onExcluir: () => Promise<void>
-}) {
+function Historico({ item, onFechar, onEditar }: { item: Item; onFechar: () => void; onEditar: () => void }) {
   const [movs, setMovs] = useState<Movimento[] | null>(null)
-  const [d, setD] = useState({ minimo: String(item.minimo), local: item.local ?? '', validade: item.validade ?? '' })
   useEffect(() => { void historicoItem(item.id).then(setMovs) }, [item.id])
   return (
-    <Janela titulo={item.nome} onFechar={onFechar} largura={600}>
+    <Janela titulo={`Histórico · ${item.nome}`} onFechar={onFechar} largura={600}>
       <div className="janela__corpo">
-        <form className="grade-2" onSubmit={(e) => { e.preventDefault(); void onSalvar({ minimo: Number(d.minimo) || 0, local: d.local.trim() || null, validade: d.validade || null }) }}>
-          <div className="campo"><label htmlFor="h-min">Avisar abaixo de</label><input id="h-min" className="entrada" type="number" min={0} step="any" value={d.minimo} onChange={(e) => setD({ ...d, minimo: e.target.value })} /></div>
-          <div className="campo"><label htmlFor="h-loc">Onde fica</label><input id="h-loc" className="entrada" value={d.local} onChange={(e) => setD({ ...d, local: e.target.value })} /></div>
-          <div className="campo"><label htmlFor="h-val">Validade</label><input id="h-val" className="entrada" type="date" value={d.validade} onChange={(e) => setD({ ...d, validade: e.target.value })} /></div>
-          <div style={{ alignSelf: 'end' }}><Botao type="submit" variante="secundario">Salvar dados</Botao></div>
-        </form>
-        <h4 style={{ margin: 0 }}>Movimentações</h4>
         {movs === null ? <p className="pequeno">Carregando…</p> : movs.length === 0 ? <p className="texto-2">Nenhuma movimentação ainda.</p> : (
           <ul className="movimentos">
             {movs.map((m) => (
@@ -194,7 +212,79 @@ function Historico({ item, podeExcluir, onFechar, onSalvar, onExcluir }: {
             ))}
           </ul>
         )}
-        {podeExcluir && <Botao variante="fantasma" style={{ color: 'var(--perigo)', alignSelf: 'flex-start' }} onClick={() => { if (confirm(`Excluir ${item.nome} e o histórico?`)) void onExcluir() }}><Trash2 size={16} /> Excluir item</Botao>}
+        <Botao variante="secundario" icone={<Pencil size={15} />} style={{ alignSelf: 'flex-start' }} onClick={onEditar}>Editar item</Botao>
+      </div>
+    </Janela>
+  )
+}
+
+/** Editar todos os dados do item; excluir pede o motivo (o item vai para "Itens excluídos" e pode voltar). */
+function EditarItem({ item, onFechar, onSalvar, onExcluir }: {
+  item: Item; onFechar: () => void; onSalvar: (d: Partial<DadosItem>) => Promise<void>; onExcluir: (motivo: string) => Promise<void>
+}) {
+  const [d, setD] = useState({ nome: item.nome, categoria: item.categoria ?? '', unidade: item.unidade, minimo: String(item.minimo),
+    local: item.local ?? '', validade: item.validade ?? '', observacoes: item.observacoes ?? '' })
+  const [excluindo, setExcluindo] = useState(false)
+  const [motivo, setMotivo] = useState('')
+  const [outro, setOutro] = useState('')
+  const [erro, setErro] = useState<string | null>(null)
+  const campo = (k: keyof typeof d) => ({ value: d[k], onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setD({ ...d, [k]: e.target.value }) })
+  const unidades = UNIDADES.includes(d.unidade) ? UNIDADES : [d.unidade, ...UNIDADES]
+  const motivoFinal = motivo === 'outro' ? outro.trim() : motivo
+
+  async function salvar(e: FormEvent) {
+    e.preventDefault(); setErro(null)
+    try {
+      await onSalvar({ nome: d.nome.trim(), categoria: d.categoria || null, unidade: d.unidade, minimo: Number(d.minimo) || 0,
+        local: d.local.trim() || null, validade: d.validade || null, observacoes: d.observacoes.trim() || null })
+    } catch (err) { setErro((err as Error).message) }
+  }
+  async function excluir() {
+    if (motivoFinal.length < 3) return
+    try { await onExcluir(motivoFinal) } catch { setErro('Não foi possível excluir.') }
+  }
+
+  return (
+    <Janela titulo={`Editar ${item.nome}`} onFechar={onFechar} largura={580}>
+      <div className="janela__corpo">
+        {!excluindo ? (
+          <form onSubmit={salvar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="campo"><label htmlFor="ed-nome">Nome do item</label><input id="ed-nome" className="entrada" required {...campo('nome')} /></div>
+            <div className="grade-2">
+              <div className="campo"><label htmlFor="ed-cat">Categoria</label><select id="ed-cat" className="entrada" {...campo('categoria')}><option value="">Sem categoria</option>{CATEGORIAS.map((c) => <option key={c}>{c}</option>)}</select></div>
+              <div className="campo"><label htmlFor="ed-un">Unidade</label><select id="ed-un" className="entrada" {...campo('unidade')}>{unidades.map((u) => <option key={u}>{u}</option>)}</select></div>
+              <div className="campo"><label htmlFor="ed-min">Avisar quando ficar abaixo de</label><input id="ed-min" className="entrada" type="number" min={0} step="any" {...campo('minimo')} /></div>
+              <div className="campo"><label htmlFor="ed-local">Onde fica</label><input id="ed-local" className="entrada" {...campo('local')} /></div>
+              <div className="campo"><label htmlFor="ed-val">Validade</label><input id="ed-val" className="entrada" type="date" {...campo('validade')} /></div>
+              <div className="campo"><label>Quantidade</label><p className="texto-2" style={{ margin: '10px 0 0' }}>{fmt(item.quantidade)} {item.unidade} · muda por entrada, saída ou contagem</p></div>
+            </div>
+            <div className="campo"><label htmlFor="ed-obs">Observações</label><textarea id="ed-obs" className="entrada" rows={2} {...campo('observacoes')} /></div>
+            {erro && <p className="pequeno" style={{ color: 'var(--perigo)' }}>{erro}</p>}
+            <div className="linha" style={{ justifyContent: 'space-between' }}>
+              <Botao type="button" variante="fantasma" style={{ color: 'var(--perigo)' }} icone={<Trash2 size={16} />} onClick={() => setExcluindo(true)}>Excluir item</Botao>
+              <div className="linha"><Botao type="button" variante="fantasma" onClick={onFechar}>Cancelar</Botao><Botao type="submit">Salvar</Botao></div>
+            </div>
+          </form>
+        ) : (
+          <div className="excluir-item">
+            <strong>Por que está excluindo {item.nome}?</strong>
+            <div className="excluir-item__motivos" role="radiogroup" aria-label="Motivo da exclusão">
+              {[...MOTIVOS_EXCLUSAO, 'outro'].map((m) => (
+                <button key={m} type="button" role="radio" aria-checked={motivo === m} className={`opcao${motivo === m ? ' marcada' : ''}`} onClick={() => setMotivo(m)}>
+                  {m === 'outro' ? 'Outro motivo…' : m}
+                </button>
+              ))}
+            </div>
+            {motivo === 'outro' && <input className="entrada" autoFocus value={outro} onChange={(e) => setOutro(e.target.value)} placeholder="Escreva o motivo" aria-label="Outro motivo" />}
+            {item.quantidade > 0 && <p className="pequeno" style={{ color: '#8a5000' }}>Ainda há {fmt(item.quantidade)} {item.unidade} registrados. Se for doar ou descartar, registre uma saída antes.</p>}
+            <p className="pequeno">O item sai da lista, mas o histórico fica guardado em "Itens excluídos", com o motivo, quem excluiu e quando. Dá para restaurar depois.</p>
+            {erro && <p className="pequeno" style={{ color: 'var(--perigo)' }}>{erro}</p>}
+            <div className="linha" style={{ justifyContent: 'flex-end' }}>
+              <Botao type="button" variante="fantasma" onClick={() => setExcluindo(false)}>Voltar</Botao>
+              <button type="button" className="botao botao--perigo" disabled={motivoFinal.length < 3} onClick={() => void excluir()}><Trash2 size={16} /> Excluir item</button>
+            </div>
+          </div>
+        )}
       </div>
     </Janela>
   )
