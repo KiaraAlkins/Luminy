@@ -1,4 +1,5 @@
-import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom'
+import { useState } from 'react'
+import { BrowserRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { Menu } from './components/Menu'
 import { BarraSuperior } from './components/BarraSuperior'
 import { Inicio } from './pages/Inicio'
@@ -21,19 +22,27 @@ import { FocoFlutuante } from './components/FocoFlutuante'
 import { Estoque } from './pages/Estoque'
 import { PainelTv } from './pages/PainelTv'
 
+const CHAVE_MENU = 'luminy.menu.recolhido'
+function lerMenu() { try { return localStorage.getItem(CHAVE_MENU) === '1' } catch { return false } }
+
 function Painel() {
   const { estado, aviso } = useSessao()
+  const [recolhido, setRecolhido] = useState(lerMenu)
+  const { pathname } = useLocation()
+  function alternarMenu() {
+    setRecolhido((r) => { try { localStorage.setItem(CHAVE_MENU, r ? '0' : '1') } catch { /* sem armazenamento */ } return !r })
+  }
   if (estado === 'carregando') return <div className="carregando">Carregando…</div>
   if (estado === 'deslogado') return <Entrar />
   if (estado === 'primeiro_acesso') return <PrimeiroAcesso />
   return (
     <ProvedorFoco>
-      <div className="app">
-        <Menu />
+      <div className={`app${recolhido ? ' app--recolhido' : ''}`}>
+        <Menu recolhido={recolhido} alternar={alternarMenu} />
         <div className="conteudo">
           <BarraSuperior />
           {aviso && <p className="faixa-aviso" role="status">{aviso}</p>}
-          <main><Outlet /></main>
+          <main key={pathname.split("/")[1]} className="pagina-entra"><Outlet /></main>
         </div>
       </div>
       <FocoFlutuante />

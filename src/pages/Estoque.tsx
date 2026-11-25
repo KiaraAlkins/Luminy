@@ -77,8 +77,11 @@ export function Estoque() {
             <div key={i.id} className="estoque-linha">
               <span><strong>{i.nome}</strong><span className="pequeno" style={{ display: 'block' }}>{i.categoria ?? 'Sem categoria'}</span></span>
               <span>
-                <strong className={`saldo saldo--${s}`}>{fmt(i.quantidade)} {i.unidade}</strong>
-                <span className="pequeno" style={{ display: 'block' }}>mínimo {fmt(i.minimo)}</span>
+                <span className={`saldo saldo--${s}`}>
+                  <span className="saldo__unidade">{i.unidade}</span>
+                  <strong className="saldo__numero">{fmt(i.quantidade)}</strong>
+                  <span className="saldo__minimo">mín. {fmt(i.minimo)}</span>
+                </span>
               </span>
               <span className="texto-2">{i.local ?? '—'}</span>
               <span>{i.validade ? <Chip tom={d !== null && d < 0 ? 'perigo' : d !== null && d <= 30 ? 'alerta' : 'neutro'}>{d !== null && d < 0 ? 'Vencido' : new Date(`${i.validade}T12:00:00`).toLocaleDateString('pt-BR')}</Chip> : <span className="pequeno">—</span>}</span>

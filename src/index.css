@@ -69,13 +69,13 @@ a { color: var(--marca); text-decoration: none; }
 .texto-2 { color: var(--texto-2); }
 
 /* ---- Estrutura ---- */
-.app { display: grid; grid-template-columns: 256px 1fr; min-height: 100%; }
+.app { display: grid; grid-template-columns: 256px 1fr; min-height: 100%; transition: grid-template-columns .25s ease; }
 .conteudo { min-width: 0; display: flex; flex-direction: column; }
 .corpo { padding: 8px 40px 40px; display: flex; flex-direction: column; gap: 24px; }
 
 /* ---- Menu lateral ---- */
 .menu { background: var(--superficie); border-right: 1px solid var(--borda); padding: 24px 16px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-.menu__logo { padding: 0 8px 16px; }
+.menu__logo { padding: 0 0 16px 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .menu__logo img { height: 40px; display: block; }
 .seletor-cliente { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: var(--raio-m); background: var(--superficie-2); border: 0; text-align: left; cursor: pointer; }
 .seletor-cliente__texto { flex: 1; min-width: 0; }
@@ -143,3 +143,42 @@ a { color: var(--marca); text-decoration: none; }
 .opcao { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--borda); background: var(--fundo); cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
 .opcao.marcada { background: var(--marca); border-color: var(--marca); color: #fff; }
 .linha { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Menu recolhível ---------- */
+.menu__recolher { width: 32px; height: 32px; border-radius: 10px; border: 0; background: transparent; color: var(--texto-3); display: grid; place-items: center; cursor: pointer; flex: none; }
+.menu__recolher:hover { background: var(--fundo); color: var(--marca); }
+.app--recolhido { grid-template-columns: 76px 1fr; }
+.app--recolhido .menu { padding: 20px 12px; align-items: stretch; }
+.app--recolhido .menu__logo { flex-direction: column; padding: 0 0 12px; }
+.app--recolhido .menu__logo img { height: 34px; width: 19px; object-fit: cover; object-position: left; }
+.app--recolhido .menu__texto, .app--recolhido .menu__grupo, .app--recolhido .seletor-cliente__texto,
+.app--recolhido .seletor-cliente > svg:last-child, .app--recolhido .menu__item .contador { display: none; }
+.app--recolhido .menu__item { justify-content: center; padding: 11px 0; }
+.app--recolhido .menu__item + .menu__item { margin-top: 2px; }
+.app--recolhido .seletor-cliente { justify-content: center; padding: 8px 0; margin-bottom: 8px; }
+.app--recolhido .seletor__lista { right: auto; width: 220px; }
+.app--recolhido .menu { overflow: visible; }
+.app--recolhido .menu__usuario { flex-direction: column; padding: 10px 0; gap: 6px; }
+.app--recolhido .menu__usuario .icone-botao { width: 28px !important; height: 28px !important; }
+
+/* ---------- Animações ---------- */
+.botao, .icone-botao, .opcao, .menu__item, .seletor-cliente, .menu__recolher {
+  transition: transform .16s cubic-bezier(.2,.8,.3,1.2), box-shadow .18s ease, background-color .18s ease, color .18s ease, border-color .18s ease;
+}
+.botao:not(:disabled):hover { transform: translateY(-1px); }
+.botao--primario:not(:disabled):hover { box-shadow: 0 6px 18px -6px rgb(61 46 249 / 0.55); }
+.botao--secundario:not(:disabled):hover { border-color: var(--marca-clara); box-shadow: 0 4px 14px -8px rgb(23 20 46 / 0.35); }
+.botao:not(:disabled):active, .icone-botao:active, .opcao:active, .menu__recolher:active { transform: scale(.96); }
+.icone-botao:hover { transform: translateY(-1px); color: var(--marca); }
+.menu__item:not(.ativo):hover svg { transform: translateX(2px); }
+.menu__item svg { transition: transform .18s ease; }
+.menu__item.ativo svg { animation: icone-pulo .35s ease-out; }
+.cartao { transition: box-shadow .2s ease, transform .2s ease; }
+.pagina-entra { animation: pagina-entra .28s ease-out; }
+@keyframes pagina-entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes icone-pulo { 40% { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) {
+  .app, .botao, .icone-botao, .opcao, .menu__item, .menu__item svg, .seletor-cliente, .menu__recolher, .cartao { transition: none; }
+  .botao:hover, .botao:active, .icone-botao:hover, .icone-botao:active, .opcao:active, .menu__item:hover svg { transform: none; }
+  .pagina-entra, .menu__item.ativo svg { animation: none; }
+}

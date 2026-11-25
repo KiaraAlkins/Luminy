@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link as RouterLink, NavLink } from 'react-router-dom'
 import {
   BadgeCheck, Briefcase, CalendarDays, ChartLine, ChevronDown, Columns3, Handshake, Home, Inbox, Lightbulb,
-  Building2, ListChecks, Package, LogOut, Plus, Send, SlidersHorizontal, Wallet,
+  Building2, ListChecks, Package, LogOut, PanelLeftClose, PanelLeftOpen, Plus, Send, SlidersHorizontal, Wallet,
 } from 'lucide-react'
 import logo from '../assets/luminy-logo.svg'
 import { Avatar } from './ui'
@@ -34,23 +34,29 @@ const AGENCIA: Item[] = [
 function Link({ item }: { item: Item }) {
   const Icone = item.icone
   return (
-    <NavLink to={item.para} end={item.para === '/'} className={({ isActive }) => `menu__item${isActive ? ' ativo' : ''}`}>
+    <NavLink to={item.para} end={item.para === '/'} title={item.rotulo} className={({ isActive }) => `menu__item${isActive ? ' ativo' : ''}`}>
       <Icone size={18} strokeWidth={1.8} aria-hidden />
-      <span>{item.rotulo}</span>
+      <span className="menu__texto">{item.rotulo}</span>
     </NavLink>
   )
 }
 
-export function Menu() {
+export function Menu({ recolhido, alternar }: { recolhido: boolean; alternar: () => void }) {
   const { usuario, agencia, cliente, clientes, trocarCliente, ehProprietario, acessoLeads, sair } = useSessao()
   const [aberto, setAberto] = useState(false)
   return (
     <nav className="menu" aria-label="Navegação principal">
-      <div className="menu__logo"><img src={logo} alt="Luminy" /></div>
+      <div className="menu__logo">
+        <img src={logo} alt="Luminy" />
+        <button type="button" className="menu__recolher" onClick={alternar}
+          aria-label={recolhido ? 'Expandir menu' : 'Recolher menu'} title={recolhido ? 'Expandir menu' : 'Recolher menu'} aria-pressed={recolhido}>
+          {recolhido ? <PanelLeftOpen size={18} aria-hidden /> : <PanelLeftClose size={18} aria-hidden />}
+        </button>
+      </div>
 
       {cliente ? (
         <div className="seletor">
-          <button className="seletor-cliente" type="button" aria-expanded={aberto} aria-haspopup="listbox" onClick={() => setAberto(!aberto)}>
+          <button className="seletor-cliente" type="button" title={cliente.nome} aria-expanded={aberto} aria-haspopup="listbox" onClick={() => setAberto(!aberto)}>
             <Avatar nome={cliente.nome} cor={cliente.cor} />
             <span className="seletor-cliente__texto">
               <span className="pequeno" style={{ display: 'block' }}>Cliente</span>
@@ -102,7 +108,7 @@ export function Menu() {
       <Link item={{ para: '/configuracoes', rotulo: 'Configurações', icone: SlidersHorizontal }} />
       <div className="menu__usuario">
         <Avatar nome={usuario.nome || '?'} cor="var(--marca)" />
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="menu__texto" style={{ flex: 1, minWidth: 0 }}>
           <div className="forte">{usuario.nome}</div>
           <div className="pequeno">{cliente?.papel === 'proprietario' ? 'Proprietário' : cliente?.papel === 'admin' ? 'Administrador' : 'Equipe'}</div>
         </div>
