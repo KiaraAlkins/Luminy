@@ -106,6 +106,9 @@ select t.ok((select count(*) from tarefas) = 0, 'admin do cliente NÃO vê taref
 select t.ok((select count(*) from leads) = 2, 'admin com acesso a leads vê os leads');
 select t.ok((select count(*) from abrir_lead((select id from leads where nome = 'Carlos Teste'))) = 1, 'abrir lead funciona');
 select t.ok((select count(*) from eventos_lead where tipo = 'aberto') = 1, 'abertura do lead fica registrada');
+update leads set etapa = 'em_contato' where nome = 'Carlos Teste';
+select t.ok((select count(*) from eventos_lead where tipo = 'etapa' and autor_id = '00000000-0000-0000-0000-00000000c1a2') = 1, 'mudança de etapa do lead entra no histórico com quem mudou');
+select t.ok((select total_leads from resumo_campanhas('20000000-0000-0000-0000-000000000001') where total_leads > 0) = 2, 'resumo da campanha conta os leads');
 
 -- ---------------------------------------------------------------- Braion (membro)
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
@@ -136,6 +139,7 @@ select t.ok((select count(*) from clientes) = 1, 'jovem aprendiz vê o hospital'
 select t.ok((select count(*) from demandas) = 1, 'jovem aprendiz vê as demandas');
 select t.ok((select count(*) from leads) = 0, 'jovem aprendiz NÃO vê leads');
 select t.ok((select count(*) from campanhas) = 0, 'jovem aprendiz NÃO vê campanhas QR');
+select t.ok((select count(*) from resumo_campanhas('20000000-0000-0000-0000-000000000001')) = 0, 'jovem aprendiz NÃO vê os números das campanhas');
 do $$ begin
   perform abrir_lead((select id from leads limit 1));
   raise exception 'FALHOU: aprendiz abriu lead';

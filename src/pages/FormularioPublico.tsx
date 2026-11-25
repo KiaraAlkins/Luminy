@@ -5,7 +5,7 @@ import './formulario.css'
 
 type Campo = { chave: string; rotulo: string; tipo: string; modo: 'obrigatorio' | 'exibir'; opcoes?: string[] }
 type Formulario =
-  | { situacao: 'ativa'; cliente: string; cor: string; titulo: string; texto?: string; campos: Campo[] }
+  | { situacao: 'ativa'; cliente: string; cor: string; titulo: string; texto?: string; obrigado?: string; campos: Campo[] }
   | { situacao: 'encerrada' | 'inexistente'; cliente?: string }
 
 // Usado quando o Supabase ainda não está conectado, para revisar a tela.
@@ -21,7 +21,7 @@ const DEMO: Formulario = {
   ],
 }
 
-const TIPO_INPUT: Record<string, string> = { telefone: 'tel', email: 'email', texto: 'text', data: 'date' }
+const TIPO_INPUT: Record<string, string> = { telefone: 'tel', email: 'email', texto: 'text', data: 'date', numero: 'number' }
 
 export function FormularioPublico() {
   const { slug = '' } = useParams()
@@ -75,7 +75,7 @@ export function FormularioPublico() {
         {estado === 'enviado' ? (
           <div className="publico__corpo">
             <h3>Recebemos seus dados!</h3>
-            <p className="texto-2">Nossa equipe vai falar com você pelo WhatsApp em até 1 dia útil.</p>
+            <p className="texto-2">{form.obrigado || 'Nossa equipe vai falar com você pelo WhatsApp em até 1 dia útil.'}</p>
           </div>
         ) : (
           <form className="publico__corpo" onSubmit={enviar}>
