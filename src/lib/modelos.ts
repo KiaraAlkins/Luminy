@@ -21,3 +21,9 @@ export const MODELO_GASTOS: Tabela = {
     ['28/11/2026', 'Brindes do Natal', '2.100,00', 'Brindes', 'Brindes & Cia', 'Previsto'],
   ],
 }
+
+/** Modelo da planilha de verba do marketing (um mês por linha). */
+export const MODELO_VERBAS: Tabela = {
+  colunas: ['Mês', 'Verba'],
+  linhas: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'].map((m) => [`${m}/${new Date().getFullYear() + 1}`, '15.000,00']),
+}

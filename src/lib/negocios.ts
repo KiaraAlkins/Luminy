@@ -288,3 +288,10 @@ export async function importarGastos(clienteId: string, fornecedores: Fornecedor
   }
   return linhas.length
 }
+
+/** Grava a verba de vários meses de uma vez (substitui a do mês, se já existir). */
+export async function definirVerbas(clienteId: string, verbas: { mes: string; valor: number }[]) {
+  if (!supabase) { verbas.forEach((v) => { demo.verbas = [...demo.verbas.filter((x) => x.mes !== v.mes), { cliente_id: clienteId, ...v }] }); return }
+  const { error } = await supabase.from('verbas').upsert(verbas.map((v) => ({ cliente_id: clienteId, ...v })))
+  if (error) throw error
+}

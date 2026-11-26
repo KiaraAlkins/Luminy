@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, ChevronLeft, ChevronRight, FileSignature, Paperclip, Pencil, Plus, Receipt, Trash2, Wallet } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, FileSignature, Paperclip, Pencil, Plus, Receipt, Trash2, Upload, Wallet } from 'lucide-react'
 import { Botao } from '../../components/ui'
 import { Janela } from '../../components/Janela'
 import { Selecao } from '../../components/Selecao'
@@ -12,6 +12,7 @@ import {
 } from '../../lib/negocios'
 import { CampoArquivo, CampoValor, SeletorFornecedor, opcoesCategoriaGasto, valorParaCampo } from './comum'
 import { ImportarGastos } from './ImportarGastos'
+import { ImportarVerbas } from './ImportarVerbas'
 import { MODELO_GASTOS } from '../../lib/modelos'
 import './negocios.css'
 
@@ -25,6 +26,7 @@ export function Financeiro() {
   const [editar, setEditar] = useState<Lancamento | Partial<Lancamento> | null>(null)
   const [editarVerba, setEditarVerba] = useState(false)
   const [importar, setImportar] = useState(false)
+  const [importarVerba, setImportarVerba] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [agora] = useState(() => Date.now())
 
@@ -97,6 +99,7 @@ export function Financeiro() {
               ? <button type="button" className="verba__valor" onClick={() => setEditarVerba(true)} title="Alterar verba">{reais(verba)} <Pencil size={14} /></button>
               : <button type="button" className="botao botao--secundario botao--mini" style={{ marginTop: 6 }} onClick={() => setEditarVerba(true)}><Wallet size={14} /> Definir a verba do mês</button>}
           </div>
+          <button type="button" className="verba__importar" onClick={() => setImportarVerba(true)}><Upload size={14} /> Importar verba dos meses</button>
           <div className="verba__numeros">
             <span><small>Pago</small><strong>{reais(pago)}</strong></span>
             <span><small>Previsto</small><strong>{reais(previsto)}</strong></span>
@@ -168,6 +171,7 @@ export function Financeiro() {
         )}
       </section>
 
+      {importarVerba && dados && <ImportarVerbas clienteId={cliente.id} atuais={dados.verbas} onFechar={() => setImportarVerba(false)} onImportado={carregar} />}
       {importar && dados && <ImportarGastos clienteId={cliente.id} fornecedores={dados.fornecedores} onFechar={() => setImportar(false)} onImportado={carregar} />}
       {editarVerba && <VerbaModal mes={mes} atual={verba} onFechar={() => setEditarVerba(false)} onSalvar={async (v) => { await definirVerba(cliente.id, chave, v); setEditarVerba(false); await carregar() }} />}
       {editar && dados && <LancamentoModal clienteId={cliente.id} lancamento={editar} dados={dados} onFechar={() => setEditar(null)}
