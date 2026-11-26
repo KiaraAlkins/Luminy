@@ -25,6 +25,8 @@ import { ProvedorSessao, useSessao } from './lib/sessao'
 import { ProvedorFoco } from './lib/foco'
 import { FocoFlutuante } from './components/FocoFlutuante'
 import { Estoque } from './pages/Estoque'
+import { MinhasTarefas } from './pages/MinhasTarefas'
+import { Demandas } from './pages/Demandas'
 import { PainelTv } from './pages/PainelTv'
 
 /** Campanhas e leads: quem não tem acesso a leads (ex.: jovem aprendiz) nem vê a tela. O banco também bloqueia. */
@@ -87,6 +89,8 @@ export default function App() {
           <Route element={<Painel />}>
             <Route index element={<Inicio />} />
             <Route path="kanban" element={<Kanban />} />
+            <Route path="tarefas" element={<MinhasTarefas />} />
+            <Route path="demandas" element={<Demandas />} />
             <Route path="clientes" element={<Navigate to="/principal" replace />} />
             <Route path="eventos" element={<Eventos />}>
               <Route index element={<Empresas />} />

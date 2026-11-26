@@ -120,6 +120,24 @@ select t.ok((select count(*) from eventos_lead e join leads l on l.id = e.lead_i
 -- ---------------------------------------------------------------- Braion (membro)
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
 select t.ok((select count(*) from tarefas) = 1, 'cada pessoa vê a própria tarefa pessoal');
+update tarefas set status = 'concluida' where titulo = 'Tarefa pessoal do Braion';
+select t.ok((select concluida_em is not null from tarefas where titulo = 'Tarefa pessoal do Braion'), 'concluir tarefa guarda quando foi concluída');
+update tarefas set status = 'a_fazer' where titulo = 'Tarefa pessoal do Braion';
+select aceitar_demanda((select id from demandas where titulo = 'Arte vacinação'));
+select t.ok((select status = 'a_fazer' and responsavel_id = '00000000-0000-0000-0000-00000000b2a1' and aceita_em is not null from demandas where titulo = 'Arte vacinação'), 'aceitar demanda sem responsável: quem aceitou vira o responsável');
+select t.ok((select count(*) from demanda_eventos e join demandas d on d.id = e.demanda_id where d.titulo = 'Arte vacinação' and e.tipo in ('criada', 'situacao')) = 2, 'histórico da demanda registra criação e aceite');
+insert into demanda_eventos (demanda_id, tipo, texto) select id, 'comentario', 'Começo amanhã' from demandas where titulo = 'Arte vacinação';
+select t.ok((select count(*) from demanda_eventos where tipo = 'comentario') = 1, 'equipe comenta na demanda');
+do $$ begin
+  update demandas set status = 'cancelada' where titulo = 'Arte vacinação';
+  raise exception 'FALHOU: cancelou sem justificativa';
+exception when check_violation then raise notice 'ok - cancelar demanda exige justificativa';
+end $$;
+do $$ begin
+  insert into demanda_eventos (demanda_id, tipo, detalhe) select id, 'situacao', '{}' from demandas where titulo = 'Arte vacinação';
+  raise exception 'FALHOU: forjou evento de situação';
+exception when insufficient_privilege then raise notice 'ok - histórico de situação não pode ser forjado';
+end $$;
 do $$ begin
   perform importar_leads('20000000-0000-0000-0000-000000000001', '[{"nome":"X","whatsapp":"61911112222"}]', 'teste');
   raise exception 'FALHOU: membro comum importou leads';

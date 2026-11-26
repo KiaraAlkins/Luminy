@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AlertTriangle, AlignLeft, CalendarDays, CheckSquare, ChevronsLeft, Columns3, Clock, MessageSquare, Paperclip, Plus, Send, X } from 'lucide-react'
 import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
@@ -63,7 +64,9 @@ export function Kanban() {
   const [quadro, setQuadro] = useState<Quadro | null | undefined>(undefined)
   const [erro, setErro] = useState<string | null>(null)
   const [motivoPara, setMotivoPara] = useState<Pendente | null>(null)
-  const [abertoId, setAbertoId] = useState<string | null>(null)
+  const [params] = useSearchParams()
+  // ?card=… abre o card direto (vindo de Minhas tarefas ou de uma demanda)
+  const [abertoId, setAbertoId] = useState<string | null>(() => params.get('card'))
   const [pessoas, setPessoas] = useState<Pessoa[]>([])
   const [visao, setVisao] = useState<'quadro' | 'calendario'>(() => { try { return localStorage.getItem('luminy.kanban.visao') === 'calendario' ? 'calendario' : 'quadro' } catch { return 'quadro' } })
   const trocarVisao = (v: 'quadro' | 'calendario') => { setVisao(v); try { localStorage.setItem('luminy.kanban.visao', v) } catch { /* sem armazenamento */ } }

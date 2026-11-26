@@ -1,0 +1,50 @@
+.minhas-tarefas { max-width: 980px; }
+.resumo-tarefas { display: flex; gap: 8px; flex-wrap: wrap; }
+.resumo-tarefas__item { padding: 6px 12px; border-radius: 10px; background: var(--superficie); border: 1px solid var(--borda); font-size: 13px; color: var(--texto-2); }
+.resumo-tarefas__item strong { font-family: var(--fonte-titulo); font-size: 16px; color: var(--texto); margin-right: 2px; }
+.resumo-tarefas__item--perigo { background: rgb(229 72 77 / .08); border-color: rgb(229 72 77 / .3); color: var(--perigo); }
+.resumo-tarefas__item--perigo strong { color: var(--perigo); }
+
+.nova-tarefa { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 16px; border-radius: 16px; background: var(--superficie); border: 1.5px solid var(--borda); transition: border-color .18s, box-shadow .18s; }
+.nova-tarefa:focus-within { border-color: var(--marca); box-shadow: 0 0 0 4px var(--marca-suave); }
+.nova-tarefa__mais { color: var(--marca); flex: none; }
+.nova-tarefa input { flex: 1; border: 0; outline: 0; background: none; font: inherit; font-size: 15px; padding: 8px 0; color: var(--texto); min-width: 0; }
+.nova-tarefa__data { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; background: var(--marca-suave); color: var(--marca-forte); font-size: 13px; font-weight: 700; white-space: nowrap; animation: quica-data .35s cubic-bezier(.34,1.56,.64,1); }
+@keyframes quica-data { from { transform: scale(.7); opacity: 0; } }
+
+.grupo-tarefas { display: flex; flex-direction: column; gap: 8px; }
+.grupo-tarefas h3 { margin: 6px 0 0; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.grupo-tarefas h3 span { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--fundo); color: var(--texto-3); }
+.grupo-tarefas--atrasadas h3 { color: var(--perigo); }
+.grupo-tarefas--atrasadas h3 span { background: rgb(229 72 77 / .1); color: var(--perigo); }
+.grupo-tarefas--hoje h3 { color: var(--marca); }
+.grupo-tarefas ul { list-style: none; margin: 0; padding: 0; background: var(--superficie); border: 1px solid var(--borda); border-radius: 16px; overflow: hidden; }
+
+.tarefa { border-top: 1px solid var(--borda); transition: background .15s; animation: pagina-entra .25s ease-out both; }
+.tarefa:first-child { border-top: 0; }
+.tarefa:hover, .tarefa--aberta { background: var(--fundo); }
+.tarefa__linha { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+.tarefa__check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--borda); background: var(--superficie); display: grid; place-items: center; color: #fff; cursor: pointer; flex: none; transition: border-color .15s, background .2s, transform .25s cubic-bezier(.34,1.56,.64,1); }
+.tarefa__check:hover { border-color: var(--sucesso); transform: scale(1.1); }
+.tarefa__check--card { border-style: dashed; border-radius: 6px; }
+.tarefa--feita .tarefa__check { background: var(--sucesso); border-color: var(--sucesso); animation: check-pula .45s cubic-bezier(.34,1.56,.64,1); }
+@keyframes check-pula { 40% { transform: scale(1.3); } }
+.tarefa__corpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; padding: 0; }
+.tarefa__titulo { font-weight: 600; font-size: 15px; transition: color .2s; }
+.tarefa--feita .tarefa__titulo { text-decoration: line-through; color: var(--texto-3); }
+.tarefa__bandeira { color: var(--perigo); margin-right: 6px; vertical-align: -1px; }
+.tarefa__meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--texto-3); }
+.tarefa__origem, .tarefa__prazo, .tarefa__cliente { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.tarefa__origem--demanda { color: var(--info); }
+.tarefa__origem--card { color: var(--marca); }
+.tarefa__cliente i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.tarefa__prazo--atrasadas { color: var(--perigo); }
+.tarefa__prazo--hoje { color: #b86a00; }
+.tarefa__agora { width: 32px; height: 32px; border-radius: 10px; border: 0; background: none; color: var(--texto-3); display: grid; place-items: center; cursor: pointer; opacity: 0; transition: opacity .15s, background .15s, color .15s; }
+.tarefa:hover .tarefa__agora, .tarefa__agora.ativo, .tarefa__agora:focus-visible { opacity: 1; }
+.tarefa__agora:hover, .tarefa__agora.ativo { background: var(--marca-suave); color: var(--marca); }
+.tarefa--saindo { animation: tarefa-sai .5s .4s ease-in forwards; }
+@keyframes tarefa-sai { to { opacity: 0; transform: translateX(24px); } }
+.tarefa__edicao { display: flex; flex-direction: column; gap: 8px; padding: 0 14px 14px 48px; animation: pagina-entra .2s ease-out; }
+.tarefa__edicao .entrada { background: var(--superficie); }
+@media (prefers-reduced-motion: reduce) { .tarefa, .tarefa--saindo, .tarefa--feita .tarefa__check, .nova-tarefa__data { animation: none; } }
