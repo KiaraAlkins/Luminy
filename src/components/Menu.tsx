@@ -43,7 +43,7 @@ const GUIAS: Guia[] = [
     id: 'negocios', rotulo: 'Negócios', icone: Briefcase, somenteAdmin: true, itens: [
       { para: '/comercial', rotulo: 'Comercial', icone: Handshake },
       { para: '/financeiro', rotulo: 'Financeiro', icone: Wallet },
-      { para: '/contratos', rotulo: 'Contratos', icone: FileSignature },
+      { para: '/contratos', rotulo: 'Contratos e notas', icone: FileSignature },
     ],
   },
   {

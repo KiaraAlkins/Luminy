@@ -146,3 +146,63 @@
   .lancamento__data { width: 36px; font-size: 12px; padding-top: 2px; }
   .verba__valor { font-size: 28px; }
 }
+
+/* Notas fiscais */
+.notas-barra { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.busca-notas { flex: 1; min-width: 220px; display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 44px; border-radius: 14px; background: var(--superficie); border: 1px solid var(--borda); color: var(--texto-3); }
+.busca-notas:focus-within { border-color: var(--marca); box-shadow: 0 0 0 4px var(--marca-suave); }
+.busca-notas input { flex: 1; border: 0; outline: 0; background: none; font: inherit; color: var(--texto); min-width: 0; }
+.pauta-temas .chip { border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; }
+.notas-faltando { padding: 12px 14px; border-radius: 16px; background: rgb(232 137 12 / .08); border: 1px dashed rgb(232 137 12 / .5); display: flex; flex-direction: column; gap: 8px; }
+.notas-faltando > strong { display: inline-flex; align-items: center; gap: 6px; color: #8a5000; font-size: 14px; }
+.notas-faltando ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.notas-faltando li { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13.5px; }
+.notas-faltando li span { display: flex; flex-direction: column; min-width: 0; }
+.notas-faltando small { color: var(--texto-3); font-size: 12px; }
+.notas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.nota { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 10px; border-radius: 18px; background: var(--superficie); border: 1px solid var(--borda); animation: pagina-entra .3s ease-out both; }
+.nota--concluida { background: color-mix(in srgb, var(--superficie) 70%, var(--fundo)); }
+.nota__abrir { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; border: 0; background: none; font: inherit; color: var(--texto); text-align: left; cursor: pointer; padding: 4px; border-radius: 12px; }
+.nota__abrir:hover { background: var(--fundo); }
+.nota__icone { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; flex: none; color: #fff; }
+.nota__icone--outdoor { background: linear-gradient(135deg, #F79009, #E5484D); }
+.nota__icone--evento { background: linear-gradient(135deg, #12A15F, #06AED4); }
+.nota__icone--material { background: linear-gradient(135deg, #7A5AF8, #EE46BC); }
+.nota__icone--servico { background: linear-gradient(135deg, #3D2EF9, #2E90FA); }
+.nota__icone--outro { background: linear-gradient(135deg, #667085, #98A2B3); }
+.nota__texto { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nota__referente { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nota__texto strong { font-size: 13px; font-weight: 600; color: var(--texto-2); }
+.nota__texto strong small { font-weight: 500; color: var(--texto-3); }
+.nota__texto > small { font-size: 12px; color: var(--texto-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nota__passos { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 0; flex: none; }
+.nota__passos li { display: flex; align-items: center; }
+.nota__passos li + li::before { content: ''; width: 14px; height: 2px; background: var(--borda); }
+.passo { display: flex; align-items: center; gap: 6px; padding: 5px 9px 5px 5px; border-radius: 999px; border: 1px solid transparent; background: none; font: inherit; cursor: pointer; color: var(--texto-3); transition: background .15s, transform .2s cubic-bezier(.34,1.56,.64,1); }
+.passo:hover { background: var(--fundo); }
+.passo:active { transform: scale(.95); }
+.passo__bola { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 1.5px dashed var(--borda); flex: none; }
+.passo__texto { display: flex; flex-direction: column; font-size: 12px; font-weight: 600; line-height: 1.15; text-align: left; }
+.passo__texto small { font-size: 10.5px; font-weight: 500; color: var(--texto-3); white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+.passo.feito { color: var(--sucesso); }
+.passo.feito .passo__bola { border: 0; background: var(--sucesso); color: #fff; }
+.passo.proximo { color: var(--marca); background: var(--marca-suave); border-color: color-mix(in srgb, var(--marca) 30%, transparent); }
+.passo.proximo .passo__bola { border: 0; background: var(--marca); color: #fff; animation: passo-pulsa 2s ease-in-out infinite; }
+@keyframes passo-pulsa { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--marca) 18%, transparent); } }
+.referentes { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.referente { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--borda); background: var(--superficie); font: inherit; font-size: 13px; font-weight: 600; color: var(--texto-2); cursor: pointer; }
+.referente.marcado { border-color: var(--marca); background: var(--marca-suave); color: var(--marca); }
+.nota-historico { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--fundo); }
+.nota-historico ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--texto-3); }
+.nota-historico li { display: flex; align-items: center; gap: 8px; }
+.nota-historico li.feito { color: var(--sucesso); font-weight: 600; }
+.contrato__referente { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--texto-2); }
+.contrato__nota { display: inline-flex; align-items: center; gap: 4px; color: #b86a00; font-weight: 600; }
+.contrato__nota.ok { color: var(--sucesso); }
+@media (max-width: 900px) {
+  .nota { flex-direction: column; align-items: stretch; }
+  .nota__passos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .nota__passos li + li::before { display: none; }
+  .passo { width: 100%; }
+  .nota__referente { white-space: normal; }
+}

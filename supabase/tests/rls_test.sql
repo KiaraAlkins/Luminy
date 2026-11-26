@@ -572,4 +572,17 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select t.ok((select count(*) from lancamentos) = 0 and (select count(*) from contratos) = 0, 'quem não é da equipe não vê os negócios');
 reset role;
 
+-- ---------------------------------------------------------------- Notas fiscais
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+insert into notas_fiscais (cliente_id, numero, fornecedor_id, valor, competencia, referente_tipo, referente)
+  values ('20000000-0000-0000-0000-000000000001', '1234', '90000000-0000-0000-0000-000000000001', 2500, '2026-11-01', 'outdoor', 'Av. Central, ponto 12');
+update notas_fiscais set assinada_em = now(), assinada_por = '00000000-0000-0000-0000-00000000c1a2', entregue_em = now(), entregue_para = 'Almoxarifado' where numero = '1234';
+select t.ok((select assinada_em is not null and entregue_para = 'Almoxarifado' from notas_fiscais where numero = '1234'), 'administrador registra a nota e marca assinada e entregue');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+select t.ok((select count(*) from notas_fiscais) = 0, 'membro da equipe não vê as notas fiscais');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
+select t.ok((select count(*) from notas_fiscais) = 0, 'quem não é da equipe não vê as notas fiscais');
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'

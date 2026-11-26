@@ -1,8 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useRef, useState } from 'react'
-import { FileText, Paperclip, Star, X } from 'lucide-react'
+import { FileText, Package, Paperclip, Shapes, Signpost, Star, Ticket, Wrench, X } from 'lucide-react'
 import { Selecao, type Opcao } from '../../components/Selecao'
-import { CATEGORIAS, abrirArquivo, enviarArquivo, lerValor, nomeArquivo, type Fornecedor } from '../../lib/negocios'
+import { CATEGORIAS, type ReferenteTipo, abrirArquivo, enviarArquivo, lerValor, nomeArquivo, type Fornecedor } from '../../lib/negocios'
 
 const bolinha = (cor: string) => <span className="bolinha-cor" style={{ background: cor }} />
 export const opcoesCategoriaGasto: Opcao[] = [{ valor: '', rotulo: 'Sem categoria' }, ...CATEGORIAS.map((c) => ({ valor: c.nome, rotulo: c.nome, icone: bolinha(c.cor) }))]
@@ -27,7 +27,7 @@ export function CampoValor({ id, valor, onMudar, autoFocus }: { id: string; valo
 export const valorParaCampo = (n: number | null | undefined) => (n == null ? '' : n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
 
 /** Anexar um arquivo (PDF do contrato, proposta, comprovante) ao armazenamento privado. */
-export function CampoArquivo({ clienteId, pasta, caminho, onMudar, rotulo }: { clienteId: string; pasta: 'contratos' | 'cotacoes' | 'comprovantes'; caminho: string | null; onMudar: (c: string | null) => void; rotulo: string }) {
+export function CampoArquivo({ clienteId, pasta, caminho, onMudar, rotulo }: { clienteId: string; pasta: 'contratos' | 'cotacoes' | 'comprovantes' | 'notas'; caminho: string | null; onMudar: (c: string | null) => void; rotulo: string }) {
   const input = useRef<HTMLInputElement>(null)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -63,3 +63,5 @@ export function Estrelas({ nota, onMudar, tamanho = 16 }: { nota: number | null;
     </span>
   )
 }
+
+export const ICONE_REFERENTE: Record<ReferenteTipo, React.ElementType> = { outdoor: Signpost, evento: Ticket, material: Package, servico: Wrench, outro: Shapes }
