@@ -322,3 +322,11 @@ a { color: var(--marca); text-decoration: none; }
 @keyframes quica-fim { 0% { transform: scale(.92); opacity: 0; } 60% { transform: scale(1.03); } }
 .faixa-dica { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; background: var(--marca-suave); color: var(--marca-forte); font-size: 14px; margin: 0; }
 .busca svg { flex: none; }
+.meu-perfil { display: flex; align-items: center; gap: 20px; }
+.meu-perfil__foto { position: relative; width: 76px; height: 76px; border-radius: 50%; padding: 0; border: 0; background: none; cursor: pointer; flex: none; transition: transform .2s cubic-bezier(.34,1.56,.64,1); }
+.meu-perfil__foto:hover { transform: scale(1.05); }
+.meu-perfil__foto img { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; display: block; }
+.meu-perfil__foto .avatar { width: 76px !important; height: 76px !important; font-size: 22px !important; }
+.meu-perfil__foto.enviando { opacity: .5; }
+.meu-perfil__camera { position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--marca); color: #fff; border: 3px solid var(--superficie); }
+.foto-usuario { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: none; }

@@ -168,7 +168,7 @@ export function Menu({ recolhido, alternar }: { recolhido: boolean; alternar: ()
       <div className="menu__espaco" />
       <Link item={{ para: '/configuracoes', rotulo: 'Configurações', icone: SlidersHorizontal }} />
       <div className="menu__usuario">
-        <Avatar nome={usuario.nome || '?'} cor="var(--marca)" />
+        {usuario.foto_url ? <img className="foto-usuario" src={usuario.foto_url} alt="" /> : <Avatar nome={usuario.nome || '?'} cor="var(--marca)" />}
         <div className="menu__texto" style={{ flex: 1, minWidth: 0 }}>
           <div className="forte">{usuario.nome}</div>
           <div className="pequeno">{cliente?.papel === 'proprietario' ? 'Proprietário' : cliente?.papel === 'admin' ? 'Administrador' : 'Equipe'}</div>

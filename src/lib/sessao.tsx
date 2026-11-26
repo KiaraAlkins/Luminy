@@ -9,11 +9,11 @@ import { supabase } from './supabase'
  * sigilo é o banco (RLS).
  */
 export type ClienteSessao = { id: string; nome: string; slug: string; cor: string; papel: 'proprietario' | 'admin' | 'membro'; acesso_leads: boolean }
-type Dados = { usuario: { id: string; nome: string }; agencia: { id: string; nome: string } | null; clientes: ClienteSessao[] }
+type Dados = { usuario: { id: string; nome: string; foto_url?: string | null }; agencia: { id: string; nome: string } | null; clientes: ClienteSessao[] }
 
 export type Sessao = {
   estado: 'carregando' | 'deslogado' | 'primeiro_acesso' | 'pronto'
-  usuario: { id: string; nome: string }
+  usuario: { id: string; nome: string; foto_url?: string | null }
   agencia: { id: string; nome: string } | null
   clientes: ClienteSessao[]
   /** Cliente selecionado; null quando a pessoa ainda não tem nenhum. */

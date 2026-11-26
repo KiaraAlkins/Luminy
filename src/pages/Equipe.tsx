@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { Selecao } from '../components/Selecao'
 import { OPCOES_PAPEL } from '../components/opcoes'
 import { useSessao } from '../lib/sessao'
+import { MeuPerfil } from '../components/MeuPerfil'
 
 type Membro = { usuario_id: string; nome: string; papel: string; acesso_leads: boolean }
 type Convite = { id: string; token: string; email: string | null; papel: string; acesso_leads: boolean; expira_em: string; aceito_em: string | null }
@@ -49,13 +50,15 @@ export function Equipe() {
     await carregar()
   }
 
-  if (!cliente) return <div className="corpo"><h2>Equipe</h2><p className="texto-2">Crie um cliente primeiro para montar a equipe dele.</p></div>
+  if (!cliente) return <div className="corpo"><h2>Configurações</h2><MeuPerfil /><p className="texto-2">Crie um cliente primeiro para montar a equipe dele.</p></div>
 
   const mensagem = (c: Convite) => `Oi! Você foi convidado para a equipe do ${cliente.nome} no Luminy. Entre por este link: ${linkDe(c.token)}`
 
   return (
     <div className="corpo">
-      <div><h2>Equipe</h2><p className="pequeno">{cliente.nome} · só quem é convidado entra na equipe deste cliente</p></div>
+      <h2>Configurações</h2>
+      <MeuPerfil />
+      <div><h3 style={{ margin: 0 }}>Equipe</h3><p className="pequeno">{cliente.nome} · só quem é convidado entra na equipe deste cliente</p></div>
 
       {ehAdminCliente && (
         <Cartao titulo="Convidar pessoa">
