@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, BadgeCheck, CalendarClock, Check, Copy, Download, ExternalLink, Info, Link2, Pencil, Send, Zap } from 'lucide-react'
+import { AlertTriangle, Lock, BadgeCheck, CalendarClock, Check, Copy, Download, ExternalLink, Info, Link2, Pencil, Send, Zap } from 'lucide-react'
 import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
 import { COR_TIPO, iconeTipo } from '../components/opcoes'
@@ -68,9 +68,10 @@ export function Agendamento() {
   const item = (c: Card) => {
     const ap = aprovacoes.get(c.id)
     const ok = aprovado(c)
-    const urgente = horaDePostar(c)
+    const passou = !!c.postagem_em && new Date(c.postagem_em) < agora
+    const urgente = horaDePostar(c) && ok
     return (
-      <li key={c.id} className={`agenda-post${urgente ? ' agenda-post--agora' : ''}`}>
+      <li key={c.id} className={`agenda-post${urgente ? ' agenda-post--agora' : ''}${passou && !ok ? ' agenda-post--perdido' : ''}`}>
         <span className="agenda-post__hora">{c.postagem_em ? new Date(c.postagem_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—'}
           {c.postagem_em && chaveDia(new Date(c.postagem_em)) !== chaveDia(agora) && new Date(c.postagem_em) < agora && <small>{new Date(c.postagem_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</small>}</span>
         {c.capa_url ? <img className="agenda-post__capa" src={c.capa_url} alt="" /> : <span className="agenda-post__capa agenda-post__capa--vazia" style={c.capa_cor ? { background: c.capa_cor } : undefined} />}
@@ -81,13 +82,15 @@ export function Agendamento() {
             {c.redes.map((r) => <span key={r} className="pequeno">{r}</span>)}
           </span>
         </div>
-        <span className={`agenda-post__aprov agenda-post__aprov--${ok ? 'ok' : ap ?? 'sem'}`}>
-          {ok ? <><BadgeCheck size={14} /> Aprovado</> : ap === 'pendente' ? 'Aguardando aprovação' : ap === 'ajuste' ? 'Ajuste pedido' : <><AlertTriangle size={13} /> Sem aprovação</>}
+        <span className={`agenda-post__aprov agenda-post__aprov--${ok ? 'ok' : passou ? 'sem' : ap ?? 'sem'}`}>
+          {ok ? <><BadgeCheck size={14} /> Liberado</>
+            : passou ? <><AlertTriangle size={13} /> {ap === 'ajuste' ? 'Voltou para alteração' : ap === 'pendente' ? 'Não aprovado a tempo' : 'Sem aprovação'}</>
+            : ap === 'pendente' ? <><Lock size={13} /> Travado: aguardando aprovação</> : ap === 'ajuste' ? <><Lock size={13} /> Travado: em alteração</> : <><AlertTriangle size={13} /> Sem aprovação</>}
         </span>
         <Responsaveis ids={c.responsaveis} pessoas={pessoas} />
         <span className="agenda-post__acoes">
           <Link className="botao botao--fantasma botao--mini" to={`/kanban?card=${c.id}`}>Abrir</Link>
-          <button type="button" className={`botao botao--mini ${urgente ? 'botao--primario' : 'botao--secundario'}`} onClick={() => setPostar(c)}><Send size={14} /> {urgente ? 'Postar agora' : 'Postar'}</button>
+          <button type="button" className={`botao botao--mini ${urgente || (passou && !ok) ? 'botao--primario' : 'botao--secundario'}`} onClick={() => setPostar(c)}><Send size={14} /> {urgente ? 'Postar agora' : !ok && passou ? 'Postar manualmente' : 'Postar'}</button>
         </span>
       </li>
     )
@@ -96,7 +99,7 @@ export function Agendamento() {
   return (
     <div className="corpo">
       <div className="linha" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div><h2>Agendamento</h2><p className="pequeno">O que vai ao ar e quando. Os posts vêm do Kanban: coloque a data de postagem no card.</p></div>
+        <div style={{ maxWidth: 720 }}><h2>Agendamento</h2><p className="pequeno">A data é programada ao enviar para aprovação. Só é liberado o que for aprovado; o que ficar pendente ou voltar para alteração não vai ao ar e precisa ser postado manualmente.</p></div>
         <Link className="botao botao--secundario" to="/kanban"><CalendarClock size={16} /> Ver no Kanban por data</Link>
       </div>
 
@@ -122,7 +125,7 @@ export function Agendamento() {
 
       {porDia.map((g) => (
         <section key={g.dia.getTime()} className={`agenda-dia${g.dia.getTime() === 0 ? ' agenda-dia--atrasado' : ''}`}>
-          <h3>{g.dia.getTime() === 0 ? 'Passou do horário e não foi marcado como postado' : nomeDia(g.dia, agora)} <span>{g.cards.length}</span></h3>
+          <h3>{g.dia.getTime() === 0 ? 'Não foi ao ar: passou do horário' : nomeDia(g.dia, agora)} <span>{g.cards.length}</span></h3>
           <ul>{g.cards.map(item)}</ul>
         </section>
       ))}
@@ -172,6 +175,11 @@ function PostarAgora({ card, contas, aprovado, onFechar, onPostado }: { card: Ca
   const [baixando, setBaixando] = useState(false)
   const [link, setLink] = useState('')
   const [salvando, setSalvando] = useState(false)
+  const [copiou, setCopiou] = useState<'link' | 'texto' | null>(null)
+  const story = card.tipo_conteudo === 'Story'
+  const temTexto = !story || !!card.legenda
+  const temSticker = story && !!card.story_link
+  const numeros = [1, 2, temTexto ? 3 : 2, 2 + Number(temTexto) + Number(temSticker)]
   const caminhos = imagens.map((i) => i.caminho!).join('|')
   useEffect(() => { void linksArquivos(caminhos ? caminhos.split('|') : []).then(setLinks) }, [caminhos])
 
@@ -183,9 +191,9 @@ function PostarAgora({ card, contas, aprovado, onFechar, onPostado }: { card: Ca
         {!aprovado && <p className="faixa-dica" style={{ background: 'rgb(232 137 12 / .12)', color: '#8a5000' }}><AlertTriangle size={15} /> Este post ainda não foi aprovado.</p>}
 
         <section className="postar-agora__passo">
-          <span className="postar-agora__numero">1</span>
+          <span className="postar-agora__numero">{numeros[0]}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <strong>Baixe as artes {imagens.length > 1 && '(já numeradas na ordem do carrossel)'}</strong>
+            <strong>{story ? (imagens.length > 1 ? 'Baixe os stories (na ordem)' : 'Baixe o story') : <>Baixe as artes {imagens.length > 1 && '(já numeradas na ordem do carrossel)'}</>}</strong>
             {imagens.length ? (
               <div className="postar-agora__imagens">{imagens.map((im, i) => (
                 <span key={im.id} className="postar-agora__imagem">{links.get(im.caminho!) && <img src={links.get(im.caminho!)} alt="" />}<small>{i + 1}</small></span>
@@ -195,17 +203,33 @@ function PostarAgora({ card, contas, aprovado, onFechar, onPostado }: { card: Ca
           </div>
         </section>
 
+        {(!story || card.legenda) && (
         <section className="postar-agora__passo">
-          <span className="postar-agora__numero">2</span>
+          <span className="postar-agora__numero">{numeros[1]}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <strong>Copie a legenda</strong>
+            <strong>{story ? 'Copie o texto do story' : 'Copie a legenda'}</strong>
             {card.legenda ? <p className="postar-agora__legenda">{card.legenda}</p> : <p className="pequeno">O card está sem legenda.</p>}
             {card.legenda && <Botao variante="secundario" icone={copiado ? <Check size={15} /> : <Copy size={15} />} onClick={() => { void navigator.clipboard.writeText(card.legenda ?? ''); setCopiado(true) }}>{copiado ? 'Legenda copiada' : 'Copiar legenda'}</Botao>}
           </div>
         </section>
-
+        )}
+        {story && card.story_link && (
+          <section className="postar-agora__passo">
+            <span className="postar-agora__numero">{numeros[2]}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <strong>Adicione o sticker de link</strong>
+              <span className="pequeno" style={{ display: 'block' }}>No story: Figurinhas › Link. Cole o link e troque o texto do sticker.</span>
+              <div className="postar-agora__sticker">
+                <span className="story-link__previa"><Link2 size={13} /> {(card.story_link_texto || card.story_link.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]).toUpperCase()}</span>
+                <Botao variante="secundario" icone={copiou === 'link' ? <Check size={15} /> : <Copy size={15} />} onClick={() => { void navigator.clipboard.writeText(card.story_link ?? ''); setCopiou('link') }}>{copiou === 'link' ? 'Link copiado' : 'Copiar link'}</Botao>
+                {card.story_link_texto && <Botao variante="secundario" icone={copiou === 'texto' ? <Check size={15} /> : <Copy size={15} />} onClick={() => { void navigator.clipboard.writeText(card.story_link_texto ?? ''); setCopiou('texto') }}>{copiou === 'texto' ? 'Texto copiado' : 'Copiar texto do sticker'}</Botao>}
+              </div>
+              <span className="pequeno postar-agora__url">{card.story_link}</span>
+            </div>
+          </section>
+        )}
         <section className="postar-agora__passo">
-          <span className="postar-agora__numero">3</span>
+          <span className="postar-agora__numero">{numeros[3]}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <strong>Publique na rede</strong>
             <div className="linha" style={{ gap: 6, marginTop: 6 }}>

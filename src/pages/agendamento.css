@@ -22,6 +22,8 @@
 .agenda-post { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-top: 1px solid var(--borda); animation: pagina-entra .25s ease-out both; }
 .agenda-post:first-child { border-top: 0; }
 .agenda-post--agora { background: var(--marca-suave); box-shadow: inset 4px 0 0 var(--marca); }
+.agenda-post--perdido { background: rgb(229 72 77 / .05); box-shadow: inset 4px 0 0 var(--perigo); }
+.agenda-post__aprov--pendente, .agenda-post__aprov--ajuste { gap: 5px; }
 .agenda-post__hora { font-family: var(--fonte-titulo); font-weight: 700; font-size: 16px; min-width: 52px; color: var(--texto); display: inline-flex; flex-direction: column; align-items: center; }
 .agenda-post__hora small { font-size: 11px; color: var(--perigo); font-weight: 600; }
 .agenda-post--feito .agenda-post__hora { color: var(--sucesso); }
@@ -51,3 +53,5 @@
 .guia-meta ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; }
 .guia-meta li { line-height: 1.45; }
 @media (max-width: 900px) { .agenda-post { flex-wrap: wrap; } .agenda-post__aprov { order: 5; } }
+.postar-agora__sticker { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0 4px; }
+.postar-agora__url { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

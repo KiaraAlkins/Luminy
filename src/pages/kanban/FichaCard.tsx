@@ -51,6 +51,7 @@ export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMov
 }) {
   const { foco, definir } = useFoco()
   const [titulo, setTitulo] = useState(card.titulo)
+  const [agoraFicha] = useState(() => Date.now())
   const [links, setLinks] = useState<Map<string, string>>(new Map())
   const [comentarios, setComentarios] = useState<Comentario[]>([])
   const [novoItem, setNovoItem] = useState('')
@@ -142,6 +143,13 @@ export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMov
                 <strong>{aprovacao.situacao === 'pendente' ? `Aguardando aprovação${aprovacao.aprovador ? ` de ${aprovacao.aprovador}` : ''}` : aprovacao.situacao === 'aprovado' ? `Aprovado por ${aprovacao.respondido_por_nome}` : `Ajuste pedido por ${aprovacao.respondido_por_nome}`}</strong>
                 {aprovacao.resposta && <p>"{aprovacao.resposta}"</p>}
                 <span className="pequeno">{aprovacao.situacao === 'pendente' ? `enviado ${quando(aprovacao.enviado_em)}` : aprovacao.respondido_em ? quando(aprovacao.respondido_em) : ''}</span>
+                {card.postagem_em && !card.postado_em && (
+                  <span className="situacao-aprovacao__programa">
+                    {aprovacao.situacao === 'aprovado' ? 'Liberado para ir ao ar em ' : 'Programado para '}
+                    {new Date(card.postagem_em).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    {aprovacao.situacao !== 'aprovado' && (new Date(card.postagem_em).getTime() < agoraFicha ? ' · não foi aprovado a tempo, postar manualmente' : ' · só vai ao ar se for aprovado')}
+                  </span>
+                )}
               </div>
               {aprovacao.situacao === 'ajuste' && <button type="button" className="botao botao--primario botao--mini" onClick={() => setEnviarAprovacao(true)}>Corrigido, reenviar</button>}
             </div>
@@ -152,8 +160,23 @@ export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMov
             <TextoQueSalva className="entrada ficha-texto" rows={4} placeholder="O que precisa ser feito, referências, tom de voz…" valor={card.briefing ?? ''} onSalvar={(v) => void salvar({ briefing: v || null })} />
           </section>
 
+          {card.tipo_conteudo === 'Story' && (
+            <section className="ficha-secao">
+              <h4><Link2 size={16} /> Link no story <span className="ficha-secao__conta">sticker do Instagram</span></h4>
+              <div className="story-link">
+                <div className="story-link__campos">
+                  <input className="entrada" type="url" placeholder="https://… (para onde o link leva)" defaultValue={card.story_link ?? ''} aria-label="Link do story"
+                    onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (card.story_link ?? null)) void salvar({ story_link: v }) }} />
+                  <input className="entrada" maxLength={40} placeholder="Texto do sticker, ex.: AGENDE SUA CONSULTA" defaultValue={card.story_link_texto ?? ''} aria-label="Texto do sticker"
+                    onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== (card.story_link_texto ?? null)) void salvar({ story_link_texto: v }) }} />
+                </div>
+                <span className="story-link__fundo" aria-hidden><span className="story-link__previa"><Link2 size={13} /> {(card.story_link_texto || card.story_link?.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'texto do link').toUpperCase()}</span></span>
+              </div>
+            </section>
+          )}
+
           <section className="ficha-secao">
-            <h4><FileText size={16} /> Legenda do post
+            <h4><FileText size={16} /> {card.tipo_conteudo === 'Story' ? 'Texto do story (opcional)' : 'Legenda do post'}
               {card.legenda && <button type="button" className="ficha-secao__acao" onClick={() => void navigator.clipboard.writeText(card.legenda ?? '')}><Copy size={13} /> Copiar</button>}
               <span className="ficha-secao__conta">{(card.legenda ?? '').length}/2200</span></h4>
             <TextoQueSalva className="entrada ficha-texto" rows={3} maxLength={2200} placeholder="Texto que vai junto da publicação" valor={card.legenda ?? ''} onSalvar={(v) => void salvar({ legenda: v || null })} />
@@ -274,7 +297,7 @@ export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMov
           <button type="button" className="painel-propriedades__acao painel-propriedades__acao--perigo" onClick={() => { if (confirm('Excluir este card? Esta ação não pode ser desfeita.')) void onExcluir() }}><Trash2 size={15} /> Excluir card</button>
         </aside>
       </div>
-      {enviarAprovacao && <EnviarAprovacao card={card} onFechar={() => setEnviarAprovacao(false)} onEnviado={setAprovacao} />}
+      {enviarAprovacao && <EnviarAprovacao card={card} onFechar={() => setEnviarAprovacao(false)} onEnviado={setAprovacao} onProgramar={(iso) => salvar({ postagem_em: iso })} />}
       {/* Aviso flutuante no canto: não empurra o conteúdo da ficha */}
       <span className={`ficha-card__salvo${salvo ? ' visivel' : ''}`} role="status" aria-live="polite">{salvo && <><Check size={14} /> Salvo</>}</span>
     </Janela>

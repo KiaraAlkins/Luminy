@@ -201,3 +201,11 @@ body.arrastando-card, body.arrastando-card * { cursor: grabbing !important; user
 .cal-novo button { border: 0; background: none; color: var(--texto-3); cursor: pointer; display: grid; place-items: center; }
 .cal-sem-data { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 18px; background: rgb(236 232 255 / .6); border: 2px solid transparent; min-height: 180px; }
 @media (max-width: 1200px) { .cal-corpo { grid-template-columns: 1fr; } .cal-sem-data { position: static; } }
+
+/* Story com sticker de link */
+.story-link { display: flex; gap: 12px; align-items: center; }
+.story-link__campos { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.story-link__previa { display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 9px; background: #fff; color: #3478F6; font-weight: 700; font-size: 12.5px; box-shadow: 0 2px 8px rgb(0 0 0 / .18); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.story-link__fundo { width: 120px; height: 150px; border-radius: 14px; flex: none; display: grid; place-items: center; padding: 8px; background: linear-gradient(160deg, #F58529, #DD2A7B 55%, #8134AF); }
+.story-link__fundo .story-link__previa { max-width: 104px; font-size: 11px; padding: 6px 8px; }
+.story-link__fundo .story-link__previa { white-space: normal; text-align: center; justify-content: center; line-height: 1.2; }

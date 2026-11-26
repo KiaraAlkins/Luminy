@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Copy, MessageCircle, Send } from 'lucide-react'
+import { CalendarClock, Check, Copy, MessageCircle, Send } from 'lucide-react'
 import { Janela } from '../../components/Janela'
 import { Botao } from '../../components/ui'
 import { useSessao } from '../../lib/sessao'
@@ -7,7 +7,13 @@ import { linksArquivos, type Card } from '../../lib/kanban'
 import { enviarParaAprovacao, linkAprovacao, type Aprovacao } from '../../lib/aprovacoes'
 
 /** Envia o post para aprovação: escolhe as imagens, escreve o recado e gera o link para mandar no WhatsApp. */
-export function EnviarAprovacao({ card, onFechar, onEnviado }: { card: Card; onFechar: () => void; onEnviado: (a: Aprovacao) => void }) {
+const paraInput = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '')
+const recadoPadrao = (titulo: string, iso: string | null) =>
+  `Olá! Segue "${titulo}" para aprovação.${iso ? ` A publicação está programada para ${new Date(iso).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.` : ''}`
+
+/** Envia o post para aprovação: data programada, imagens, recado e o link para mandar no WhatsApp.
+ *  A data fica no card, mas o post só é liberado para ir ao ar se for aprovado. */
+export function EnviarAprovacao({ card, onFechar, onEnviado, onProgramar }: { card: Card; onFechar: () => void; onEnviado: (a: Aprovacao) => void; onProgramar: (iso: string | null) => Promise<void> }) {
   const { cliente } = useSessao()
   const imagens = card.anexos.filter((a) => a.tipo === 'arquivo' && /^image\//.test(a.mime ?? '') && a.caminho)
   const [escolhidas, setEscolhidas] = useState<string[]>(() => {
@@ -16,7 +22,13 @@ export function EnviarAprovacao({ card, onFechar, onEnviado }: { card: Card; onF
   })
   const [links, setLinks] = useState<Map<string, string>>(new Map())
   const [aprovador, setAprovador] = useState('')
-  const [mensagem, setMensagem] = useState(() => `Olá! Segue "${card.titulo}" para aprovação.${card.postagem_em ? ` A publicação está prevista para ${new Date(card.postagem_em).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.` : ''}`)
+  const [programada, setProgramada] = useState(() => paraInput(card.postagem_em))
+  const [mensagem, setMensagem] = useState(() => recadoPadrao(card.titulo, card.postagem_em))
+  const [recadoEditado, setRecadoEditado] = useState(false)
+  function mudarData(v: string) {
+    setProgramada(v)
+    if (!recadoEditado) setMensagem(recadoPadrao(card.titulo, v ? new Date(v).toISOString() : null))
+  }
   const [enviada, setEnviada] = useState<Aprovacao | null>(null)
   const [copiado, setCopiado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -29,7 +41,10 @@ export function EnviarAprovacao({ card, onFechar, onEnviado }: { card: Card; onF
   async function enviar() {
     if (!cliente) return
     setEnviando(true); setErro(null)
-    try { const a = await enviarParaAprovacao(card, cliente.id, { caminhos: escolhidas, mensagem: mensagem.trim() || null, aprovador: aprovador.trim() || null }); setEnviada(a); onEnviado(a) }
+    try {
+      const iso = programada ? new Date(programada).toISOString() : null
+      if (iso !== (card.postagem_em ? new Date(card.postagem_em).toISOString() : null)) await onProgramar(iso)
+      const a = await enviarParaAprovacao({ ...card, postagem_em: iso }, cliente.id, { caminhos: escolhidas, mensagem: mensagem.trim() || null, aprovador: aprovador.trim() || null }); setEnviada(a); onEnviado(a) }
     catch (e) { setErro((e as Error).message) }
     setEnviando(false)
   }
@@ -41,6 +56,14 @@ export function EnviarAprovacao({ card, onFechar, onEnviado }: { card: Card; onF
       <div className="janela__corpo enviar-aprovacao">
         {!enviada ? (
           <>
+            <div className="programar-postagem">
+              <CalendarClock size={20} />
+              <div className="campo" style={{ flex: 1 }}>
+                <label htmlFor="ap-data">Programar postagem para</label>
+                <input id="ap-data" type="datetime-local" className="entrada" value={programada} onChange={(e) => mudarData(e.target.value)} />
+                <span className="pequeno">{programada ? 'Só é liberado se for aprovado. Se ficar pendente ou voltar para alteração, não vai ao ar e precisa ser postado manualmente.' : 'Opcional. Sem data, o post aprovado fica em "Aprovados sem data" no Agendamento.'}</span>
+              </div>
+            </div>
             <div>
               <span className="rotulo-campo">Imagens que vão junto</span>
               {imagens.length ? (
@@ -60,7 +83,7 @@ export function EnviarAprovacao({ card, onFechar, onEnviado }: { card: Card; onF
             </div>
             {!card.legenda && <p className="faixa-dica">O card está sem legenda. Quem aprova costuma querer ver o texto também.</p>}
             <div className="campo"><label htmlFor="ap-para">Para quem (opcional)</label><input id="ap-para" className="entrada" value={aprovador} onChange={(e) => setAprovador(e.target.value)} placeholder="Ex.: Dra. Paula, diretoria" /></div>
-            <div className="campo"><label htmlFor="ap-msg">Recado</label><textarea id="ap-msg" className="entrada" rows={3} value={mensagem} onChange={(e) => setMensagem(e.target.value)} /></div>
+            <div className="campo"><label htmlFor="ap-msg">Recado</label><textarea id="ap-msg" className="entrada" rows={3} value={mensagem} onChange={(e) => { setMensagem(e.target.value); setRecadoEditado(true) }} /></div>
             <p className="pequeno">O link vale 14 dias e não precisa de conta. Enviar de novo este card invalida o link anterior.</p>
             {erro && <p className="importar__erro">{erro}</p>}
             <div className="linha" style={{ justifyContent: 'flex-end' }}>

@@ -24,6 +24,8 @@ export type Card = {
   postado_em?: string | null
   postado_por?: string | null
   link_post?: string | null
+  story_link?: string | null
+  story_link_texto?: string | null
   /** Link temporário da capa (o armazenamento é privado) */
   capa_url?: string | null
   comentarios?: number
@@ -51,6 +53,8 @@ let cardsDemo: Card[] = [
   { ...base, id: 'k5', coluna_id: 'c3', titulo: 'Reels Dia do Homem', tipo_conteudo: 'Reels', redes: ['Instagram', 'TikTok'], prioridade: 'comum', posicao: 2, entrega_em: '2026-11-25T10:00:00', postagem_em: '2026-11-19T18:00:00', responsaveis: ['p4', 'p2'] },
   { ...base, id: 'k6', coluna_id: 'c4', titulo: 'Post Doação de sangue', tipo_conteudo: 'Post', redes: ['Instagram'], prioridade: 'comum', posicao: 1, postagem_em: '2026-11-27T12:00:00', capa_cor: '#E5484D',
     checklist: [{ id: 'a', texto: 'Arte', feito: true }, { id: 'b', texto: 'Legenda', feito: true }] },
+  { ...base, id: 'k8', coluna_id: 'c4', titulo: 'Story: agende seu check-up', tipo_conteudo: 'Story', redes: ['Instagram'], prioridade: 'comum', posicao: 2, postagem_em: '2026-11-27T09:00:00', capa_cor: '#D6297A',
+    story_link: 'https://hospitalsantamarta.com.br/agendamento', story_link_texto: 'Agende seu check-up', legenda: null },
   { ...base, id: 'k7', coluna_id: 'c6', titulo: 'Vídeo institucional da UTI', tipo_conteudo: 'Vídeo', redes: ['YouTube'], prioridade: 'comum', posicao: 1,
     motivo_impedimento: 'Aguardando autorização de imagem dos pacientes', coluna_antes_impedimento: 'c3' },
 ]
@@ -99,7 +103,7 @@ export async function criarCard(quadroId: string, colunaId: string, titulo: stri
   if (error) throw error
 }
 
-export type EdicaoCard = Partial<Pick<Card, 'titulo' | 'briefing' | 'tipo_conteudo' | 'redes' | 'entrega_em' | 'postagem_em' | 'prioridade' | 'legenda' | 'capa_path' | 'capa_cor' | 'checklist' | 'anexos' | 'responsaveis' | 'postado_em' | 'postado_por' | 'link_post'>>
+export type EdicaoCard = Partial<Pick<Card, 'titulo' | 'briefing' | 'tipo_conteudo' | 'redes' | 'entrega_em' | 'postagem_em' | 'prioridade' | 'legenda' | 'capa_path' | 'capa_cor' | 'checklist' | 'anexos' | 'responsaveis' | 'postado_em' | 'postado_por' | 'link_post' | 'story_link' | 'story_link_texto'>>
 
 export async function salvarCard(id: string, edicao: EdicaoCard) {
   if (!supabase) { cardsDemo = cardsDemo.map((c) => (c.id === id ? { ...c, ...edicao } : c)); return }
