@@ -24,10 +24,8 @@ let tarefasDemo: Tarefa[] = [
   { id: 't6', titulo: 'Enviar relatório de outubro', descricao: null, prazo: em(-20), prioridade: 'comum', status: 'concluida', concluida_em: em(-22), criado_em: em(-80) },
 ]
 const extrasDemo: MeuItem[] = [
-  { id: 'd2', origem: 'demanda', titulo: 'Banner da campanha de vacinação', prazo: em(6), prioridade: 'alta', concluida: false, concluida_em: null, cliente_id: 'hospital', detalhe: 'Demanda · Enfermagem' },
   { id: 'k4', origem: 'card', titulo: 'Carrossel Novembro Azul', prazo: em(-40), prioridade: 'alta', concluida: false, concluida_em: null, cliente_id: 'hospital', detalhe: 'Kanban · Fazendo' },
   { id: 'o1', origem: 'os', titulo: 'OS 48213: Placa de identificação da nova UTI', prazo: em(50), prioridade: 'alta', concluida: false, concluida_em: null, cliente_id: 'hospital', detalhe: 'OS · UTI' },
-  { id: 'd3', origem: 'demanda', titulo: 'Vídeo depoimento da maternidade', prazo: em(52), prioridade: 'comum', concluida: false, concluida_em: null, cliente_id: 'hospital', detalhe: 'Demanda · Diretoria' },
 ]
 
 const deTarefa = (t: Tarefa): MeuItem => ({ id: t.id, origem: 'tarefa', titulo: t.titulo, prazo: t.prazo, prioridade: t.prioridade, concluida: t.status === 'concluida', concluida_em: t.concluida_em, cliente_id: null, descricao: t.descricao })

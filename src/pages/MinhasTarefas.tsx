@@ -127,7 +127,7 @@ export function MinhasTarefas() {
   return (
     <div className="corpo minhas-tarefas">
       <div className="linha" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div><h2>Minhas tarefas</h2><p className="pequeno">Suas tarefas pessoais, demandas, OS e cards do Kanban de todos os clientes · as pessoais só você vê</p></div>
+        <div><h2>Minhas tarefas</h2><p className="pequeno">Suas tarefas pessoais, rotinas, OS e cards do Kanban de todos os clientes · as pessoais só você vê</p></div>
         <div className="resumo-tarefas">
           {conta('atrasadas') > 0 && <span className="resumo-tarefas__item resumo-tarefas__item--perigo"><strong>{conta('atrasadas')}</strong> atrasadas</span>}
           <span className="resumo-tarefas__item"><strong>{conta('hoje')}</strong> para hoje</span>
@@ -145,7 +145,7 @@ export function MinhasTarefas() {
       {erro && <p className="pequeno" style={{ color: 'var(--perigo)' }}>{erro}</p>}
 
       <div className="segmentos" role="radiogroup" aria-label="Mostrar">
-        {(['', 'tarefa', 'rotina', 'demanda', 'card', 'os'] as const).map((f) => (
+        {(['', 'tarefa', 'rotina', 'card', 'os'] as const).map((f) => (
           <button key={f} type="button" role="radio" aria-checked={filtro === f} className={filtro === f ? 'marcado' : ''} onClick={() => setFiltro(f)}>
             {f ? { tarefa: 'Pessoais', rotina: 'Rotinas', demanda: 'Demandas', card: 'Kanban', os: 'OS' }[f] : 'Tudo'}
             <span>{(itens ?? []).filter((i) => !i.concluida && (!f || i.origem === f)).length}</span>

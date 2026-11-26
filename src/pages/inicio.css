@@ -83,3 +83,11 @@ a.publicacao:hover { background: var(--fundo); }
 .depois__item:hover { background: rgb(255 255 255 / .16); transform: translateX(2px); }
 .depois__item span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .depois__item small { opacity: .75; white-space: nowrap; }
+
+.aprov-inicio { display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 12px; color: inherit; transition: background .15s; }
+.aprov-inicio:hover { background: var(--fundo); }
+.aprov-inicio img, .aprov-inicio__vazio { width: 46px; height: 46px; border-radius: 10px; object-fit: cover; flex: none; background: var(--superficie-2); }
+.aprov-inicio > span { display: flex; flex-direction: column; min-width: 0; }
+.aprov-inicio strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aprov-inicio .pequeno { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aprov-inicio--ajuste .pequeno { color: #b86a00; }

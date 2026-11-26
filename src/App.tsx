@@ -26,7 +26,6 @@ import { ProvedorFoco } from './lib/foco'
 import { FocoFlutuante } from './components/FocoFlutuante'
 import { Estoque } from './pages/Estoque'
 import { MinhasTarefas } from './pages/MinhasTarefas'
-import { Demandas } from './pages/Demandas'
 import { OrdensServico } from './pages/OrdensServico'
 import { Rotinas } from './pages/Rotinas'
 import { Aprovacoes } from './pages/Aprovacoes'
@@ -95,7 +94,7 @@ export default function App() {
             <Route index element={<Inicio />} />
             <Route path="kanban" element={<Kanban />} />
             <Route path="tarefas" element={<MinhasTarefas />} />
-            <Route path="demandas" element={<Demandas />} />
+            <Route path="demandas" element={<Navigate to="/ordens" replace />} />
             <Route path="clientes" element={<Navigate to="/principal" replace />} />
             <Route path="eventos" element={<Eventos />}>
               <Route index element={<Empresas />} />

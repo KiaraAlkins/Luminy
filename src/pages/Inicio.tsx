@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  AlertTriangle, ArrowRight, CalendarDays, Check, ClipboardList, Columns3, Hand, Inbox, ListChecks, Package, Play, Repeat, Send, Sparkles, User,
+  AlertTriangle, ArrowRight, CalendarDays, Check, ClipboardList, Columns3, Inbox, ListChecks, Package, Play, Repeat, Send, Sparkles, User,
 } from 'lucide-react'
 import { Cartao, Chip } from '../components/ui'
 import { COR_TIPO, iconeTipo } from '../components/opcoes'
@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabase'
 import { tempoDesde, useFoco } from '../lib/foco'
 import { grupoDe, rotuloPrazo } from '../lib/datas'
 import { meusItens, type MeuItem } from '../lib/tarefas'
-import { aceitarDemanda, listarDemandas, type Demanda } from '../lib/demandas'
+import { listarAprovacoes, type Aprovacao } from '../lib/aprovacoes'
 import { listarCampanhas, listarLeads, type Campanha, type Lead } from '../lib/campanhas'
 import { carregarQuadro, type Card } from '../lib/kanban'
 import { listarOS, type OS } from '../lib/os'
@@ -26,8 +26,8 @@ const ICONE_ORIGEM: Record<MeuItem['origem'], React.ElementType> = { tarefa: Use
 const chaveDia = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
 
-type Dados = { itens: MeuItem[]; demandas: Demanda[]; leads: Lead[]; campanhas: Campanha[]; cards: Card[]; os: OS[]; estoque: Item[]; eventos: Evento[] }
-const VAZIO: Dados = { itens: [], demandas: [], leads: [], campanhas: [], cards: [], os: [], estoque: [], eventos: [] }
+type Dados = { itens: MeuItem[]; aprovacoes: Aprovacao[]; leads: Lead[]; campanhas: Campanha[]; cards: Card[]; os: OS[]; estoque: Item[]; eventos: Evento[] }
+const VAZIO: Dados = { itens: [], aprovacoes: [], leads: [], campanhas: [], cards: [], os: [], estoque: [], eventos: [] }
 
 /** Início do cliente: o resumo do dia com dados reais (tarefas, demandas, leads, publicações, OS, estoque e eventos). */
 export function Inicio() {
@@ -41,14 +41,14 @@ export function Inicio() {
   const carregar = useCallback(async () => {
     if (!cliente) return
     const seguro = <T,>(p: Promise<T>, padrao: T) => p.catch(() => padrao)
-    const [itens, demandas, leads, campanhas, quadro, os, estoque, eventos] = await Promise.all([
-      seguro(meusItens(eu), []), seguro(listarDemandas(cliente.id), []),
+    const [itens, aprovacoes, leads, campanhas, quadro, os, estoque, eventos] = await Promise.all([
+      seguro(meusItens(eu), []), seguro(listarAprovacoes(cliente.id), []),
       acessoLeads ? seguro(listarLeads(cliente.id), []) : Promise.resolve([]),
       acessoLeads ? seguro(listarCampanhas(cliente.id).then((r) => r.campanhas), []) : Promise.resolve([]),
       seguro(carregarQuadro(cliente.id), null), seguro(listarOS(cliente.id), []),
       seguro(listarItens(cliente.id).then((r) => r.ativos), []), seguro(listarEventos(cliente.id), []),
     ])
-    setDados({ itens: itens.filter((i) => !i.cliente_id || i.cliente_id === cliente.id), demandas, leads, campanhas, cards: quadro?.cards ?? [], os, estoque, eventos })
+    setDados({ itens: itens.filter((i) => !i.cliente_id || i.cliente_id === cliente.id), aprovacoes, leads, campanhas, cards: quadro?.cards ?? [], os, estoque, eventos })
   }, [cliente, acessoLeads, eu])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
 
@@ -57,7 +57,8 @@ export function Inicio() {
   const doDia = pendentes.filter((i) => ['atrasadas', 'hoje'].includes(grupoDe(i.prazo, agora)))
     .sort((a, b) => (a.prazo ?? '').localeCompare(b.prazo ?? '') || (a.prioridade === 'alta' ? -1 : 1))
   const proxima = doDia[0] ?? pendentes.filter((i) => i.prazo).sort((a, b) => a.prazo!.localeCompare(b.prazo!))[0]
-  const aguardando = d.demandas.filter((x) => x.status === 'aguardando_aceite' && (!x.responsavel_id || x.responsavel_id === eu))
+  const aprovacoes = d.aprovacoes
+  const ajustes = aprovacoes.filter((x) => x.situacao === 'ajuste').length
   const leadsNovos = d.leads.filter((l) => l.etapa === 'novo')
   const porCampanha = [...leadsNovos.reduce((m, l) => m.set(l.campanha_id ?? '', (m.get(l.campanha_id ?? '') ?? 0) + 1), new Map<string, number>())]
     .map(([id, n]) => ({ nome: d.campanhas.find((c) => c.id === id)?.nome ?? 'Importados / sem campanha', n })).sort((a, b) => b.n - a.n).slice(0, 3)
@@ -78,7 +79,6 @@ export function Inicio() {
   }), [agora, pendentes, d.cards])
   const livre = semana.slice(1).find((s) => s.dia.getDay() !== 0 && s.dia.getDay() !== 6 && s.entregas + s.posts === 0)
 
-  async function aceitar(x: Demanda) { await aceitarDemanda(x.id, eu).catch(() => null); await carregar() }
   function abrirItem(i: MeuItem) {
     navegar(i.origem === 'card' ? `/kanban?card=${i.id}` : i.origem === 'demanda' ? `/demandas?d=${i.id}` : i.origem === 'os' ? `/ordens?os=${i.id}` : i.origem === 'rotina' ? '/rotinas' : '/tarefas')
   }
@@ -115,7 +115,7 @@ export function Inicio() {
 
   const resumo = [
     doDia.length ? plural(doDia.length, 'entrega para hoje', 'entregas para hoje') : 'nada vencendo hoje',
-    aguardando.length ? plural(aguardando.length, 'demanda esperando aceite', 'demandas esperando aceite') : null,
+    ajustes ? plural(ajustes, 'post com ajuste pedido', 'posts com ajuste pedido') : null,
     acessoLeads && leadsNovos.length ? plural(leadsNovos.length, 'lead novo para atender', 'leads novos para atender') : null,
   ].filter(Boolean)
 
@@ -188,15 +188,20 @@ export function Inicio() {
           {doDia.length > 6 && <Link className="pequeno" to="/tarefas">e mais {doDia.length - 6}…</Link>}
         </Cartao>
 
-        <Cartao titulo="Demandas esperando aceite" acao={<Link className="pequeno" to="/demandas">Demandas</Link>}>
-          {aguardando.slice(0, 3).map((x) => (
-            <div key={x.id} className="demanda">
-              <div><div className="forte">{x.titulo}</div><div className="pequeno">{[x.setor_solicitante, x.prazo ? `prazo ${rotuloPrazo(x.prazo)}` : null].filter(Boolean).join(' · ')}</div></div>
-              <div className="linha"><button type="button" className="botao botao--primario botao--mini" onClick={() => void aceitar(x)}><Hand size={14} /> Aceitar</button>
-                <Link className="botao botao--fantasma botao--mini" to={`/demandas?d=${x.id}`}>Ver</Link></div>
-            </div>
+        <Cartao titulo="Aprovações" acao={<Link className="pequeno" to="/aprovacoes">Ver todas</Link>}>
+          {aprovacoes.filter((x) => x.situacao === 'ajuste').slice(0, 2).map((x) => (
+            <Link key={x.id} to={`/kanban?card=${x.card_id}`} className="aprov-inicio aprov-inicio--ajuste">
+              {x.imagens[0] ? <img src={x.imagens[0].url} alt="" /> : <span className="aprov-inicio__vazio" />}
+              <span><strong>{x.titulo}</strong><span className="pequeno">Ajuste pedido{x.respondido_por_nome ? ` por ${x.respondido_por_nome}` : ''}: "{x.resposta}"</span></span>
+            </Link>
           ))}
-          {dados && aguardando.length === 0 && <p className="texto-2">Nenhuma demanda esperando resposta.</p>}
+          {aprovacoes.filter((x) => x.situacao === 'pendente').slice(0, 3).map((x) => (
+            <Link key={x.id} to={`/kanban?card=${x.card_id}`} className="aprov-inicio">
+              {x.imagens[0] ? <img src={x.imagens[0].url} alt="" /> : <span className="aprov-inicio__vazio" />}
+              <span><strong>{x.titulo}</strong><span className="pequeno">Aguardando{x.aprovador ? ` ${x.aprovador}` : ''}</span></span>
+            </Link>
+          ))}
+          {dados && !aprovacoes.some((x) => x.situacao === 'pendente' || x.situacao === 'ajuste') && <p className="texto-2">Nada aguardando aprovação.</p>}
         </Cartao>
 
         {acessoLeads && (

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link as RouterLink, NavLink, useLocation } from 'react-router-dom'
 import {
   BadgeCheck, Boxes, Briefcase, Building2, CalendarDays, CalendarRange, ChevronDown, ClipboardList, Columns3, FileSignature, Handshake, HeartPulse, Home,
-  Inbox, LayoutGrid, Lightbulb, ListChecks, LogOut, Package, Palette, PanelLeftClose, PanelLeftOpen, QrCode, Repeat, Send,
+  LayoutGrid, Lightbulb, ListChecks, LogOut, Package, Palette, PanelLeftClose, PanelLeftOpen, QrCode, Repeat, Send,
   SlidersHorizontal, Ticket, Users, Wallet, Waypoints,
 } from 'lucide-react'
 import logo from '../assets/luminy-logo.svg'
@@ -22,7 +22,6 @@ const MEU_ESPACO: Item[] = [
 const GUIAS: Guia[] = [
   {
     id: 'design', rotulo: 'Design', icone: Palette, itens: [
-      { para: '/demandas', rotulo: 'Demandas', icone: Inbox },
       { para: '/kanban', rotulo: 'Kanban redes sociais', icone: Columns3 },
       { para: '/aprovacoes', rotulo: 'Aprovações', icone: BadgeCheck },
       { para: '/agendamento', rotulo: 'Agendamento', icone: Send },
