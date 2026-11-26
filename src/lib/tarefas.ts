@@ -6,7 +6,7 @@ export type Tarefa = { id: string; titulo: string; descricao: string | null; pra
 
 /** Tudo o que é "meu" para fazer: tarefa pessoal, demanda que aceitei ou card do Kanban em que sou responsável. */
 export type MeuItem = {
-  id: string; origem: 'tarefa' | 'demanda' | 'card'; titulo: string; prazo: string | null; prioridade: Prioridade
+  id: string; origem: 'tarefa' | 'demanda' | 'card' | 'os'; titulo: string; prazo: string | null; prioridade: Prioridade
   concluida: boolean; concluida_em: string | null; cliente_id: string | null; detalhe?: string; descricao?: string | null
 }
 
@@ -23,6 +23,7 @@ let tarefasDemo: Tarefa[] = [
 const extrasDemo: MeuItem[] = [
   { id: 'd2', origem: 'demanda', titulo: 'Banner da campanha de vacinação', prazo: em(6), prioridade: 'alta', concluida: false, concluida_em: null, cliente_id: 'hospital', detalhe: 'Demanda · Enfermagem' },
   { id: 'k4', origem: 'card', titulo: 'Carrossel Novembro Azul', prazo: em(-40), prioridade: 'alta', concluida: false, concluida_em: null, cliente_id: 'hospital', detalhe: 'Kanban · Fazendo' },
+  { id: 'o1', origem: 'os', titulo: 'OS 48213: Placa de identificação da nova UTI', prazo: em(50), prioridade: 'alta', concluida: false, concluida_em: null, cliente_id: 'hospital', detalhe: 'OS · UTI' },
   { id: 'd3', origem: 'demanda', titulo: 'Vídeo depoimento da maternidade', prazo: em(52), prioridade: 'comum', concluida: false, concluida_em: null, cliente_id: 'hospital', detalhe: 'Demanda · Diretoria' },
 ]
 
@@ -32,11 +33,12 @@ const deTarefa = (t: Tarefa): MeuItem => ({ id: t.id, origem: 'tarefa', titulo: 
 export async function meusItens(usuarioId: string): Promise<MeuItem[]> {
   if (!supabase) return [...tarefasDemo.map(deTarefa), ...extrasDemo]
   const semana = new Date(Date.now() - 7 * 86_400_000).toISOString()
-  const [t, d, c] = await Promise.all([
+  const [t, d, c, o] = await Promise.all([
     supabase.from('tarefas').select('*').or(`status.neq.concluida,concluida_em.gte.${semana}`).neq('status', 'cancelada').order('prazo', { nullsFirst: false }),
     supabase.from('demandas').select('id, titulo, prazo, prioridade, status, concluida_em, cliente_id, setor_solicitante')
       .or(`responsavel_id.eq.${usuarioId},colaboradores.cs.{${usuarioId}}`).in('status', ['a_fazer', 'em_andamento', 'concluida', 'impedida']),
     supabase.from('cards').select('id, titulo, entrega_em, postagem_em, prioridade, colunas(nome), quadros(cliente_id)').contains('responsaveis', [usuarioId]),
+    supabase.from('ordens_servico').select('id, numero, titulo, prazo, prioridade, situacao, setor, cliente_id, concluida_em').eq('responsavel_id', usuarioId).neq('situacao', 'cancelada'),
   ])
   const itens: MeuItem[] = ((t.data ?? []) as Tarefa[]).map(deTarefa)
   ;((d.data ?? []) as { id: string; titulo: string; prazo: string | null; prioridade: Prioridade; status: string; concluida_em: string | null; cliente_id: string; setor_solicitante: string | null }[])
@@ -47,6 +49,9 @@ export async function meusItens(usuarioId: string): Promise<MeuItem[]> {
       const feito = /postado|feito/i.test(x.colunas?.nome ?? '')
       if (!feito) itens.push({ id: x.id, origem: 'card', titulo: x.titulo, prazo: x.entrega_em ?? x.postagem_em, prioridade: x.prioridade, concluida: false, concluida_em: null, cliente_id: x.quadros?.cliente_id ?? null, detalhe: `Kanban · ${x.colunas?.nome ?? ''}` })
     })
+  ;((o.data ?? []) as { id: string; numero: string; titulo: string; prazo: string | null; prioridade: Prioridade; situacao: string; setor: string | null; cliente_id: string; concluida_em: string | null }[])
+    .filter((x) => x.situacao !== 'concluida' || (x.concluida_em ?? '') >= semana)
+    .forEach((x) => itens.push({ id: x.id, origem: 'os', titulo: `OS ${x.numero}: ${x.titulo}`, prazo: x.prazo ? `${x.prazo}T18:00:00` : null, prioridade: x.prioridade, concluida: x.situacao === 'concluida', concluida_em: x.concluida_em, cliente_id: x.cliente_id, detalhe: `OS${x.setor ? ` · ${x.setor}` : ''}${x.situacao === 'aguardando' ? ' · aguardando' : ''}` }))
   return itens
 }
 

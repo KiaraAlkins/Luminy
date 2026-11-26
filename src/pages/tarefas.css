@@ -37,6 +37,7 @@
 .tarefa__origem, .tarefa__prazo, .tarefa__cliente { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
 .tarefa__origem--demanda { color: var(--info); }
 .tarefa__origem--card { color: var(--marca); }
+.tarefa__origem--os { color: #7A5AF8; }
 .tarefa__cliente i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .tarefa__prazo--atrasadas { color: var(--perigo); }
 .tarefa__prazo--hoje { color: #b86a00; }

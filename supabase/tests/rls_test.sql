@@ -344,9 +344,29 @@ select t.ok(importar_estoque('20000000-0000-0000-0000-000000000001',
   = '{"novos":1,"atualizados":1,"invalidos":1}'::jsonb, 'importar estoque cria os novos e atualiza os existentes pelo nome');
 select t.ok((select quantidade from estoque_itens where nome = 'fitas de glicemia' and arquivado_em is null) = 7, 'quantidade da planilha vira ajuste no item existente');
 select t.ok((select quantidade from estoque_itens where nome = 'Pilhas AA') = 4, 'item novo da planilha entra com o saldo');
+insert into ordens_servico (cliente_id, numero, titulo, setor, solicitante) values ('20000000-0000-0000-0000-000000000001', '48213', 'Placa da nova UTI', 'UTI', 'Enf. Carla');
+select t.ok((select count(*) from ordens_servico) = 1 and (select count(*) from os_eventos where tipo = 'criada') = 1, 'equipe (inclusive jovem aprendiz) registra OS e o histórico começa');
+do $$ begin
+  insert into ordens_servico (cliente_id, numero, titulo) values ('20000000-0000-0000-0000-000000000001', ' 48213 ', 'Repetida');
+  raise exception 'FALHOU: OS com número repetido';
+exception when unique_violation then raise notice 'ok - número da OS do Tasy não se repete no cliente';
+end $$;
+do $$ begin
+  update ordens_servico set situacao = 'aguardando' where numero = '48213';
+  raise exception 'FALHOU: aguardando sem motivo';
+exception when check_violation then raise notice 'ok - OS aguardando exige o motivo';
+end $$;
+update ordens_servico set situacao = 'concluida' where numero = '48213';
+select t.ok((select concluida_em is not null from ordens_servico where numero = '48213') and (select count(*) from os_eventos where tipo = 'situacao') = 1, 'concluir OS registra data e histórico');
+do $$ begin
+  delete from ordens_servico where numero = '48213';
+  if found then raise exception 'FALHOU: membro excluiu OS'; end if;
+  raise notice 'ok - só administradores excluem OS';
+end $$;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
 select t.ok((select count(*) from estoque_itens) = 0, 'quem não é da equipe não vê o estoque');
 select t.ok((select count(*) from card_comentarios) = 0, 'quem não é da equipe não vê os comentários dos cards');
+select t.ok((select count(*) from ordens_servico) = 0, 'quem não é da equipe não vê as OS');
 select t.ok((select count(*) from convenios) = 0, 'quem não é da equipe não vê os planos de saúde do cliente');
 do $$ begin
   insert into convenios (cliente_id, nome) values ('20000000-0000-0000-0000-000000000001', 'Plano Intruso');

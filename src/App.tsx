@@ -27,6 +27,7 @@ import { FocoFlutuante } from './components/FocoFlutuante'
 import { Estoque } from './pages/Estoque'
 import { MinhasTarefas } from './pages/MinhasTarefas'
 import { Demandas } from './pages/Demandas'
+import { OrdensServico } from './pages/OrdensServico'
 import { PainelTv } from './pages/PainelTv'
 
 /** Campanhas e leads: quem não tem acesso a leads (ex.: jovem aprendiz) nem vê a tela. O banco também bloqueia. */
@@ -103,6 +104,7 @@ export default function App() {
               <Route path="planos" element={<PlanosSaude />} />
             </Route>
             <Route path="estoque" element={<Estoque />} />
+            <Route path="ordens" element={<OrdensServico />} />
             <Route path="configuracoes" element={<Equipe />} />
             <Route path="*" element={<EmConstrucao />} />
           </Route>
