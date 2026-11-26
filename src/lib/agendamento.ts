@@ -67,3 +67,30 @@ export async function marcarPostado(card: Card, colunas: Coluna[], usuarioId: st
     await moverCard(card, destino.id, Date.now() / 1e6)
   }
 }
+
+/** Se a aprovação chegar até 1h depois do horário programado, o post ainda vai ao ar na hora em que for aprovado. */
+export const TOLERANCIA_ATRASO_MS = 60 * 60_000
+
+export type Liberacao =
+  | 'liberado'            // aprovado antes do horário: vai ao ar no horário
+  | 'liberado_atraso'     // aprovado até 1h depois do horário: vai ao ar na hora da aprovação
+  | 'aprovado_tarde'      // aprovado mais de 1h depois: não vai sozinho, postar manualmente
+  | 'aguardando'          // ainda pendente e dentro do prazo (horário + 1h)
+  | 'ajuste'              // voltou para alteração e ainda dentro do prazo
+  | 'perdido'             // passou do horário + 1h sem aprovação: postar manualmente
+  | 'sem_aprovacao'       // nunca foi enviado para aprovação
+
+/** Regra de liberação do post programado (a mesma que a publicação automática vai seguir). */
+export function liberacao(postagemEm: string | null, aprov: { situacao: string; respondido_em: string | null } | undefined, aprovadoPorColuna: boolean, agora: number): Liberacao {
+  const horario = postagemEm ? new Date(postagemEm).getTime() : null
+  if (aprov?.situacao === 'aprovado') {
+    if (horario === null || !aprov.respondido_em) return 'liberado'
+    const resp = new Date(aprov.respondido_em).getTime()
+    return resp <= horario ? 'liberado' : resp <= horario + TOLERANCIA_ATRASO_MS ? 'liberado_atraso' : 'aprovado_tarde'
+  }
+  if (!aprov && aprovadoPorColuna) return 'liberado'
+  const prazoAcabou = horario !== null && agora > horario + TOLERANCIA_ATRASO_MS
+  if (aprov?.situacao === 'pendente') return prazoAcabou ? 'perdido' : 'aguardando'
+  if (aprov?.situacao === 'ajuste') return prazoAcabou ? 'perdido' : 'ajuste'
+  return 'sem_aprovacao'
+}

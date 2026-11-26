@@ -61,7 +61,7 @@ export function EnviarAprovacao({ card, onFechar, onEnviado, onProgramar }: { ca
               <div className="campo" style={{ flex: 1 }}>
                 <label htmlFor="ap-data">Programar postagem para</label>
                 <input id="ap-data" type="datetime-local" className="entrada" value={programada} onChange={(e) => mudarData(e.target.value)} />
-                <span className="pequeno">{programada ? 'Só é liberado se for aprovado. Se ficar pendente ou voltar para alteração, não vai ao ar e precisa ser postado manualmente.' : 'Opcional. Sem data, o post aprovado fica em "Aprovados sem data" no Agendamento.'}</span>
+                <span className="pequeno">{programada ? 'Só é liberado se for aprovado. Se a aprovação chegar até 1h depois do horário, vai ao ar na hora; depois disso, ou se voltar para alteração, precisa ser postado manualmente.' : 'Opcional. Sem data, o post aprovado fica em "Aprovados sem data" no Agendamento.'}</span>
               </div>
             </div>
             <div>

@@ -9,7 +9,7 @@ import { useSessao } from '../lib/sessao'
 import { supabase } from '../lib/supabase'
 import { carregarQuadro, linksArquivos, listarPessoas, salvarCard, type Card, type Pessoa, type Quadro } from '../lib/kanban'
 import { listarAprovacoes, type SituacaoAprovacao } from '../lib/aprovacoes'
-import { REDES_SOCIAIS, baixarImagens, imagensDoCard, linkRede, listarContas, marcarPostado, salvarConta, type ContaSocial, type Rede } from '../lib/agendamento'
+import { REDES_SOCIAIS, TOLERANCIA_ATRASO_MS, liberacao, type Liberacao, baixarImagens, imagensDoCard, linkRede, listarContas, marcarPostado, salvarConta, type ContaSocial, type Rede } from '../lib/agendamento'
 import { Responsaveis } from './kanban/Pessoas'
 import './kanban.css'
 import './agendamento.css'
@@ -26,7 +26,7 @@ const nomeDia = (d: Date, hoje: Date) => {
 export function Agendamento() {
   const { cliente, usuario, ehAdminCliente } = useSessao()
   const [quadro, setQuadro] = useState<Quadro | null | undefined>(undefined)
-  const [aprovacoes, setAprovacoes] = useState<Map<string, SituacaoAprovacao>>(new Map())
+  const [aprovacoes, setAprovacoes] = useState<Map<string, { situacao: SituacaoAprovacao; respondido_em: string | null }>>(new Map())
   const [contas, setContas] = useState<ContaSocial[]>([])
   const [pessoas, setPessoas] = useState<Pessoa[]>([])
   const [postar, setPostar] = useState<Card | null>(null)
@@ -37,14 +37,15 @@ export function Agendamento() {
   const carregar = useCallback(async () => {
     if (!cliente) return
     const [q, a, c, p] = await Promise.all([carregarQuadro(cliente.id), listarAprovacoes(cliente.id).catch(() => []), listarContas(cliente.id), listarPessoas(cliente.id)])
-    const m = new Map<string, SituacaoAprovacao>(); a.forEach((x) => { if (!m.has(x.card_id)) m.set(x.card_id, x.situacao) })
+    const m = new Map<string, { situacao: SituacaoAprovacao; respondido_em: string | null }>(); a.forEach((x) => { if (!m.has(x.card_id)) m.set(x.card_id, { situacao: x.situacao, respondido_em: x.respondido_em }) })
     setQuadro(q); setAprovacoes(m); setContas(c); setPessoas(p)
   }, [cliente])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
 
   const colunaDe = useCallback((c: Card) => quadro?.colunas.find((x) => x.id === c.coluna_id)?.nome ?? '', [quadro])
   const jaPostado = useCallback((c: Card) => !!c.postado_em || /^postado/i.test(colunaDe(c)), [colunaDe])
-  const aprovado = (c: Card) => aprovacoes.get(c.id) === 'aprovado' || /aprovado/i.test(colunaDe(c))
+  const situacaoDe = (c: Card) => liberacao(c.postagem_em, aprovacoes.get(c.id), /aprovado/i.test(colunaDe(c)), agora.getTime())
+  const aprovado = (c: Card) => ['liberado', 'liberado_atraso', 'aprovado_tarde'].includes(situacaoDe(c))
 
   const { porDia, semData, recentes } = useMemo(() => {
     const cards = quadro?.cards ?? []
@@ -65,13 +66,25 @@ export function Agendamento() {
   if (!cliente) return <div className="corpo"><h2>Agendamento</h2><p className="texto-2">Crie um cliente primeiro.</p></div>
   const horaDePostar = (c: Card) => !!c.postagem_em && new Date(c.postagem_em).getTime() - agora.getTime() < 30 * 60_000
 
+  const hora = (ms: number) => new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const item = (c: Card) => {
-    const ap = aprovacoes.get(c.id)
-    const ok = aprovado(c)
+    const lib = situacaoDe(c)
+    const ok = lib === 'liberado' || lib === 'liberado_atraso'
+    const manual = lib === 'aprovado_tarde' || lib === 'perdido'
     const passou = !!c.postagem_em && new Date(c.postagem_em) < agora
     const urgente = horaDePostar(c) && ok
+    const limite = c.postagem_em ? hora(new Date(c.postagem_em).getTime() + TOLERANCIA_ATRASO_MS) : ''
+    const selo: Record<Liberacao, [string, React.ReactNode]> = {
+      liberado: ['ok', <><BadgeCheck size={14} /> Liberado</>],
+      liberado_atraso: ['ok', <><BadgeCheck size={14} /> Aprovado com atraso · vai na hora</>],
+      aprovado_tarde: ['sem', <><AlertTriangle size={13} /> Aprovado depois de 1h · postar manualmente</>],
+      aguardando: ['pendente', <><Lock size={13} /> {passou ? `Aguardando · se aprovar até ${limite} vai na hora` : 'Travado: aguardando aprovação'}</>],
+      ajuste: ['ajuste', <><Lock size={13} /> {passou ? `Em alteração · se aprovar até ${limite} vai na hora` : 'Travado: em alteração'}</>],
+      perdido: ['sem', <><AlertTriangle size={13} /> Não aprovado a tempo · postar manualmente</>],
+      sem_aprovacao: ['sem', <><AlertTriangle size={13} /> Sem aprovação</>],
+    }
     return (
-      <li key={c.id} className={`agenda-post${urgente ? ' agenda-post--agora' : ''}${passou && !ok ? ' agenda-post--perdido' : ''}`}>
+      <li key={c.id} className={`agenda-post${urgente ? ' agenda-post--agora' : ''}${manual ? ' agenda-post--perdido' : ''}`}>
         <span className="agenda-post__hora">{c.postagem_em ? new Date(c.postagem_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—'}
           {c.postagem_em && chaveDia(new Date(c.postagem_em)) !== chaveDia(agora) && new Date(c.postagem_em) < agora && <small>{new Date(c.postagem_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</small>}</span>
         {c.capa_url ? <img className="agenda-post__capa" src={c.capa_url} alt="" /> : <span className="agenda-post__capa agenda-post__capa--vazia" style={c.capa_cor ? { background: c.capa_cor } : undefined} />}
@@ -82,15 +95,11 @@ export function Agendamento() {
             {c.redes.map((r) => <span key={r} className="pequeno">{r}</span>)}
           </span>
         </div>
-        <span className={`agenda-post__aprov agenda-post__aprov--${ok ? 'ok' : passou ? 'sem' : ap ?? 'sem'}`}>
-          {ok ? <><BadgeCheck size={14} /> Liberado</>
-            : passou ? <><AlertTriangle size={13} /> {ap === 'ajuste' ? 'Voltou para alteração' : ap === 'pendente' ? 'Não aprovado a tempo' : 'Sem aprovação'}</>
-            : ap === 'pendente' ? <><Lock size={13} /> Travado: aguardando aprovação</> : ap === 'ajuste' ? <><Lock size={13} /> Travado: em alteração</> : <><AlertTriangle size={13} /> Sem aprovação</>}
-        </span>
+        <span className={`agenda-post__aprov agenda-post__aprov--${selo[lib][0]}`}>{selo[lib][1]}</span>
         <Responsaveis ids={c.responsaveis} pessoas={pessoas} />
         <span className="agenda-post__acoes">
           <Link className="botao botao--fantasma botao--mini" to={`/kanban?card=${c.id}`}>Abrir</Link>
-          <button type="button" className={`botao botao--mini ${urgente || (passou && !ok) ? 'botao--primario' : 'botao--secundario'}`} onClick={() => setPostar(c)}><Send size={14} /> {urgente ? 'Postar agora' : !ok && passou ? 'Postar manualmente' : 'Postar'}</button>
+          <button type="button" className={`botao botao--mini ${urgente || manual ? 'botao--primario' : 'botao--secundario'}`} onClick={() => setPostar(c)}><Send size={14} /> {urgente ? 'Postar agora' : manual ? 'Postar manualmente' : 'Postar'}</button>
         </span>
       </li>
     )
@@ -99,7 +108,7 @@ export function Agendamento() {
   return (
     <div className="corpo">
       <div className="linha" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div style={{ maxWidth: 720 }}><h2>Agendamento</h2><p className="pequeno">A data é programada ao enviar para aprovação. Só é liberado o que for aprovado; o que ficar pendente ou voltar para alteração não vai ao ar e precisa ser postado manualmente.</p></div>
+        <div style={{ maxWidth: 720 }}><h2>Agendamento</h2><p className="pequeno">A data é programada ao enviar para aprovação. Só é liberado o que for aprovado. Se a aprovação chegar até 1h depois do horário, vai ao ar na hora; passou disso, precisa ser postado manualmente.</p></div>
         <Link className="botao botao--secundario" to="/kanban"><CalendarClock size={16} /> Ver no Kanban por data</Link>
       </div>
 

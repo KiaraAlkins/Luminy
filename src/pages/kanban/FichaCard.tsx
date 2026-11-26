@@ -9,6 +9,7 @@ import { COR_TIPO, OPCOES_PRIORIDADE, iconeTipo, opcoesTipoConteudo } from '../.
 import { useFoco } from '../../lib/foco'
 import { EscolherResponsaveis } from './Pessoas'
 import { EnviarAprovacao } from './EnviarAprovacao'
+import { TOLERANCIA_ATRASO_MS, liberacao } from '../../lib/agendamento'
 import { aprovacaoDoCard, type Aprovacao } from '../../lib/aprovacoes'
 import {
   REDES, TIPOS, apagarArquivoCard, apagarComentario, comentar, enviarArquivoCard, linksArquivos, listarComentarios,
@@ -42,6 +43,19 @@ function TextoQueSalva({ valor, onSalvar, ...props }: { valor: string; onSalvar:
  * Ficha do card (no jeito da Orkestrya + Trello): capa, título grande, briefing, legenda, checklist,
  * anexos e comentários; à direita, o painel escuro de propriedades. Tudo salva sozinho.
  */
+const dataHora = (ms: number) => new Date(ms).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+function textoLiberacao(postagemEm: string, a: Aprovacao, agora: number) {
+  const h = new Date(postagemEm).getTime()
+  const limite = new Date(h + TOLERANCIA_ATRASO_MS).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  switch (liberacao(postagemEm, a, false, agora)) {
+    case 'liberado': return `Liberado para ir ao ar em ${dataHora(h)}`
+    case 'liberado_atraso': return `Aprovado com atraso: vai ao ar na hora da aprovação (programado para ${dataHora(h)})`
+    case 'aprovado_tarde': return `Aprovado mais de 1h depois do horário (${dataHora(h)}): postar manualmente`
+    case 'perdido': return `Programado para ${dataHora(h)} · não foi aprovado a tempo, postar manualmente`
+    default: return `Programado para ${dataHora(h)} · só vai ao ar se for aprovado (até ${limite}, vai na hora)`
+  }
+}
+
 export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMover, onExcluir, onFechar }: {
   card: Card; quadroId: string; colunas: Coluna[]; pessoas: Pessoa[]
   onAtualizar: (parcial: EdicaoCard) => Promise<void>
@@ -143,13 +157,7 @@ export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMov
                 <strong>{aprovacao.situacao === 'pendente' ? `Aguardando aprovação${aprovacao.aprovador ? ` de ${aprovacao.aprovador}` : ''}` : aprovacao.situacao === 'aprovado' ? `Aprovado por ${aprovacao.respondido_por_nome}` : `Ajuste pedido por ${aprovacao.respondido_por_nome}`}</strong>
                 {aprovacao.resposta && <p>"{aprovacao.resposta}"</p>}
                 <span className="pequeno">{aprovacao.situacao === 'pendente' ? `enviado ${quando(aprovacao.enviado_em)}` : aprovacao.respondido_em ? quando(aprovacao.respondido_em) : ''}</span>
-                {card.postagem_em && !card.postado_em && (
-                  <span className="situacao-aprovacao__programa">
-                    {aprovacao.situacao === 'aprovado' ? 'Liberado para ir ao ar em ' : 'Programado para '}
-                    {new Date(card.postagem_em).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                    {aprovacao.situacao !== 'aprovado' && (new Date(card.postagem_em).getTime() < agoraFicha ? ' · não foi aprovado a tempo, postar manualmente' : ' · só vai ao ar se for aprovado')}
-                  </span>
-                )}
+                {card.postagem_em && !card.postado_em && <span className="situacao-aprovacao__programa">{textoLiberacao(card.postagem_em, aprovacao, agoraFicha)}</span>}
               </div>
               {aprovacao.situacao === 'ajuste' && <button type="button" className="botao botao--primario botao--mini" onClick={() => setEnviarAprovacao(true)}>Corrigido, reenviar</button>}
             </div>
