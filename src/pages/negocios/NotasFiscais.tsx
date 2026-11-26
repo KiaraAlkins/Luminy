@@ -68,6 +68,10 @@ export function NotasFiscais({ clienteId, eu, dados, eventos, pessoas, recarrega
         })} />
       </div>
 
+      <div className="notas-total">
+        <span><small>{termo ? 'Total encontrado' : `Total das notas de ${mes.toLocaleDateString('pt-BR', { month: 'long' })}`}</small><strong>{reais(base.reduce((t, n) => t + (n.valor ?? 0), 0))}</strong></span>
+        <span className="pequeno">Só para controle: o valor das notas não mexe na verba do mês.</span>
+      </div>
       <div className="pauta-temas">
         <button type="button" className={`chip${filtro === 'todas' ? '' : ' chip--neutro'}`} aria-pressed={filtro === 'todas'} onClick={() => setFiltro('todas')}>{termo ? 'Resultados' : 'Todas do mês'} · {base.length}</button>
         {(['assinar', 'digitalizar', 'entregar', 'concluida'] as EtapaNota[]).map((e) => (
@@ -151,17 +155,9 @@ export function NotasFiscais({ clienteId, eu, dados, eventos, pessoas, recarrega
         onSalvar={async (para, protocolo) => { await marcar(entregar, { entregue_em: agoraIso(), entregue_por: eu, entregue_para: para, protocolo }); setEntregar(null) }} />}
       {(abrir || novaPara) && <FichaNota clienteId={clienteId} nota={abrir} inicial={novaPara ?? { competencia: chave }} dados={dados} eventos={eventos} pessoas={pessoas}
         onFechar={() => { setAbrir(null); setNovaPara(null) }}
-        onSalvar={async (n, lancar) => {
-          let id = abrir?.id ?? null
-          let lancamento = n.lancamento_id ?? null
-          if (!abrir && lancar && n.valor) {
-            lancamento = await salvar('lancamentos', clienteId, null, {
-              data: n.emissao ?? n.recebida_em ?? hojeIso(), descricao: `${n.referente ? n.referente : 'Nota fiscal'}${n.numero ? ` (NF ${n.numero})` : ''}`,
-              categoria: n.contrato_id ? contrato(n.contrato_id)?.categoria ?? null : dados.fornecedores.find((f) => f.id === n.fornecedor_id)?.categoria ?? null,
-              valor: n.valor, situacao: lancar, fornecedor_id: n.fornecedor_id, contrato_id: n.contrato_id, comprovante_path: n.arquivo_path,
-            })
-          }
-          id = await salvar('notas_fiscais', clienteId, id, { ...n, lancamento_id: lancamento })
+        onSalvar={async (n) => {
+          // O valor fica só na nota: não entra na verba do mês do Financeiro
+          const id = await salvar('notas_fiscais', clienteId, abrir?.id ?? null, n)
           setAbrir(null); setNovaPara(null); await recarregar()
           return id
         }}
@@ -191,7 +187,7 @@ function EntregaModal({ nota, fornecedor, onFechar, onSalvar }: { nota: NotaFisc
 
 function FichaNota({ clienteId, nota, inicial, dados, eventos, pessoas, onFechar, onSalvar, onExcluir }: {
   clienteId: string; nota: NotaFiscal | null; inicial: Partial<NotaFiscal>; dados: DadosNegocios; eventos: Evento[]; pessoas: Pessoa[]
-  onFechar: () => void; onSalvar: (n: Partial<NotaFiscal>, lancar: 'pago' | 'previsto' | null) => Promise<string>; onExcluir?: () => Promise<void>
+  onFechar: () => void; onSalvar: (n: Partial<NotaFiscal>) => Promise<string>; onExcluir?: () => Promise<void>
 }) {
   const v = { ...inicial, ...(nota ?? {}) }
   const [fornecedorId, setFornecedorId] = useState(v.fornecedor_id ?? '')
@@ -204,12 +200,11 @@ function FichaNota({ clienteId, nota, inicial, dados, eventos, pessoas, onFechar
   const [tipo, setTipo] = useState<ReferenteTipo>(v.referente_tipo ?? 'servico')
   const [referente, setReferente] = useState(v.referente ?? '')
   const [eventoId, setEventoId] = useState(v.evento_id ?? '')
-  const [recebida, setRecebida] = useState(v.recebida_em ?? hojeIso())
+  const [recebida, setRecebida] = useState(() => v.recebida_em ?? hojeIso())
   const [arquivo, setArquivo] = useState<string | null>(v.arquivo_path ?? null)
   const [entreguePara, setEntreguePara] = useState(v.entregue_para ?? '')
   const [protocolo, setProtocolo] = useState(v.protocolo ?? '')
   const [observacao, setObservacao] = useState(v.observacao ?? '')
-  const [lancar, setLancar] = useState<'pago' | 'previsto' | null>(nota ? null : 'previsto')
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [confirmar, setConfirmar] = useState(false)
@@ -235,7 +230,7 @@ function FichaNota({ clienteId, nota, inicial, dados, eventos, pessoas, onFechar
         recebida_em: recebida, arquivo_path: arquivo, digitalizada_em: arquivo ? nota?.digitalizada_em ?? new Date().toISOString() : null,
         entregue_para: nota?.entregue_em ? entreguePara.trim() || null : nota?.entregue_para ?? null, protocolo: nota?.entregue_em ? protocolo.trim() || null : nota?.protocolo ?? null,
         observacao: observacao.trim() || null,
-      }, lancar)
+      })
     } catch (e) { setErro((e as Error).message); setSalvando(false) }
   }
   const dica = REFERENTES.find((r) => r.valor === tipo)?.dica
@@ -287,16 +282,6 @@ function FichaNota({ clienteId, nota, inicial, dados, eventos, pessoas, onFechar
             )}
             {lancado && <span className="pequeno">No Financeiro: {reais(lancado.valor)} · {lancado.situacao === 'pago' ? 'pago' : 'previsto'} em {dataBr(lancado.data)}</span>}
           </section>
-        )}
-        {!nota && (
-          <div className="campo"><span className="rotulo-campo">Lançar no Financeiro</span>
-            <div className="segmentos" role="radiogroup" aria-label="Lançar no Financeiro">
-              <button type="button" role="radio" aria-checked={lancar === 'previsto'} className={lancar === 'previsto' ? 'marcado' : ''} onClick={() => setLancar('previsto')}>Sim, a pagar</button>
-              <button type="button" role="radio" aria-checked={lancar === 'pago'} className={lancar === 'pago' ? 'marcado' : ''} onClick={() => setLancar('pago')}>Sim, já paga</button>
-              <button type="button" role="radio" aria-checked={lancar === null} className={lancar === null ? 'marcado' : ''} onClick={() => setLancar(null)}>Não</button>
-            </div>
-            {contratoId && lancar && dados.lancamentos.some((l) => l.contrato_id === contratoId && l.data.slice(0, 7) === competencia) && <span className="pequeno" style={{ color: '#b86a00' }}>Atenção: a mensalidade deste contrato já foi lançada neste mês no Financeiro.</span>}
-          </div>
         )}
         <div className="campo"><label htmlFor="nf-obs">Observação (opcional)</label><input id="nf-obs" className="entrada" value={observacao} onChange={(e) => setObservacao(e.target.value)} /></div>
         {erro && <p className="importar__erro">{erro}</p>}
