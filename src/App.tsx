@@ -31,6 +31,9 @@ import { Rotinas } from './pages/Rotinas'
 import { Demandas } from './pages/Demandas'
 import { Agendamento } from './pages/Agendamento'
 import { AcervoPauta } from './pages/AcervoPauta'
+import { Comercial } from './pages/negocios/Comercial'
+import { Financeiro } from './pages/negocios/Financeiro'
+import { Contratos } from './pages/negocios/Contratos'
 import { Aprovacoes } from './pages/Aprovacoes'
 import { AprovarPost } from './pages/AprovarPost'
 import { PainelTv } from './pages/PainelTv'
@@ -39,6 +42,12 @@ import { PainelTv } from './pages/PainelTv'
 function SoComLeads({ children }: { children: React.ReactNode }) {
   const { acessoLeads } = useSessao()
   return acessoLeads ? <>{children}</> : <p className="texto-2">Você não tem acesso a campanhas e leads. Fale com um administrador se precisar.</p>
+}
+
+/** Negócios (valores, fornecedores e contratos): só administradores do cliente. */
+function SoAdmin({ children }: { children: React.ReactNode }) {
+  const { ehAdminCliente } = useSessao()
+  return ehAdminCliente ? <>{children}</> : <div className="corpo"><p className="texto-2">Esta página é só para administradores do cliente.</p></div>
 }
 
 const CHAVE_MENU = 'luminy.menu.recolhido'
@@ -115,6 +124,9 @@ export default function App() {
             <Route path="aprovacoes" element={<Aprovacoes />} />
             <Route path="agendamento" element={<Agendamento />} />
             <Route path="pauta" element={<AcervoPauta />} />
+            <Route path="comercial" element={<SoAdmin><Comercial /></SoAdmin>} />
+            <Route path="financeiro" element={<SoAdmin><Financeiro /></SoAdmin>} />
+            <Route path="contratos" element={<SoAdmin><Contratos /></SoAdmin>} />
             <Route path="configuracoes" element={<Equipe />} />
             <Route path="*" element={<EmConstrucao />} />
           </Route>

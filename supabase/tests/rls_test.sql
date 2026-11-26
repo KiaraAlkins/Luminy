@@ -543,4 +543,33 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select t.ok((select count(*) from campanhas_pauta) = 0, 'quem não é da equipe não vê as campanhas próprias');
 reset role;
 
+-- ---------------------------------------------------------------- Negócios (marketing do cliente)
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+insert into fornecedores (id, cliente_id, nome, categoria) values ('90000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Gráfica Central', 'Gráfica e impressos');
+insert into orcamentos (id, cliente_id, titulo) values ('90000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', 'Banners Outubro Rosa');
+insert into cotacoes (orcamento_id, fornecedor_id, valor) values ('90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000001', 850);
+insert into verbas (cliente_id, mes, valor) values ('20000000-0000-0000-0000-000000000001', '2026-11-01', 15000);
+insert into lancamentos (cliente_id, data, descricao, valor, situacao, fornecedor_id) values ('20000000-0000-0000-0000-000000000001', '2026-11-10', 'Banners', 850, 'pago', '90000000-0000-0000-0000-000000000001');
+insert into contratos (cliente_id, fornecedor_id, titulo, valor, inicio, fim) values ('20000000-0000-0000-0000-000000000001', '90000000-0000-0000-0000-000000000001', 'Impressos do ano', 1200, '2026-01-01', '2026-12-31');
+select t.ok((select count(*) from fornecedores) = 1 and (select count(*) from cotacoes) = 1 and (select count(*) from lancamentos) = 1 and (select count(*) from contratos) = 1,
+  'administrador registra fornecedores, cotações, gastos e contratos');
+do $$ begin
+  insert into verbas (cliente_id, mes, valor) values ('20000000-0000-0000-0000-000000000001', '2026-11-15', 1);
+  raise exception 'FALHOU: verba fora do primeiro dia do mês';
+exception when check_violation then raise notice 'ok - verba é sempre do mês inteiro';
+end $$;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+select t.ok((select count(*) from fornecedores) = 0 and (select count(*) from cotacoes) = 0 and (select count(*) from lancamentos) = 0
+  and (select count(*) from contratos) = 0 and (select count(*) from verbas) = 0 and (select count(*) from orcamentos) = 0,
+  'membro da equipe não vê valores, fornecedores nem contratos');
+do $$ begin
+  insert into lancamentos (cliente_id, data, descricao, valor) values ('20000000-0000-0000-0000-000000000001', '2026-11-11', 'Intruso', 10);
+  raise exception 'FALHOU: membro lançou gasto';
+exception when insufficient_privilege then raise notice 'ok - só administradores lançam gastos';
+end $$;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
+select t.ok((select count(*) from lancamentos) = 0 and (select count(*) from contratos) = 0, 'quem não é da equipe não vê os negócios');
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'
