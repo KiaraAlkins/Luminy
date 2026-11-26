@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Archive, ArchiveRestore, ArrowRight, CalendarHeart, CalendarPlus, Pencil, ExternalLink, Lightbulb, Link2, Plus, Repeat, ThumbsUp, Trash2, X } from 'lucide-react'
+import { Archive, ArchiveRestore, ArrowRight, CalendarHeart, CalendarDays, CalendarPlus, Pencil, ExternalLink, Lightbulb, Link2, Plus, Repeat, ThumbsUp, Trash2, X } from 'lucide-react'
 import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
 import { Selecao } from '../components/Selecao'
@@ -10,7 +10,7 @@ import { useSessao } from '../lib/sessao'
 import { supabase } from '../lib/supabase'
 import { TIPOS, listarPessoas, type Pessoa } from '../lib/kanban'
 import {
-  CORES_CAMPANHA, TEMAS, criarPauta, excluirCampanhaPauta, excluirPauta, listarCampanhasPauta, listarPautas, montarCalendario, salvarCampanhaPauta, salvarPauta, virarCard, votar,
+  CORES_CAMPANHA, TEMAS, anoTodo, criarPauta, excluirCampanhaPauta, excluirPauta, listarCampanhasPauta, listarPautas, montarCalendario, salvarCampanhaPauta, salvarPauta, virarCard, votar,
   type Calendario, type CampanhaPropria, type EdicaoCampanha, type EdicaoPauta, type Pauta, type Referencia,
 } from '../lib/pautas'
 import { FotoPessoa } from './kanban/Pessoas'
@@ -40,6 +40,18 @@ export function AcervoPauta() {
   const [agora] = useState(() => Date.now())
   const [proprias, setProprias] = useState<CampanhaPropria[]>([])
   const [editarCampanha, setEditarCampanha] = useState<CampanhaPropria | 'nova' | null>(null)
+  const [verAno, setVerAno] = useState(false)
+  // Faixa fixa: mostra só as datas que cabem numa linha (o resto fica em "Ver o ano todo")
+  const faixa = useRef<HTMLElement>(null)
+  const [colunas, setColunas] = useState(5)
+  const carregou = pautas !== null
+  useEffect(() => {
+    const el = faixa.current; if (!el) return
+    const medir = () => setColunas(Math.max(1, Math.floor((el.clientWidth + 10) / (180 + 10))))
+    medir()
+    const ro = new ResizeObserver(medir); ro.observe(el)
+    return () => ro.disconnect()
+  }, [carregou])
 
   const carregar = useCallback(async () => {
     if (!cliente) return
@@ -105,10 +117,13 @@ export function AcervoPauta() {
 
       <div className="datas-saude__topo">
         <span className="rotulo">Próximas datas e campanhas</span>
-        <button type="button" className="contas-redes__info" onClick={() => setEditarCampanha('nova')}><CalendarPlus size={15} /> Criar campanha ou data</button>
+        <span className="linha" style={{ gap: 4 }}>
+          <button type="button" className="contas-redes__info" onClick={() => setVerAno(true)}><CalendarDays size={15} /> Ver o ano todo</button>
+          <button type="button" className="botao botao--secundario botao--mini" onClick={() => setEditarCampanha('nova')}><CalendarPlus size={14} /> Nova campanha</button>
+        </span>
       </div>
-      <section className="datas-saude" aria-label="Próximas datas e campanhas">
-        {datas.map((d) => {
+      <section ref={faixa} className="datas-saude" aria-label="Próximas datas e campanhas" style={{ gridTemplateColumns: `repeat(${colunas}, minmax(0, 1fr))` }}>
+        {datas.slice(0, colunas).map((d) => {
           const n = abertas.filter((p) => p.data_ref === d.chave).length
           const falta = Math.ceil((d.inicio.getTime() - agora) / DIA)
           const agoraMesmo = falta <= 0
@@ -128,11 +143,6 @@ export function AcervoPauta() {
             </div>
           )
         })}
-        <button type="button" className="data-saude data-saude--nova" onClick={() => setEditarCampanha('nova')}>
-          <CalendarPlus size={22} />
-          <strong>Nova campanha</strong>
-          <span className="data-saude__desc">Faltou alguma data? Crie aqui</span>
-        </button>
       </section>
 
       <div className="linha pauta-filtros">
@@ -198,6 +208,10 @@ export function AcervoPauta() {
         </ul>
       )}
 
+      {verAno && (
+        <AnoTodo proprias={proprias} ideias={abertas} agora={agora} onFechar={() => setVerAno(false)} onCriar={() => { setVerAno(false); setEditarCampanha('nova') }}
+          onEscolher={(chave) => { setDataFiltro(chave); setAba('ideias'); setVerAno(false) }} />
+      )}
       {editarCampanha && (
         <CampanhaModal campanha={editarCampanha === 'nova' ? null : editarCampanha} onFechar={() => setEditarCampanha(null)}
           onSalvar={async (c) => { await salvarCampanhaPauta(cliente.id, editarCampanha === 'nova' ? null : editarCampanha.id, c); setEditarCampanha(null); await carregar() }}
@@ -352,6 +366,46 @@ function CampanhaModal({ campanha, onFechar, onSalvar, onExcluir }: { campanha: 
           </div>
         </div>
       </form>
+    </Janela>
+  )
+}
+
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+
+/** Todas as datas do ano, mês a mês. Clicar numa data filtra as ideias dela. */
+function AnoTodo({ proprias, ideias, agora, onFechar, onEscolher, onCriar }: { proprias: CampanhaPropria[]; ideias: Pauta[]; agora: number; onFechar: () => void; onEscolher: (chave: string) => void; onCriar: () => void }) {
+  const hoje = new Date(agora)
+  const [ano, setAno] = useState(hoje.getFullYear())
+  const meses = useMemo(() => anoTodo(ano, proprias), [ano, proprias])
+  return (
+    <Janela titulo="Datas e campanhas do ano" onFechar={onFechar} largura={1040}>
+      <div className="janela__corpo">
+        <div className="linha" style={{ justifyContent: 'space-between' }}>
+          <div className="segmentos" role="radiogroup" aria-label="Ano">
+            {[hoje.getFullYear(), hoje.getFullYear() + 1].map((a) => <button key={a} type="button" role="radio" aria-checked={ano === a} className={ano === a ? 'marcado' : ''} onClick={() => setAno(a)}>{a}</button>)}
+          </div>
+          <Botao variante="secundario" icone={<CalendarPlus size={15} />} onClick={onCriar}>Criar campanha ou data</Botao>
+        </div>
+        <div className="ano-todo">
+          {meses.map(({ mes, datas }) => (
+            <section key={mes} className={`ano-todo__mes${ano === hoje.getFullYear() && mes === hoje.getMonth() + 1 ? ' atual' : ''}`}>
+              <h4>{MESES[mes - 1]}</h4>
+              <ul>{datas.map((d) => {
+                const n = ideias.filter((p) => p.data_ref === d.chave).length
+                return (
+                  <li key={d.chave}>
+                    <button type="button" onClick={() => onEscolher(d.chave)} title={d.descricao}>
+                      <span className="ano-todo__cor" style={{ background: d.cor }} />
+                      <span className="ano-todo__texto"><strong>{d.nome}</strong><small>{d.propria ? `${d.quando} · do cliente` : d.quando === 'O mês todo' ? `O mês todo · ${d.descricao}` : d.quando}</small></span>
+                      {n > 0 && <span className="ano-todo__ideias">{n}</span>}
+                    </button>
+                  </li>
+                )
+              })}</ul>
+            </section>
+          ))}
+        </div>
+      </div>
     </Janela>
   )
 }

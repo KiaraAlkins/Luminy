@@ -14,41 +14,99 @@ export const TEMAS = ['Institucional', 'Prevenção', 'Saúde da mulher', 'Saúd
 
 // ---------------------------------------------------------------- datas da saúde
 export type DataSaude = { chave: string; nome: string; descricao: string; cor: string; inicio: Date; fim: Date }
-type Regra = { chave: string; nome: string; descricao: string; cor: string; mes: number; dia?: number; domingo?: number /* n-ésimo domingo */ }
+type Regra = { chave: string; nome: string; descricao: string; cor: string; mes: number; dia?: number; semana?: [number, number] /* n-ésimo dia da semana (0 = domingo) */ }
+const AZUL = '#2E90FA', ROSA = '#EE46BC', VERMELHO = '#E5484D', AMARELO = '#EAAA08', VERDE = '#12A15F', ROXO = '#7A5AF8', LARANJA = '#F79009', LILAS = '#9E77ED', DOURADO = '#CA8504', CINZA = '#98A2B3', MARCA = '#3D2EF9'
 const REGRAS: Regra[] = [
-  { chave: 'janeiro-branco', nome: 'Janeiro Branco', descricao: 'Saúde mental', cor: '#98A2B3', mes: 1 },
-  { chave: 'cancer-fev', nome: 'Dia Mundial do Câncer', descricao: '4 de fevereiro', cor: '#7A5AF8', mes: 2, dia: 4 },
-  { chave: 'marco-lilas', nome: 'Março Lilás', descricao: 'Câncer do colo do útero', cor: '#9E77ED', mes: 3 },
-  { chave: 'dia-mulher', nome: 'Dia da Mulher', descricao: '8 de março', cor: '#D6297A', mes: 3, dia: 8 },
-  { chave: 'abril-azul', nome: 'Abril Azul', descricao: 'Conscientização sobre o autismo', cor: '#2E90FA', mes: 4 },
-  { chave: 'dia-saude', nome: 'Dia Mundial da Saúde', descricao: '7 de abril', cor: '#12A15F', mes: 4, dia: 7 },
-  { chave: 'maio-amarelo', nome: 'Maio Amarelo', descricao: 'Segurança no trânsito', cor: '#EAAA08', mes: 5 },
+  // Janeiro
+  { chave: 'janeiro-branco', nome: 'Janeiro Branco', descricao: 'Saúde mental', cor: CINZA, mes: 1 },
+  { chave: 'janeiro-roxo', nome: 'Janeiro Roxo', descricao: 'Hanseníase', cor: ROXO, mes: 1 },
+  { chave: 'dia-farmaceutico', nome: 'Dia do Farmacêutico', descricao: '20 de janeiro', cor: VERDE, mes: 1, dia: 20 },
+  // Fevereiro
+  { chave: 'fevereiro-roxo', nome: 'Fevereiro Roxo', descricao: 'Lúpus, fibromialgia e Alzheimer', cor: ROXO, mes: 2 },
+  { chave: 'fevereiro-laranja', nome: 'Fevereiro Laranja', descricao: 'Leucemia e doação de medula', cor: LARANJA, mes: 2 },
+  { chave: 'cancer-fev', nome: 'Dia Mundial do Câncer', descricao: '4 de fevereiro', cor: ROXO, mes: 2, dia: 4 },
+  // Março
+  { chave: 'marco-lilas', nome: 'Março Lilás', descricao: 'Câncer do colo do útero', cor: LILAS, mes: 3 },
+  { chave: 'marco-azul', nome: 'Março Azul-marinho', descricao: 'Câncer colorretal', cor: '#1849A9', mes: 3 },
+  { chave: 'dia-mulher', nome: 'Dia da Mulher', descricao: '8 de março', cor: ROSA, mes: 3, dia: 8 },
+  { chave: 'dia-rim', nome: 'Dia Mundial do Rim', descricao: '2ª quinta-feira de março', cor: AZUL, mes: 3, semana: [2, 4] },
+  { chave: 'dia-down', nome: 'Dia da Síndrome de Down', descricao: '21 de março', cor: AMARELO, mes: 3, dia: 21 },
+  { chave: 'dia-tuberculose', nome: 'Dia de Combate à Tuberculose', descricao: '24 de março', cor: VERMELHO, mes: 3, dia: 24 },
+  // Abril
+  { chave: 'abril-azul', nome: 'Abril Azul', descricao: 'Conscientização sobre o autismo', cor: AZUL, mes: 4 },
+  { chave: 'abril-verde', nome: 'Abril Verde', descricao: 'Saúde e segurança no trabalho', cor: VERDE, mes: 4 },
+  { chave: 'dia-autismo', nome: 'Dia Mundial do Autismo', descricao: '2 de abril', cor: AZUL, mes: 4, dia: 2 },
+  { chave: 'dia-saude', nome: 'Dia Mundial da Saúde', descricao: '7 de abril', cor: VERDE, mes: 4, dia: 7 },
+  // Maio
+  { chave: 'maio-amarelo', nome: 'Maio Amarelo', descricao: 'Segurança no trânsito', cor: AMARELO, mes: 5 },
+  { chave: 'dia-maos', nome: 'Dia da Higienização das Mãos', descricao: '5 de maio', cor: '#06AED4', mes: 5, dia: 5 },
   { chave: 'dia-enfermagem', nome: 'Dia da Enfermagem', descricao: '12 de maio', cor: '#06AED4', mes: 5, dia: 12 },
-  { chave: 'dia-maes', nome: 'Dia das Mães', descricao: '2º domingo de maio', cor: '#EE46BC', mes: 5, domingo: 2 },
-  { chave: 'junho-vermelho', nome: 'Junho Vermelho', descricao: 'Doação de sangue', cor: '#E5484D', mes: 6 },
+  { chave: 'dia-maes', nome: 'Dia das Mães', descricao: '2º domingo de maio', cor: ROSA, mes: 5, semana: [2, 0] },
+  { chave: 'dia-hipertensao', nome: 'Dia Mundial da Hipertensão', descricao: '17 de maio', cor: VERMELHO, mes: 5, dia: 17 },
+  { chave: 'dia-sem-tabaco', nome: 'Dia Mundial sem Tabaco', descricao: '31 de maio', cor: CINZA, mes: 5, dia: 31 },
+  // Junho
+  { chave: 'junho-vermelho', nome: 'Junho Vermelho', descricao: 'Doação de sangue', cor: VERMELHO, mes: 6 },
+  { chave: 'junho-laranja', nome: 'Junho Laranja', descricao: 'Anemia e leucemia', cor: LARANJA, mes: 6 },
   { chave: 'dia-doador', nome: 'Dia do Doador de Sangue', descricao: '14 de junho', cor: '#D92D20', mes: 6, dia: 14 },
-  { chave: 'julho-amarelo', nome: 'Julho Amarelo', descricao: 'Hepatites virais', cor: '#EAAA08', mes: 7 },
-  { chave: 'agosto-dourado', nome: 'Agosto Dourado', descricao: 'Aleitamento materno', cor: '#CA8504', mes: 8 },
-  { chave: 'dia-pais', nome: 'Dia dos Pais', descricao: '2º domingo de agosto', cor: '#3D2EF9', mes: 8, domingo: 2 },
-  { chave: 'setembro-amarelo', nome: 'Setembro Amarelo', descricao: 'Prevenção do suicídio', cor: '#EAAA08', mes: 9 },
-  { chave: 'dia-coracao', nome: 'Dia Mundial do Coração', descricao: '29 de setembro', cor: '#E5484D', mes: 9, dia: 29 },
-  { chave: 'outubro-rosa', nome: 'Outubro Rosa', descricao: 'Câncer de mama', cor: '#EE46BC', mes: 10 },
-  { chave: 'dia-medico', nome: 'Dia do Médico', descricao: '18 de outubro', cor: '#12A15F', mes: 10, dia: 18 },
-  { chave: 'novembro-azul', nome: 'Novembro Azul', descricao: 'Saúde do homem', cor: '#2E90FA', mes: 11 },
+  // Julho
+  { chave: 'julho-amarelo', nome: 'Julho Amarelo', descricao: 'Hepatites virais', cor: AMARELO, mes: 7 },
+  { chave: 'julho-verde', nome: 'Julho Verde', descricao: 'Câncer de cabeça e pescoço', cor: VERDE, mes: 7 },
+  { chave: 'dia-hospital', nome: 'Dia do Hospital', descricao: '2 de julho', cor: MARCA, mes: 7, dia: 2 },
+  { chave: 'dia-avos', nome: 'Dia dos Avós', descricao: '26 de julho', cor: LILAS, mes: 7, dia: 26 },
+  // Agosto
+  { chave: 'agosto-dourado', nome: 'Agosto Dourado', descricao: 'Aleitamento materno', cor: DOURADO, mes: 8 },
+  { chave: 'agosto-lilas', nome: 'Agosto Lilás', descricao: 'Fim da violência contra a mulher', cor: LILAS, mes: 8 },
+  { chave: 'dia-pais', nome: 'Dia dos Pais', descricao: '2º domingo de agosto', cor: MARCA, mes: 8, semana: [2, 0] },
+  { chave: 'dia-psicologo', nome: 'Dia do Psicólogo', descricao: '27 de agosto', cor: ROXO, mes: 8, dia: 27 },
+  { chave: 'dia-nutricionista', nome: 'Dia do Nutricionista', descricao: '31 de agosto', cor: VERDE, mes: 8, dia: 31 },
+  // Setembro
+  { chave: 'setembro-amarelo', nome: 'Setembro Amarelo', descricao: 'Prevenção do suicídio', cor: AMARELO, mes: 9 },
+  { chave: 'setembro-verde', nome: 'Setembro Verde', descricao: 'Doação de órgãos', cor: VERDE, mes: 9 },
+  { chave: 'dia-doacao-orgaos', nome: 'Dia da Doação de Órgãos', descricao: '27 de setembro', cor: VERDE, mes: 9, dia: 27 },
+  { chave: 'dia-coracao', nome: 'Dia Mundial do Coração', descricao: '29 de setembro', cor: VERMELHO, mes: 9, dia: 29 },
+  // Outubro
+  { chave: 'outubro-rosa', nome: 'Outubro Rosa', descricao: 'Câncer de mama', cor: ROSA, mes: 10 },
+  { chave: 'dia-criancas', nome: 'Dia das Crianças', descricao: '12 de outubro', cor: LARANJA, mes: 10, dia: 12 },
+  { chave: 'dia-fisioterapeuta', nome: 'Dia do Fisioterapeuta', descricao: '13 de outubro', cor: AZUL, mes: 10, dia: 13 },
+  { chave: 'dia-medico', nome: 'Dia do Médico', descricao: '18 de outubro', cor: VERDE, mes: 10, dia: 18 },
+  { chave: 'dia-dentista', nome: 'Dia do Dentista', descricao: '25 de outubro', cor: '#06AED4', mes: 10, dia: 25 },
+  { chave: 'dia-avc', nome: 'Dia Mundial do AVC', descricao: '29 de outubro', cor: VERMELHO, mes: 10, dia: 29 },
+  // Novembro
+  { chave: 'novembro-azul', nome: 'Novembro Azul', descricao: 'Saúde do homem', cor: AZUL, mes: 11 },
+  { chave: 'novembro-roxo', nome: 'Novembro Roxo', descricao: 'Prematuridade', cor: ROXO, mes: 11 },
   { chave: 'dia-diabetes', nome: 'Dia Mundial do Diabetes', descricao: '14 de novembro', cor: '#1570EF', mes: 11, dia: 14 },
-  { chave: 'dezembro-vermelho', nome: 'Dezembro Vermelho', descricao: 'Prevenção ao HIV', cor: '#D92D20', mes: 12 },
-  { chave: 'natal', nome: 'Natal', descricao: '25 de dezembro', cor: '#12A15F', mes: 12, dia: 25 },
+  { chave: 'dia-prematuridade', nome: 'Dia Mundial da Prematuridade', descricao: '17 de novembro', cor: ROXO, mes: 11, dia: 17 },
+  // Dezembro
+  { chave: 'dezembro-vermelho', nome: 'Dezembro Vermelho', descricao: 'Prevenção ao HIV e outras ISTs', cor: '#D92D20', mes: 12 },
+  { chave: 'dezembro-laranja', nome: 'Dezembro Laranja', descricao: 'Câncer de pele', cor: LARANJA, mes: 12 },
+  { chave: 'dia-aids', nome: 'Dia Mundial de Luta contra a Aids', descricao: '1º de dezembro', cor: '#D92D20', mes: 12, dia: 1 },
+  { chave: 'natal', nome: 'Natal', descricao: '25 de dezembro', cor: VERDE, mes: 12, dia: 25 },
 ]
 function ocorrencia(r: Regra, ano: number): DataSaude {
   let inicio: Date; let fim: Date
-  if (r.domingo) {
+  if (r.semana) {
+    const [n, diaSemana] = r.semana
     const primeiro = new Date(ano, r.mes - 1, 1)
-    const dia = 1 + ((7 - primeiro.getDay()) % 7) + (r.domingo - 1) * 7
+    const dia = 1 + ((diaSemana - primeiro.getDay() + 7) % 7) + (n - 1) * 7
     inicio = new Date(ano, r.mes - 1, dia); fim = new Date(ano, r.mes - 1, dia, 23, 59)
   } else if (r.dia) { inicio = new Date(ano, r.mes - 1, r.dia); fim = new Date(ano, r.mes - 1, r.dia, 23, 59) }
   else { inicio = new Date(ano, r.mes - 1, 1); fim = new Date(ano, r.mes, 0, 23, 59) }
   return { chave: r.chave, nome: r.nome, descricao: r.descricao, cor: r.cor, inicio, fim }
 }
+/** Todas as datas do ano (saúde + do cliente), por mês, para a visão "ano todo". */
+export function anoTodo(ano: number, proprias: CampanhaPropria[]): { mes: number; datas: { chave: string; nome: string; descricao: string; cor: string; inicio: Date; quando: string; propria: boolean }[] }[] {
+  const lista = [
+    ...REGRAS.map((r) => { const o = ocorrencia(r, ano); return { ...o, quando: r.dia || r.semana ? `Dia ${o.inicio.getDate()}` : 'O mês todo', propria: false } }),
+    ...proprias.filter((c) => c.anual || c.inicio.startsWith(String(ano))).map((c) => {
+      const [, m, d] = c.inicio.split('-').map(Number)
+      const [, mf, df] = c.fim.split('-').map(Number)
+      const quando = c.inicio === c.fim ? `Dia ${d}` : `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')} a ${String(df).padStart(2, '0')}/${String(mf).padStart(2, '0')}`
+      return { chave: `campanha:${c.id}`, nome: c.nome, descricao: c.descricao ?? 'Campanha do cliente', cor: c.cor, inicio: new Date(ano, m - 1, d), quando, propria: true }
+    }),
+  ]
+  return Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, datas: lista.filter((d) => d.inicio.getMonth() === i).sort((a, b) => a.inicio.getTime() - b.inicio.getTime()) }))
+}
+
 export type CampanhaPropria = { id: string; cliente_id: string; nome: string; descricao: string | null; cor: string; inicio: string; fim: string; anual: boolean; criado_por: string; criado_em: string }
 export type DataCalendario = DataSaude & { origem: 'saude' | 'propria'; id?: string }
 export type Calendario = { proximas: DataCalendario[]; todas: { chave: string; nome: string; descricao: string; cor: string; origem: DataCalendario['origem'] }[]; porChave: (chave: string | null) => { nome: string; descricao: string; cor: string } | null }
