@@ -7,9 +7,10 @@ import { Janela } from '../../components/Janela'
 import { Selecao } from '../../components/Selecao'
 import { COR_TIPO, OPCOES_PRIORIDADE, iconeTipo, opcoesTipoConteudo } from '../../components/opcoes'
 import { useFoco } from '../../lib/foco'
+import { EscolherResponsaveis } from './Pessoas'
 import {
   REDES, TIPOS, apagarArquivoCard, apagarComentario, comentar, enviarArquivoCard, linksArquivos, listarComentarios,
-  type Anexo, type Card, type Coluna, type Comentario, type EdicaoCard, type ItemChecklist,
+  type Anexo, type Card, type Coluna, type Comentario, type EdicaoCard, type ItemChecklist, type Pessoa,
 } from '../../lib/kanban'
 
 const CORES_CAPA = ['#3D2EF9', '#1F6FEB', '#12A15F', '#E8890C', '#E5484D', '#D6297A', '#7A5AF8', '#17142E']
@@ -39,8 +40,8 @@ function TextoQueSalva({ valor, onSalvar, ...props }: { valor: string; onSalvar:
  * Ficha do card (no jeito da Orkestrya + Trello): capa, título grande, briefing, legenda, checklist,
  * anexos e comentários; à direita, o painel escuro de propriedades. Tudo salva sozinho.
  */
-export function FichaCard({ card, quadroId, colunas, onAtualizar, onMover, onExcluir, onFechar }: {
-  card: Card; quadroId: string; colunas: Coluna[]
+export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMover, onExcluir, onFechar }: {
+  card: Card; quadroId: string; colunas: Coluna[]; pessoas: Pessoa[]
   onAtualizar: (parcial: EdicaoCard) => Promise<void>
   onMover: (colunaId: string) => void
   onExcluir: () => Promise<void>
@@ -127,7 +128,6 @@ export function FichaCard({ card, quadroId, colunas, onAtualizar, onMover, onExc
             {card.tipo_conteudo && <span className="etiqueta" style={{ '--cor': COR_TIPO[card.tipo_conteudo] } as React.CSSProperties}>{iconeTipo(card.tipo_conteudo)} {card.tipo_conteudo}</span>}
             {card.prioridade === 'alta' && <span className="etiqueta" style={{ '--cor': 'var(--perigo)' } as React.CSSProperties}>Prioridade alta</span>}
             {card.redes.map((r) => <span key={r} className="etiqueta etiqueta--leve">{r}</span>)}
-            {salvo && <span className="ficha-card__salvo"><Check size={13} /> Salvo</span>}
           </div>
           {card.motivo_impedimento && <p className="card__impedimento"><AlertTriangle size={14} aria-hidden /> {card.motivo_impedimento}</p>}
 
@@ -224,6 +224,8 @@ export function FichaCard({ card, quadroId, colunas, onAtualizar, onMover, onExc
 
         <aside className="painel-propriedades">
           <span className="rotulo">Propriedades</span>
+          <div className="propriedade"><span>Responsáveis</span>
+            <EscolherResponsaveis ids={card.responsaveis} pessoas={pessoas} onMudar={(ids) => void salvar({ responsaveis: ids })} /></div>
           <div className="propriedade"><span>Coluna</span><Selecao mini valor={card.coluna_id} onMudar={(v) => { if (v !== card.coluna_id) onMover(v) }} opcoes={opcoesColuna} /></div>
           <div className="propriedade"><span>Prioridade</span><Selecao mini valor={card.prioridade} onMudar={(v) => void salvar({ prioridade: v as Card['prioridade'] })} opcoes={OPCOES_PRIORIDADE} /></div>
           <div className="propriedade"><span>Tipo</span><Selecao mini valor={card.tipo_conteudo ?? ''} onMudar={(v) => void salvar({ tipo_conteudo: v || null })} opcoes={opcoesTipoConteudo(TIPOS)} /></div>
@@ -255,6 +257,8 @@ export function FichaCard({ card, quadroId, colunas, onAtualizar, onMover, onExc
           <button type="button" className="painel-propriedades__acao painel-propriedades__acao--perigo" onClick={() => { if (confirm('Excluir este card? Esta ação não pode ser desfeita.')) void onExcluir() }}><Trash2 size={15} /> Excluir card</button>
         </aside>
       </div>
+      {/* Aviso flutuante no canto: não empurra o conteúdo da ficha */}
+      <span className={`ficha-card__salvo${salvo ? ' visivel' : ''}`} role="status" aria-live="polite">{salvo && <><Check size={14} /> Salvo</>}</span>
     </Janela>
   )
 }

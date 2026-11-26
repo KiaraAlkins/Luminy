@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, AlignLeft, CheckSquare, ChevronsLeft, Clock, MessageSquare, Paperclip, Plus, Send, X } from 'lucide-react'
+import { AlertTriangle, AlignLeft, CalendarDays, CheckSquare, ChevronsLeft, Columns3, Clock, MessageSquare, Paperclip, Plus, Send, X } from 'lucide-react'
 import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
 import { COR_TIPO, iconeTipo } from '../components/opcoes'
 import { useFoco } from '../lib/foco'
 import { useSessao } from '../lib/sessao'
 import {
-  carregarQuadro, criarCard, dataCurta, excluirCard, linksArquivos, moverCard, salvarCard, situacaoPrazo,
-  type Card, type Coluna, type EdicaoCard, type Quadro,
+  carregarQuadro, criarCard, dataCurta, excluirCard, linksArquivos, listarPessoas, moverCard, salvarCard, situacaoPrazo,
+  type Card, type Coluna, type EdicaoCard, type Pessoa, type Quadro,
 } from '../lib/kanban'
 import { FichaCard } from './kanban/FichaCard'
+import { Responsaveis } from './kanban/Pessoas'
+import { CalendarioKanban } from './kanban/CalendarioKanban'
 import { posicaoEntre, useArrastar, useColunasMinimizadas, type Vaga } from '../lib/arrastar'
 import { CardVoando, FaixaColuna, VagaCard } from '../components/Arrastar'
 import './kanban.css'
@@ -21,7 +23,7 @@ const COR_COLUNA: Record<string, string> = {
 
 type Pendente = { card: Card; coluna: Coluna; posicao: number }
 /** Card no jeito do Trello: capa, etiquetas coloridas, título e selos (prazo, briefing, checklist, anexos, comentários). */
-function CardConteudo({ card, ultima }: { card: Card; ultima?: boolean }) {
+function CardConteudo({ card, ultima, pessoas = [] }: { card: Card; ultima?: boolean; pessoas?: Pessoa[] }) {
   const { foco } = useFoco()
   const feitos = card.checklist.filter((i) => i.feito).length
   const prazo = situacaoPrazo(card.entrega_em, ultima)
@@ -38,6 +40,7 @@ function CardConteudo({ card, ultima }: { card: Card; ultima?: boolean }) {
         )}
         <strong className="card__titulo">{card.titulo}</strong>
         {card.motivo_impedimento && <p className="card__impedimento"><AlertTriangle size={14} aria-hidden /> {card.motivo_impedimento}</p>}
+        <div className="card__rodape-card">
         <div className="card__selos">
           {card.entrega_em && <span className={`selo selo--${prazo}`} title="Entrega"><Clock size={13} /> {dataCurta(card.entrega_em)}</span>}
           {card.postagem_em && <span className="selo" title="Postagem"><Send size={12} /> {dataCurta(card.postagem_em)}</span>}
@@ -46,6 +49,8 @@ function CardConteudo({ card, ultima }: { card: Card; ultima?: boolean }) {
           {card.anexos.length > 0 && <span className="selo" title="Anexos"><Paperclip size={13} /> {card.anexos.length}</span>}
           {(card.comentarios ?? 0) > 0 && <span className="selo" title="Comentários"><MessageSquare size={13} /> {card.comentarios}</span>}
           {foco?.card_id === card.id && <span className="selo selo--agora" title="Você está fazendo agora">● agora</span>}
+        </div>
+        <Responsaveis ids={card.responsaveis} pessoas={pessoas} />
         </div>
       </div>
     </>
@@ -59,6 +64,9 @@ export function Kanban() {
   const [erro, setErro] = useState<string | null>(null)
   const [motivoPara, setMotivoPara] = useState<Pendente | null>(null)
   const [abertoId, setAbertoId] = useState<string | null>(null)
+  const [pessoas, setPessoas] = useState<Pessoa[]>([])
+  const [visao, setVisao] = useState<'quadro' | 'calendario'>(() => { try { return localStorage.getItem('luminy.kanban.visao') === 'calendario' ? 'calendario' : 'quadro' } catch { return 'quadro' } })
+  const trocarVisao = (v: 'quadro' | 'calendario') => { setVisao(v); try { localStorage.setItem('luminy.kanban.visao', v) } catch { /* sem armazenamento */ } }
   const [novoEm, setNovoEm] = useState<string | null>(null)
 
   const recarregar = useCallback(async () => {
@@ -67,6 +75,7 @@ export function Kanban() {
   }, [clienteId])
 
   useEffect(() => { void Promise.resolve().then(recarregar) }, [recarregar])
+  useEffect(() => { if (clienteId) void listarPessoas(clienteId).then(setPessoas) }, [clienteId])
 
   const porColuna = useMemo(() => {
     const m = new Map<string, Card[]>()
@@ -130,10 +139,26 @@ export function Kanban() {
           <h2>Kanban · Redes sociais</h2>
           <p className="pequeno">Quadro oficial do {cliente?.nome} · {quadro.cards.length} cards</p>
         </div>
-        <Botao icone={<Plus size={16} aria-hidden />} onClick={() => setNovoEm(quadro.colunas[0]?.id ?? null)}>Novo card</Botao>
+        <div className="linha" style={{ gap: 10 }}>
+          <div className="segmentos" role="radiogroup" aria-label="Visualização">
+            <button type="button" role="radio" aria-checked={visao === 'quadro'} className={visao === 'quadro' ? 'marcado' : ''} onClick={() => trocarVisao('quadro')}><Columns3 size={15} /> Quadro</button>
+            <button type="button" role="radio" aria-checked={visao === 'calendario'} className={visao === 'calendario' ? 'marcado' : ''} onClick={() => trocarVisao('calendario')}><CalendarDays size={15} /> Calendário</button>
+          </div>
+          {visao === 'quadro' && <Botao icone={<Plus size={16} aria-hidden />} onClick={() => setNovoEm(quadro.colunas[0]?.id ?? null)}>Novo card</Botao>}
+        </div>
       </div>
       {erro && <p className="aviso" role="alert" style={{ background: 'rgb(229 72 77 / .1)', color: 'var(--perigo)' }}>{erro}</p>}
 
+      {visao === 'calendario' ? (
+        <CalendarioKanban cards={quadro.cards} colunas={quadro.colunas} pessoas={pessoas} onAbrir={setAbertoId}
+          onMudarData={(c, postagem_em) => void atualizarCard(c.id, { postagem_em })}
+          onCriar={async (dia, titulo) => {
+            const col = quadro.colunas[0]; const ultimo = porColuna.get(col.id)?.at(-1)?.posicao ?? 0
+            const [a, m, d] = dia.split('-').map(Number)
+            try { await criarCard(quadro.id, col.id, titulo, ultimo + 1, new Date(a, m - 1, d, 12, 0).toISOString()) } catch { setErro('Não foi possível criar o card.') }
+            await recarregar()
+          }} />
+      ) : (
       <div className="quadro" aria-label="Quadro de redes sociais" ref={quadroRef}>
         {quadro.colunas.map((col) => {
           const cards = porColuna.get(col.id) ?? []
@@ -161,7 +186,7 @@ export function Kanban() {
                   onPointerDown={(e) => iniciar(e, card)}
                   onClick={() => { if (!acabouDeSoltar()) setAbertoId(card.id) }} tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter') setAbertoId(card.id) }}>
-                  <CardConteudo card={card} ultima={col.posicao >= 4 && !col.exige_motivo} />
+                  <CardConteudo card={card} ultima={col.posicao >= 4 && !col.exige_motivo} pessoas={pessoas} />
                 </article>,
               ])}
               {vagaAqui >= visiveis.length && slot}
@@ -175,9 +200,10 @@ export function Kanban() {
           )
         })}
       </div>
+      )}
 
       {arraste && (
-        <CardVoando arraste={arraste} voandoRef={voandoRef} classe="card--trello"><CardConteudo card={arraste.item} /></CardVoando>
+        <CardVoando arraste={arraste} voandoRef={voandoRef} classe="card--trello"><CardConteudo card={arraste.item} pessoas={pessoas} /></CardVoando>
       )}
 
       {motivoPara && (
@@ -185,7 +211,7 @@ export function Kanban() {
           onConfirmar={(m) => { void executarMovimento(motivoPara, m); setMotivoPara(null) }} />
       )}
       {aberto && (
-        <FichaCard card={aberto} quadroId={quadro.id} colunas={quadro.colunas} onFechar={() => { setAbertoId(null); void recarregar() }}
+        <FichaCard card={aberto} quadroId={quadro.id} colunas={quadro.colunas} pessoas={pessoas} onFechar={() => { setAbertoId(null); void recarregar() }}
           onAtualizar={(p) => atualizarCard(aberto.id, p)}
           onMover={(colunaId) => soltarEm(aberto, { coluna: colunaId, indice: (porColuna.get(colunaId) ?? []).filter((c) => c.id !== aberto.id).length })}
           onExcluir={async () => { await excluirCard(aberto.id); setAbertoId(null); await recarregar() }} />

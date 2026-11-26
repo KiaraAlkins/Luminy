@@ -141,6 +141,10 @@ begin
   update cards set checklist = '[{"id":"1","texto":"Roteiro","feito":true}]', legenda = 'Legenda do post' where id = v_card;
   insert into card_comentarios (card_id, texto) values (v_card, 'Ficou ótimo!');
   perform t.ok((select count(*) from card_comentarios where card_id = v_card) = 1, 'equipe comenta nos cards');
+  update cards set responsaveis = array['00000000-0000-0000-0000-00000000b2a1', '00000000-0000-0000-0000-00000000c1a2']::uuid[] where id = v_card;
+  perform t.ok((select cardinality(responsaveis) from cards where id = v_card) = 2, 'card aceita vários responsáveis');
+  perform t.ok((select count(*) from pessoas_cliente('20000000-0000-0000-0000-000000000001')) = 4, 'responsáveis possíveis: equipe do cliente + dono da agência');
+  perform t.ok((select count(*) from pessoas_cliente('20000000-0000-0000-0000-000000000002')) = 0, 'não lista a equipe de cliente que a pessoa não acessa');
 end $$;
 do $$ begin
   insert into colunas (quadro_id, nome, posicao) select id, 'Coluna nova', 7 from quadros limit 1;

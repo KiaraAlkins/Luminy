@@ -20,6 +20,7 @@ export type Card = {
   capa_cor: string | null
   checklist: ItemChecklist[]
   anexos: Anexo[]
+  responsaveis: string[]
   /** Link temporário da capa (o armazenamento é privado) */
   capa_url?: string | null
   comentarios?: number
@@ -35,16 +36,16 @@ export const REDES = ['Instagram', 'Facebook', 'TikTok', 'LinkedIn', 'YouTube']
 // ---------------------------------------------------------------- modo demonstração (sem Supabase)
 const colunasDemo: Coluna[] = ['Backlog (ideias)', 'Briefing aprovado', 'Fazendo', 'Feito e aprovado', 'Postado e feito', 'Impedimento']
   .map((nome, i) => ({ id: `c${i + 1}`, nome, posicao: i + 1, exige_motivo: nome === 'Impedimento' }))
-const base = { briefing: null, entrega_em: null, postagem_em: null, motivo_impedimento: null, coluna_antes_impedimento: null, legenda: null, capa_path: null, capa_cor: null, checklist: [], anexos: [] }
+const base = { briefing: null, entrega_em: null, postagem_em: null, motivo_impedimento: null, coluna_antes_impedimento: null, legenda: null, capa_path: null, capa_cor: null, checklist: [], anexos: [], responsaveis: [] as string[] }
 let cardsDemo: Card[] = [
-  { ...base, id: 'k1', coluna_id: 'c1', titulo: 'Série: mitos sobre o coração', tipo_conteudo: 'Carrossel', redes: ['Instagram'], prioridade: 'comum', posicao: 1 },
+  { ...base, id: 'k1', coluna_id: 'c1', titulo: 'Série: mitos sobre o coração', tipo_conteudo: 'Carrossel', redes: ['Instagram'], prioridade: 'comum', posicao: 1, postagem_em: '2026-12-02T12:00:00', responsaveis: ['p2'] },
   { ...base, id: 'k2', coluna_id: 'c1', titulo: 'Bastidores da maternidade', tipo_conteudo: 'Reels', redes: ['Instagram'], prioridade: 'baixa', posicao: 2 },
-  { ...base, id: 'k3', coluna_id: 'c2', titulo: 'Campanha da vacina da gripe', tipo_conteudo: 'Post', redes: ['Instagram', 'Facebook'], prioridade: 'comum', posicao: 1, entrega_em: '2026-11-26T12:00:00' },
+  { ...base, id: 'k3', coluna_id: 'c2', titulo: 'Campanha da vacina da gripe', tipo_conteudo: 'Post', redes: ['Instagram', 'Facebook'], prioridade: 'comum', posicao: 1, entrega_em: '2026-11-26T12:00:00', postagem_em: '2026-11-28T11:00:00', responsaveis: ['p3'] },
   { ...base, id: 'k4', coluna_id: 'c3', titulo: 'Carrossel Novembro Azul', tipo_conteudo: 'Carrossel', redes: ['Instagram', 'Facebook'], prioridade: 'alta', posicao: 1, entrega_em: '2026-11-24T16:00:00', postagem_em: '2026-11-24T18:00:00',
     briefing: 'Carrossel de 6 telas sobre prevenção do câncer de próstata. Tom acolhedor, sem alarmismo.', capa_cor: '#1F6FEB',
-    legenda: 'Novembro Azul: cuidar de si também é um ato de coragem. 💙 Agende seu check-up.',
+    legenda: 'Novembro Azul: cuidar de si também é um ato de coragem. 💙 Agende seu check-up.', responsaveis: ['p1', 'p2'],
     checklist: [{ id: 'a', texto: 'Roteiro das telas', feito: true }, { id: 'b', texto: 'Artes', feito: true }, { id: 'c', texto: 'Revisão médica', feito: false }, { id: 'd', texto: 'Aprovação', feito: false }] },
-  { ...base, id: 'k5', coluna_id: 'c3', titulo: 'Reels Dia do Homem', tipo_conteudo: 'Reels', redes: ['Instagram', 'TikTok'], prioridade: 'comum', posicao: 2, entrega_em: '2026-11-25T10:00:00' },
+  { ...base, id: 'k5', coluna_id: 'c3', titulo: 'Reels Dia do Homem', tipo_conteudo: 'Reels', redes: ['Instagram', 'TikTok'], prioridade: 'comum', posicao: 2, entrega_em: '2026-11-25T10:00:00', postagem_em: '2026-11-19T18:00:00', responsaveis: ['p4', 'p2'] },
   { ...base, id: 'k6', coluna_id: 'c4', titulo: 'Post Doação de sangue', tipo_conteudo: 'Post', redes: ['Instagram'], prioridade: 'comum', posicao: 1, postagem_em: '2026-11-27T12:00:00', capa_cor: '#E5484D',
     checklist: [{ id: 'a', texto: 'Arte', feito: true }, { id: 'b', texto: 'Legenda', feito: true }] },
   { ...base, id: 'k7', coluna_id: 'c6', titulo: 'Vídeo institucional da UTI', tipo_conteudo: 'Vídeo', redes: ['YouTube'], prioridade: 'comum', posicao: 1,
@@ -86,16 +87,16 @@ export async function moverCard(card: Card, colunaId: string, posicao: number, m
   if (error) throw error
 }
 
-export async function criarCard(quadroId: string, colunaId: string, titulo: string, posicao: number) {
+export async function criarCard(quadroId: string, colunaId: string, titulo: string, posicao: number, postagemEm: string | null = null) {
   if (!supabase) {
-    cardsDemo = [...cardsDemo, { ...base, id: crypto.randomUUID(), coluna_id: colunaId, titulo, tipo_conteudo: null, redes: [], prioridade: 'comum', posicao }]
+    cardsDemo = [...cardsDemo, { ...base, id: crypto.randomUUID(), coluna_id: colunaId, titulo, tipo_conteudo: null, redes: [], prioridade: 'comum', posicao, postagem_em: postagemEm }]
     return
   }
-  const { error } = await supabase.from('cards').insert({ quadro_id: quadroId, coluna_id: colunaId, titulo, posicao })
+  const { error } = await supabase.from('cards').insert({ quadro_id: quadroId, coluna_id: colunaId, titulo, posicao, postagem_em: postagemEm })
   if (error) throw error
 }
 
-export type EdicaoCard = Partial<Pick<Card, 'titulo' | 'briefing' | 'tipo_conteudo' | 'redes' | 'entrega_em' | 'postagem_em' | 'prioridade' | 'legenda' | 'capa_path' | 'capa_cor' | 'checklist' | 'anexos'>>
+export type EdicaoCard = Partial<Pick<Card, 'titulo' | 'briefing' | 'tipo_conteudo' | 'redes' | 'entrega_em' | 'postagem_em' | 'prioridade' | 'legenda' | 'capa_path' | 'capa_cor' | 'checklist' | 'anexos' | 'responsaveis'>>
 
 export async function salvarCard(id: string, edicao: EdicaoCard) {
   if (!supabase) { cardsDemo = cardsDemo.map((c) => (c.id === id ? { ...c, ...edicao } : c)); return }
@@ -192,4 +193,17 @@ export function situacaoPrazo(iso: string | null, concluido = false): 'atrasado'
   if (d <= hoje.getTime()) return 'hoje'
   if (d - agora < 2 * 86_400_000) return 'breve'
   return 'ok'
+}
+
+// ---------------------------------------------------------------- pessoas (responsáveis)
+export type Pessoa = { usuario_id: string; nome: string; foto_url: string | null }
+const pessoasDemo: Pessoa[] = [
+  { usuario_id: 'p1', nome: 'Dilan Freitas', foto_url: null }, { usuario_id: 'p2', nome: 'Kiara Alkins', foto_url: null },
+  { usuario_id: 'p3', nome: 'Braion Silva', foto_url: null }, { usuario_id: 'p4', nome: 'Pedro Prado', foto_url: null },
+]
+/** Quem pode ser responsável pelos cards: a equipe do cliente e o dono da agência. */
+export async function listarPessoas(clienteId: string): Promise<Pessoa[]> {
+  if (!supabase) return pessoasDemo
+  const { data } = await supabase.rpc('pessoas_cliente', { p_cliente: clienteId })
+  return ((data ?? []) as Pessoa[]).sort((a, b) => a.nome.localeCompare(b.nome))
 }

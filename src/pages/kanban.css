@@ -92,7 +92,8 @@ body.arrastando-card, body.arrastando-card * { cursor: grabbing !important; user
 .ficha-card__principal .editar-card__titulo { padding-right: 40px; }
 .ficha-card__chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: -8px; }
 .ficha-card__chips .etiqueta { font-size: 12px; padding: 3px 10px; }
-.ficha-card__salvo { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--sucesso); font-weight: 600; animation: pagina-entra .25s ease-out; }
+.ficha-card__salvo { position: fixed; right: 28px; bottom: 28px; z-index: 80; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: var(--sucesso); color: #fff; font-size: 13px; font-weight: 700; box-shadow: 0 10px 24px -10px rgb(18 161 95 / .6); pointer-events: none; opacity: 0; transform: translateY(10px) scale(.9); transition: opacity .2s, transform .3s cubic-bezier(.34,1.56,.64,1); }
+.ficha-card__salvo.visivel { opacity: 1; transform: none; }
 .ficha-secao { display: flex; flex-direction: column; gap: 10px; }
 .ficha-secao h4 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; }
 .ficha-secao h4 svg { color: var(--texto-3); }
@@ -152,3 +153,51 @@ body.arrastando-card, body.arrastando-card * { cursor: grabbing !important; user
 .escolher-capa__cores button:hover { transform: scale(1.06); }
 .escolher-capa__cores button.marcada { border-color: #fff; }
 @media (max-width: 860px) { .ficha-card__corpo { grid-template-columns: 1fr; } .anexo-link { grid-template-columns: 1fr; } }
+
+/* ---------- Responsáveis ---------- */
+.responsaveis { display: inline-flex; align-items: center; }
+.responsaveis .foto-pessoa + .foto-pessoa { margin-left: -7px; }
+.foto-pessoa { display: inline-grid; place-items: center; border-radius: 50%; color: #fff; font-weight: 700; border: 2px solid var(--superficie); object-fit: cover; flex: none; }
+.foto-pessoa--mais { background: var(--fundo); color: var(--texto-2); font-size: 11px; margin-left: -7px; }
+.escolher-responsaveis { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.painel-propriedades .foto-pessoa { border-color: var(--painel); }
+.escolher-responsaveis__mais { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; border: 1.5px dashed rgb(255 255 255 / .35); background: none; color: #fff; cursor: pointer; transition: background .15s, transform .2s cubic-bezier(.34,1.56,.64,1); }
+.escolher-responsaveis__mais:hover { background: rgb(255 255 255 / .1); transform: rotate(90deg); }
+.card__rodape-card { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card__rodape-card .card__selos { flex: 1; }
+
+/* ---------- Kanban por data (calendário) ---------- */
+.calendario-kanban { display: flex; flex-direction: column; gap: 12px; padding-right: 40px; }
+.cal-topo { display: flex; align-items: center; gap: 8px; }
+.cal-topo__mes { font-family: var(--fonte-titulo); font-size: 20px; min-width: 190px; }
+.cal-corpo { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 16px; align-items: start; }
+.cal-grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--superficie); border: 1px solid var(--borda); border-radius: 18px; overflow: hidden; }
+.cal-semana-dia { padding: 10px; text-align: center; font-size: 12px; font-weight: 700; color: var(--texto-3); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--borda); background: var(--fundo); }
+.cal-dia { position: relative; min-height: 132px; padding: 6px; border-right: 1px solid var(--borda); border-bottom: 1px solid var(--borda); display: flex; flex-direction: column; gap: 4px; transition: background .15s; }
+.cal-dia:nth-child(7n) { border-right: 0; }
+.cal-dia--fora { background: var(--fundo); }
+.cal-dia--fora .cal-dia__numero { color: var(--texto-3); opacity: .6; }
+.cal-dia--hoje { background: rgb(61 46 249 / .05); box-shadow: inset 0 3px 0 var(--marca); }
+.cal-dia--hoje .cal-dia__numero { color: var(--marca); }
+.cal-dia--alvo { background: var(--marca-suave); outline: 2px dashed var(--marca-clara); outline-offset: -4px; }
+.cal-dia__numero { text-align: center; font-weight: 700; font-size: 14px; padding: 2px 0 4px; }
+.cal-dia__itens { display: flex; flex-direction: column; gap: 4px; }
+.cal-item { position: relative; display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 6px 7px; border-radius: 10px; border: 1px solid var(--borda); background: var(--superficie); box-shadow: 0 1px 2px rgb(23 20 46 / .06); font: inherit; text-align: left; cursor: grab; color: var(--texto); overflow: hidden; transition: border-color .15s, box-shadow .15s, transform .15s; user-select: none; }
+.cal-item:hover { border-color: var(--marca-clara); box-shadow: 0 4px 12px -6px rgb(23 20 46 / .25); }
+.cal-item__capa { width: calc(100% + 14px); margin: -6px -7px 2px; height: 56px; object-fit: cover; pointer-events: none; }
+.cal-item__topo { display: flex; flex-wrap: wrap; gap: 3px; }
+.cal-item__topo:empty { display: none; }
+.cal-item .etiqueta { font-size: 10px; padding: 1px 6px; }
+.cal-item__linha { display: flex; align-items: flex-end; gap: 5px; min-width: 0; flex-wrap: wrap; }
+.cal-item__titulo { flex: 1 1 100%; min-width: 0; font-size: 13px; font-weight: 600; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+.cal-item__linha .responsaveis { margin-left: auto; }
+.cal-item__pronto { color: var(--sucesso); vertical-align: -2px; margin-right: 4px; }
+.cal-item--voando { padding: 6px 7px !important; gap: 4px !important; }
+.cal-dia__adicionar { margin-top: auto; display: flex; align-items: center; gap: 4px; border: 0; background: none; font: inherit; font-size: 12px; font-weight: 600; color: var(--texto-3); padding: 4px 6px; border-radius: 8px; cursor: pointer; opacity: 0; transition: opacity .15s, background .15s; }
+.cal-dia:hover .cal-dia__adicionar, .cal-dia__adicionar:focus-visible { opacity: 1; }
+.cal-dia__adicionar:hover { background: var(--fundo); color: var(--marca); }
+.cal-novo { display: flex; gap: 4px; margin-top: auto; }
+.cal-novo .entrada { flex: 1; min-width: 0; }
+.cal-novo button { border: 0; background: none; color: var(--texto-3); cursor: pointer; display: grid; place-items: center; }
+.cal-sem-data { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 18px; background: rgb(236 232 255 / .6); border: 2px solid transparent; min-height: 180px; }
+@media (max-width: 1200px) { .cal-corpo { grid-template-columns: 1fr; } .cal-sem-data { position: static; } }
