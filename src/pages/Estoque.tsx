@@ -10,6 +10,9 @@ import {
 } from '../lib/estoque'
 import { Selecao } from '../components/Selecao'
 import { opcaoEvento, opcoesCategoria, opcoesUnidade } from '../components/opcoes'
+import { BotaoPlanilha } from '../components/Planilha'
+import { ImportarEstoque } from './ImportarEstoque'
+import { MODELO_ESTOQUE } from '../lib/modelos'
 import './estoque.css'
 
 /** Estoque de materiais: brindes, papel, pilhas, fitas de glicemia, luvas… com entradas, saídas e avisos. */
@@ -19,6 +22,7 @@ export function Estoque() {
   const [excluidos, setExcluidos] = useState<Item[]>([])
   const [verExcluidos, setVerExcluidos] = useState(false)
   const [editar, setEditar] = useState<Item | null>(null)
+  const [importar, setImportar] = useState(false)
   const [eventos, setEventos] = useState<Evento[]>([])
   const [busca, setBusca] = useState('')
   const [categoria, setCategoria] = useState('')
@@ -45,7 +49,12 @@ export function Estoque() {
     <div className="corpo">
       <div className="linha" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div><h2>Estoque</h2><p className="pequeno">Materiais do {cliente.nome} para eventos e para o dia a dia</p></div>
-        <Botao icone={<Plus size={16} />} onClick={() => setNovo(true)}>Novo item</Botao>
+        <div className="linha" style={{ gap: 8 }}>
+          <BotaoPlanilha nome="Estoque" modelo={MODELO_ESTOQUE} onImportar={() => setImportar(true)}
+            exportar={() => ({ colunas: ['Nome', 'Categoria', 'Unidade', 'Quantidade', 'Mínimo', 'Local', 'Validade', 'Situação'],
+              linhas: (itens ?? []).map((i) => [i.nome, i.categoria, i.unidade, i.quantidade, i.minimo, i.local, i.validade ? new Date(`${i.validade}T12:00:00`) : null, situacao(i) === 'ok' ? 'OK' : situacao(i) === 'baixo' ? 'Repor' : 'Zerado']) })} />
+          <Botao icone={<Plus size={16} />} onClick={() => setNovo(true)}>Novo item</Botao>
+        </div>
       </div>
 
       {alertas.length > 0 && (
@@ -100,6 +109,7 @@ export function Estoque() {
         })}
       </div>
 
+      {importar && <ImportarEstoque onFechar={() => setImportar(false)} onImportado={carregar} />}
       {novo && <NovoItem onFechar={() => setNovo(false)} onCriar={async (d, ini) => { await criarItem(cliente.id, d, ini); setNovo(false); await carregar() }} />}
       {mov && <Movimentar item={mov.item} tipo={mov.tipo} eventos={eventos} onFechar={() => setMov(null)} onFeito={async () => { setMov(null); await carregar() }} />}
       {hist && <Historico item={hist} onFechar={() => setHist(null)} onEditar={() => { setEditar(hist); setHist(null) }} />}

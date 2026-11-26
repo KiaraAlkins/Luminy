@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Download, Lock, MessageCircle, Search, Send, ShieldCheck, Tag } from 'lucide-react'
+import { Lock, MessageCircle, Search, Send, ShieldCheck, Tag } from 'lucide-react'
 import { Botao, Chip } from '../../components/ui'
 import { useSessao } from '../../lib/sessao'
 import {
@@ -12,6 +12,10 @@ import { LogoConvenio } from '../../components/Convenio'
 import { EnvioEmMassa } from './EnvioEmMassa'
 import { Selecao } from '../../components/Selecao'
 import { opcaoCampanha } from '../../components/opcoes'
+import { BotaoPlanilha } from '../../components/Planilha'
+import { ImportarLeads } from './ImportarLeads'
+import { MODELO_LEADS } from '../../lib/modelos'
+import type { Tabela } from '../../lib/planilhas'
 import './campanhas.css'
 
 /** Leads que chegaram pelos QR: funil, segmentos e envio de campanhas. Sigiloso: só quem tem acesso a leads. */
@@ -26,6 +30,7 @@ export function Leads() {
   const [soAceite, setSoAceite] = useState(false)
   const [marcados, setMarcados] = useState<Set<string>>(new Set())
   const [envio, setEnvio] = useState<Lead[] | null>(null)
+  const [importar, setImportar] = useState(false)
   const campanhaId = params.get('campanha') ?? ''
   const aberto = params.get('lead')
 
@@ -59,12 +64,11 @@ export function Leads() {
   const selecionados = (leads ?? []).filter((l) => marcados.has(l.id))
   const alvoEnvio = selecionados.length ? selecionados : filtrados
 
-  function exportar() {
-    const linhas = [['Nome', 'WhatsApp', 'E-mail', 'Etapa', 'Campanha', 'Segmentos', 'Aceita campanhas', 'Chegou em'],
-      ...alvoEnvio.map((l) => [l.nome, l.whatsapp ?? '', l.email ?? '', nomeEtapaLead(l.etapa), nomeCampanha(l.campanha_id), l.segmentos.join(' | '), podeReceberCampanha(l) ? 'Sim' : 'Não', new Date(l.criado_em).toLocaleString('pt-BR')])]
-    const csv = linhas.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n')
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })); a.download = 'leads.csv'; a.click()
-  }
+  /** Planilha com a lista atual (ou só os selecionados). */
+  const tabela = (): Tabela => ({
+    colunas: ['Nome', 'WhatsApp', 'E-mail', 'Plano de saúde', 'Etapa', 'Campanha', 'Segmentos', 'Aceita campanhas', 'Chegou em'],
+    linhas: alvoEnvio.map((l) => [l.nome, l.whatsapp, l.email, l.dados.convenio ?? null, nomeEtapaLead(l.etapa), nomeCampanha(l.campanha_id), l.segmentos.join(', '), podeReceberCampanha(l) ? 'Sim' : 'Não', new Date(l.criado_em)]),
+  })
 
   return (
     <>
@@ -103,7 +107,7 @@ export function Leads() {
         </label>
         {marcados.size > 0 && <button type="button" className="botao botao--fantasma botao--mini" onClick={() => setMarcados(new Set())}>Limpar seleção</button>}
         <span style={{ flex: 1 }} />
-        {ehAdminCliente && <Botao variante="secundario" icone={<Download size={15} />} onClick={exportar} disabled={!alvoEnvio.length}>Exportar</Botao>}
+        {ehAdminCliente && <BotaoPlanilha nome="Leads" exportar={tabela} onImportar={() => setImportar(true)} modelo={MODELO_LEADS} />}
         <Botao icone={<Send size={15} />} onClick={() => setEnvio(alvoEnvio)} disabled={!alvoEnvio.length}>
           Enviar campanha para {marcados.size ? 'selecionados' : segmento ? `"${segmento}"` : 'esta lista'}
         </Botao>
@@ -137,6 +141,7 @@ export function Leads() {
       <p className="pequeno linha" style={{ gap: 6 }}><ShieldCheck size={14} /> Dados sigilosos. Só quem tem acesso a leads vê esta lista, e cada ficha aberta fica registrada.</p>
 
       {aberto && <LeadDetalhe id={aberto} campanhas={campanhas} podeExcluir={ehAdminCliente} onFechar={() => mudarParam('lead', '')} onMudou={carregar} />}
+      {importar && <ImportarLeads onFechar={() => setImportar(false)} onImportado={carregar} />}
       {envio && <EnvioEmMassa leads={envio} rotulo={segmento || (campanhaId ? nomeCampanha(campanhaId) : '')} onFechar={() => setEnvio(null)} onEnviado={carregar} />}
     </>
   )

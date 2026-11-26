@@ -111,3 +111,26 @@ export function venceEmDias(i: Item) {
   if (!i.validade) return null
   return Math.ceil((new Date(`${i.validade}T12:00:00`).getTime() - Date.now()) / 86_400_000)
 }
+
+// ---------------------------------------------------------------- importar planilha
+export type ItemImportado = { nome: string; categoria: string | null; unidade: string | null; quantidade: number | null; minimo: number | null; local: string | null; validade: string | null }
+export async function importarEstoque(clienteId: string, linhas: ItemImportado[]): Promise<{ novos: number; atualizados: number; invalidos: number }> {
+  if (!supabase) {
+    let novos = 0; let atualizados = 0
+    for (const l of linhas) {
+      const i = itensDemo.find((x) => !x.arquivado_em && x.nome.toLowerCase() === l.nome.toLowerCase())
+      if (i) {
+        Object.assign(i, { categoria: l.categoria ?? i.categoria, unidade: l.unidade ?? i.unidade, minimo: l.minimo ?? i.minimo, local: l.local ?? i.local, validade: l.validade ?? i.validade })
+        if (l.quantidade != null) i.quantidade = l.quantidade
+        atualizados++
+      } else {
+        itensDemo.push({ id: crypto.randomUUID(), cliente_id: clienteId, nome: l.nome, categoria: l.categoria, unidade: l.unidade ?? 'un', quantidade: l.quantidade ?? 0, minimo: l.minimo ?? 0, local: l.local, validade: l.validade, observacoes: null, atualizado_em: new Date().toISOString() })
+        novos++
+      }
+    }
+    return { novos, atualizados, invalidos: 0 }
+  }
+  const { data, error } = await supabase.rpc('importar_estoque', { p_cliente: clienteId, p_linhas: linhas })
+  if (error) throw new Error('Não foi possível importar. Confira números e datas na planilha.')
+  return data as { novos: number; atualizados: number; invalidos: number }
+}

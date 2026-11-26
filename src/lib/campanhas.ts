@@ -252,3 +252,23 @@ export function comPlanos(campos: Campo[], planos: { nome: string; foto_url: str
     fotos: Object.fromEntries(planos.filter((p) => p.foto_url && !p.foto_url.startsWith('data:')).map((p) => [p.nome, p.foto_url!])),
   }))
 }
+
+// ---------------------------------------------------------------- importar planilha
+export type LeadImportado = { nome: string; whatsapp: string | null; email: string | null; dados: Record<string, string>; segmentos: string[]; aceita_campanhas: boolean; etapa: EtapaLead | null }
+export async function importarLeads(clienteId: string, linhas: LeadImportado[], origem: string): Promise<{ inseridos: number; repetidos: number; invalidos: number }> {
+  if (!supabase) {
+    let inseridos = 0; let repetidos = 0
+    const dig = (t: string | null) => (t ?? '').replace(/\D/g, '').slice(-10)
+    for (const l of linhas) {
+      if (demoLeads.some((x) => (l.whatsapp && dig(x.whatsapp) === dig(l.whatsapp)) || (l.email && x.email === l.email))) { repetidos++; continue }
+      demoLeads.unshift({ id: crypto.randomUUID(), cliente_id: clienteId, campanha_id: null, peca_id: null, nome: l.nome, whatsapp: l.whatsapp, email: l.email, dados: l.dados,
+        segmentos: l.segmentos, etapa: l.etapa && l.etapa !== 'perdido' ? l.etapa : 'novo', motivo_perda: null, proxima_acao: null, proxima_acao_em: null,
+        aceite_contato_em: new Date().toISOString(), aceite_campanhas_em: l.aceita_campanhas ? new Date().toISOString() : null, descadastrado_em: null, criado_em: new Date().toISOString() })
+      inseridos++
+    }
+    return { inseridos, repetidos, invalidos: 0 }
+  }
+  const { data, error } = await supabase.rpc('importar_leads', { p_cliente: clienteId, p_linhas: linhas, p_origem: origem })
+  if (error) throw new Error(error.code === '42501' ? 'Só administradores importam leads.' : 'Não foi possível importar.')
+  return data as { inseridos: number; repetidos: number; invalidos: number }
+}

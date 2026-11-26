@@ -109,10 +109,22 @@ select t.ok((select count(*) from eventos_lead where tipo = 'aberto') = 1, 'aber
 update leads set etapa = 'em_contato' where nome = 'Carlos Teste';
 select t.ok((select count(*) from eventos_lead where tipo = 'etapa' and autor_id = '00000000-0000-0000-0000-00000000c1a2') = 1, 'mudança de etapa do lead entra no histórico com quem mudou');
 select t.ok((select total_leads from resumo_campanhas('20000000-0000-0000-0000-000000000001') where total_leads > 0) = 2, 'resumo da campanha conta os leads');
+select t.ok(importar_leads('20000000-0000-0000-0000-000000000001',
+  '[{"nome":"Ana Planilha","whatsapp":"(61) 99999-1234","segmentos":["Hipertensão"],"aceita_campanhas":true},
+    {"nome":"Carlos de novo","whatsapp":"+55 61 98812-4821"},
+    {"nome":"Sem contato"}]', 'planilha.xlsx')
+  = '{"inseridos":1,"repetidos":1,"invalidos":1}'::jsonb, 'importar leads pula repetidos (mesmo WhatsApp) e linhas sem contato');
+select t.ok((select aceite_campanhas_em is not null and 'Hipertensão' = any (segmentos) from leads where nome = 'Ana Planilha'), 'lead importado guarda segmentos e o aceite de campanhas');
+select t.ok((select count(*) from eventos_lead e join leads l on l.id = e.lead_id where l.nome = 'Ana Planilha' and e.tipo = 'importado') = 1, 'importação fica no histórico do lead');
 
 -- ---------------------------------------------------------------- Braion (membro)
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
 select t.ok((select count(*) from tarefas) = 1, 'cada pessoa vê a própria tarefa pessoal');
+do $$ begin
+  perform importar_leads('20000000-0000-0000-0000-000000000001', '[{"nome":"X","whatsapp":"61911112222"}]', 'teste');
+  raise exception 'FALHOU: membro comum importou leads';
+exception when insufficient_privilege then raise notice 'ok - só administradores importam leads';
+end $$;
 do $$
 declare v_card uuid; v_imp uuid; v_faz uuid;
 begin
@@ -305,6 +317,11 @@ select t.ok((select arquivado_por = '00000000-0000-0000-0000-00000000a9e1' and q
 select t.ok((select count(*) from estoque_movimentos where item_id = '60000000-0000-0000-0000-000000000001') = 3, 'o histórico de movimentações continua guardado');
 insert into estoque_itens (cliente_id, nome, unidade) values ('20000000-0000-0000-0000-000000000001', 'fitas de glicemia', 'caixa');
 select t.ok(true, 'dá para recadastrar um item com o mesmo nome de um excluído');
+select t.ok(importar_estoque('20000000-0000-0000-0000-000000000001',
+  '[{"nome":"Fitas de glicemia","quantidade":"7"},{"nome":"Pilhas AA","quantidade":"4","unidade":"pacote"},{"nome":""}]')
+  = '{"novos":1,"atualizados":1,"invalidos":1}'::jsonb, 'importar estoque cria os novos e atualiza os existentes pelo nome');
+select t.ok((select quantidade from estoque_itens where nome = 'fitas de glicemia' and arquivado_em is null) = 7, 'quantidade da planilha vira ajuste no item existente');
+select t.ok((select quantidade from estoque_itens where nome = 'Pilhas AA') = 4, 'item novo da planilha entra com o saldo');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
 select t.ok((select count(*) from estoque_itens) = 0, 'quem não é da equipe não vê o estoque');
 select t.ok((select count(*) from card_comentarios) = 0, 'quem não é da equipe não vê os comentários dos cards');
