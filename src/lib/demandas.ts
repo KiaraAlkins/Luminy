@@ -6,7 +6,7 @@ export type Demanda = {
   id: string; cliente_id: string; titulo: string; descricao: string | null; criado_por: string; responsavel_id: string | null
   colaboradores: string[]; status: StatusDemanda; prioridade: Prioridade; categoria: string | null; setor_solicitante: string | null
   prazo: string | null; justificativa: string | null; card_id: string | null; aceita_em: string | null; concluida_em: string | null
-  posicao: number; criado_em: string; atualizado_em: string
+  posicao: number; criado_em: string; atualizado_em: string; evento_id: string | null
 }
 export type EventoDemanda = { id: number; demanda_id: string; autor_id: string | null; tipo: 'comentario' | 'situacao' | 'criada' | 'aceita' | 'card'; texto: string | null; detalhe: Record<string, string | null>; criado_em: string; autor?: string }
 
@@ -19,17 +19,17 @@ export const SITUACOES: { id: StatusDemanda; nome: string; cor: string; justific
   { id: 'cancelada', nome: 'Cancelada', cor: '#98A2B3', justificativa: true },
 ]
 export const nomeSituacao = (s: StatusDemanda) => SITUACOES.find((x) => x.id === s)?.nome ?? s
-export const CATEGORIAS_DEMANDA = ['Arte', 'Post', 'Vídeo', 'Fotografia', 'Evento', 'Impresso', 'Texto', 'Outro']
+export const CATEGORIAS_DEMANDA = ['Arte', 'Impresso', 'Brindes', 'Estrutura do evento', 'Fotografia', 'Vídeo', 'Texto', 'Outro']
 export const SETORES = ['Diretoria', 'Enfermagem', 'Corpo clínico', 'RH', 'Comercial', 'Qualidade', 'Recepção', 'Ouvidoria']
 
 // ---------------------------------------------------------------- demonstração
 const h = (n: number) => new Date(Date.now() + n * 3_600_000).toISOString()
-const base = { descricao: null, colaboradores: [], justificativa: null, card_id: null, aceita_em: null, concluida_em: null, criado_por: 'p2' }
+const base = { descricao: null, colaboradores: [], justificativa: null, card_id: null, aceita_em: null, concluida_em: null, criado_por: 'p2', evento_id: null as string | null }
 let demo: Demanda[] = [
-  { ...base, id: 'd1', cliente_id: 'hospital', titulo: 'Convite para a palestra de diabetes', status: 'aguardando_aceite', prioridade: 'comum', categoria: 'Arte', setor_solicitante: 'Enfermagem', prazo: h(70), responsavel_id: null, posicao: 1, criado_em: h(-3), atualizado_em: h(-3),
+  { ...base, id: 'd1', cliente_id: 'hospital', titulo: 'Convite para a palestra de diabetes', evento_id: 'v2', status: 'aguardando_aceite', prioridade: 'comum', categoria: 'Arte', setor_solicitante: 'Enfermagem', prazo: h(70), responsavel_id: null, posicao: 1, criado_em: h(-3), atualizado_em: h(-3),
     descricao: 'Arte para feed e story, com data 10/12 às 14h no auditório.' },
   { ...base, id: 'd4', cliente_id: 'hospital', titulo: 'Placa de boas-vindas da nova UTI', status: 'aguardando_aceite', prioridade: 'alta', categoria: 'Impresso', setor_solicitante: 'Diretoria', prazo: h(30), responsavel_id: null, posicao: 2, criado_em: h(-1), atualizado_em: h(-1) },
-  { ...base, id: 'd2', cliente_id: 'hospital', titulo: 'Banner da campanha de vacinação', status: 'a_fazer', prioridade: 'alta', categoria: 'Arte', setor_solicitante: 'Enfermagem', prazo: h(6), responsavel_id: 'p1', posicao: 1, criado_em: h(-26), atualizado_em: h(-20), aceita_em: h(-20) },
+  { ...base, id: 'd2', cliente_id: 'hospital', titulo: 'Kit de brindes do mutirão de glicemia', evento_id: 'v1', status: 'a_fazer', prioridade: 'alta', categoria: 'Arte', setor_solicitante: 'Enfermagem', prazo: h(6), responsavel_id: 'p1', posicao: 1, criado_em: h(-26), atualizado_em: h(-20), aceita_em: h(-20) },
   { ...base, id: 'd3', cliente_id: 'hospital', titulo: 'Vídeo depoimento da maternidade', status: 'em_andamento', prioridade: 'comum', categoria: 'Vídeo', setor_solicitante: 'Diretoria', prazo: h(52), responsavel_id: 'p1', colaboradores: ['p4'], posicao: 1, criado_em: h(-70), atualizado_em: h(-8), aceita_em: h(-60) },
   { ...base, id: 'd5', cliente_id: 'hospital', titulo: 'Fotos do novo centro cirúrgico', status: 'em_andamento', prioridade: 'comum', categoria: 'Fotografia', setor_solicitante: 'Qualidade', prazo: h(-4), responsavel_id: 'p3', posicao: 2, criado_em: h(-90), atualizado_em: h(-10), aceita_em: h(-80) },
   { ...base, id: 'd6', cliente_id: 'hospital', titulo: 'Folder do check-up executivo', status: 'concluida', prioridade: 'comum', categoria: 'Impresso', setor_solicitante: 'Comercial', prazo: h(-30), responsavel_id: 'p2', posicao: 1, criado_em: h(-200), atualizado_em: h(-28), aceita_em: h(-190), concluida_em: h(-28) },
@@ -47,7 +47,7 @@ export async function listarDemandas(clienteId: string): Promise<Demanda[]> {
   return data as Demanda[]
 }
 
-export type NovaDemanda = Pick<Demanda, 'titulo' | 'descricao' | 'categoria' | 'setor_solicitante' | 'prioridade' | 'prazo' | 'responsavel_id' | 'colaboradores'>
+export type NovaDemanda = Pick<Demanda, 'titulo' | 'descricao' | 'categoria' | 'setor_solicitante' | 'prioridade' | 'prazo' | 'responsavel_id' | 'colaboradores' | 'evento_id'>
 export async function criarDemanda(clienteId: string, d: NovaDemanda) {
   if (!supabase) {
     demo = [...demo, { ...base, ...d, id: crypto.randomUUID(), cliente_id: clienteId, status: 'aguardando_aceite', posicao: Date.now(), criado_por: 'p1', criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString() }]

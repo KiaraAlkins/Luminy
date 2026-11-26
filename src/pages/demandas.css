@@ -1,0 +1,9 @@
+.card--aguardando { border-style: dashed; border-color: var(--marca-clara); }
+.aceitar { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 7px; border-radius: 10px; border: 0; background: var(--marca); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s, transform .15s cubic-bezier(.34,1.56,.64,1); }
+.aceitar:hover { background: var(--marca-forte); transform: translateY(-1px); }
+.aceitar:active { transform: scale(.96); }
+.trilha-demanda { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+.trilha-demanda .etapas-lead__item { font-size: 13px; padding: 9px 6px; }
+.comentarios__sistema .comentarios__avatar { background: var(--fundo); color: var(--texto-3); }
+.painel-propriedades__acao:disabled { opacity: .6; cursor: wait; }
+.demanda-evento { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; padding: 2px 8px; border-radius: 6px; background: rgb(46 144 250 / .1); color: #1d6fc7; font-size: 12px; font-weight: 700; }

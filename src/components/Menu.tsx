@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link as RouterLink, NavLink, useLocation } from 'react-router-dom'
 import {
-  BadgeCheck, Boxes, Briefcase, Building2, CalendarDays, CalendarRange, ChevronDown, ClipboardList, Columns3, FileSignature, Handshake, HeartPulse, Home,
+  BadgeCheck, Boxes, Briefcase, Building2, CalendarDays, CalendarRange, ChevronDown, ClipboardList, Columns3, FileSignature, Handshake, HeartPulse, Home, Inbox,
   LayoutGrid, Lightbulb, ListChecks, LogOut, Package, Palette, PanelLeftClose, PanelLeftOpen, QrCode, Repeat, Send,
   SlidersHorizontal, Ticket, Users, Wallet, Waypoints,
 } from 'lucide-react'
@@ -33,6 +33,7 @@ const GUIAS: Guia[] = [
       { para: '/eventos', rotulo: 'Empresas', icone: Building2, fim: true, ativoEm: /^\/eventos(\/empresas\/.*)?$/ },
       { para: '/eventos/parcerias', rotulo: 'Parcerias', icone: Waypoints },
       { para: '/eventos/agenda', rotulo: 'Agenda de eventos', icone: CalendarRange },
+      { para: '/demandas', rotulo: 'Demandas', icone: Inbox },
       { para: '/eventos/planos', rotulo: 'Planos de saúde', icone: HeartPulse },
       { para: '/eventos/campanhas', rotulo: 'Campanhas QR', icone: QrCode, somenteLeads: true },
       { para: '/eventos/leads', rotulo: 'Leads', icone: Users, somenteLeads: true },
