@@ -94,13 +94,15 @@ export async function moverCard(card: Card, colunaId: string, posicao: number, m
   if (error) throw error
 }
 
-export async function criarCard(quadroId: string, colunaId: string, titulo: string, posicao: number, postagemEm: string | null = null) {
+export async function criarCard(quadroId: string, colunaId: string, titulo: string, posicao: number, postagemEm: string | null = null): Promise<string> {
   if (!supabase) {
-    cardsDemo = [...cardsDemo, { ...base, id: crypto.randomUUID(), coluna_id: colunaId, titulo, tipo_conteudo: null, redes: [], prioridade: 'comum', posicao, postagem_em: postagemEm }]
-    return
+    const id = crypto.randomUUID()
+    cardsDemo = [...cardsDemo, { ...base, id, coluna_id: colunaId, titulo, tipo_conteudo: null, redes: [], prioridade: 'comum', posicao, postagem_em: postagemEm }]
+    return id
   }
-  const { error } = await supabase.from('cards').insert({ quadro_id: quadroId, coluna_id: colunaId, titulo, posicao, postagem_em: postagemEm })
+  const { data, error } = await supabase.from('cards').insert({ quadro_id: quadroId, coluna_id: colunaId, titulo, posicao, postagem_em: postagemEm }).select('id').single()
   if (error) throw error
+  return data.id as string
 }
 
 export type EdicaoCard = Partial<Pick<Card, 'titulo' | 'briefing' | 'tipo_conteudo' | 'redes' | 'entrega_em' | 'postagem_em' | 'prioridade' | 'legenda' | 'capa_path' | 'capa_cor' | 'checklist' | 'anexos' | 'responsaveis' | 'postado_em' | 'postado_por' | 'link_post' | 'story_link' | 'story_link_texto'>>

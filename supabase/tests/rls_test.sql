@@ -505,4 +505,28 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select t.ok((select count(*) from contas_sociais) = 0, 'quem não é da equipe não vê as contas das redes');
 reset role;
 
+-- ---------------------------------------------------------------- Acervo de Pauta
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+insert into pautas (id, cliente_id, titulo, data_ref) values ('80000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Mitos do câncer de próstata', 'novembro-azul');
+select t.ok((select count(*) from pautas) = 1, 'equipe guarda ideias no acervo');
+insert into pauta_votos (pauta_id) values ('80000000-0000-0000-0000-000000000001');
+select t.ok((select count(*) from pauta_votos) = 1, 'equipe vota nas ideias');
+do $$ begin
+  insert into pauta_votos (pauta_id, usuario_id) values ('80000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-00000000c1a2');
+  raise exception 'FALHOU: votou no lugar de outra pessoa';
+exception when insufficient_privilege then raise notice 'ok - ninguém vota no lugar de outra pessoa';
+end $$;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+update pautas set situacao = 'usada', usada_em = now() where id = '80000000-0000-0000-0000-000000000001';
+select t.ok((select situacao = 'usada' from pautas where id = '80000000-0000-0000-0000-000000000001'), 'ideia vira card e fica marcada como usada');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
+select t.ok((select count(*) from pautas) = 0 and (select count(*) from pauta_votos) = 0, 'quem não é da equipe não vê o acervo');
+do $$ begin
+  insert into pautas (cliente_id, titulo) values ('20000000-0000-0000-0000-000000000001', 'Intrusa');
+  raise exception 'FALHOU: estranho criou pauta';
+exception when insufficient_privilege then raise notice 'ok - só a equipe cria ideias';
+end $$;
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'
