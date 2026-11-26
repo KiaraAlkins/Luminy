@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  AlertTriangle, AlignLeft, CalendarClock, Check, CheckSquare, Copy, ExternalLink, FileText, ImagePlus, Link2, MessageSquare,
+  AlertTriangle, AlignLeft, BadgeCheck, CalendarClock, Check, CheckSquare, Copy, ExternalLink, FileText, ImagePlus, Link2, MessageSquare,
   Paperclip, Play, Plus, Send, Trash2, X,
 } from 'lucide-react'
 import { Janela } from '../../components/Janela'
@@ -8,6 +8,8 @@ import { Selecao } from '../../components/Selecao'
 import { COR_TIPO, OPCOES_PRIORIDADE, iconeTipo, opcoesTipoConteudo } from '../../components/opcoes'
 import { useFoco } from '../../lib/foco'
 import { EscolherResponsaveis } from './Pessoas'
+import { EnviarAprovacao } from './EnviarAprovacao'
+import { aprovacaoDoCard, type Aprovacao } from '../../lib/aprovacoes'
 import {
   REDES, TIPOS, apagarArquivoCard, apagarComentario, comentar, enviarArquivoCard, linksArquivos, listarComentarios,
   type Anexo, type Card, type Coluna, type Comentario, type EdicaoCard, type ItemChecklist, type Pessoa,
@@ -58,6 +60,8 @@ export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMov
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
+  const [aprovacao, setAprovacao] = useState<Aprovacao | null>(null)
+  const [enviarAprovacao, setEnviarAprovacao] = useState(false)
   const arquivo = useRef<HTMLInputElement>(null)
   const capaArquivo = useRef<HTMLInputElement>(null)
   const coluna = colunas.find((c) => c.id === card.coluna_id)
@@ -66,6 +70,7 @@ export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMov
   useEffect(() => { void linksArquivos(caminhos ? caminhos.split('|') : []).then(setLinks) }, [caminhos])
   const carregarComentarios = useCallback(async () => setComentarios(await listarComentarios(card.id)), [card.id])
   useEffect(() => { void Promise.resolve().then(carregarComentarios) }, [carregarComentarios])
+  useEffect(() => { void aprovacaoDoCard(card.id).then(setAprovacao) }, [card.id])
 
   async function salvar(p: EdicaoCard) {
     setErro(null)
@@ -130,6 +135,17 @@ export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMov
             {card.redes.map((r) => <span key={r} className="etiqueta etiqueta--leve">{r}</span>)}
           </div>
           {card.motivo_impedimento && <p className="card__impedimento"><AlertTriangle size={14} aria-hidden /> {card.motivo_impedimento}</p>}
+          {aprovacao && (
+            <div className={`situacao-aprovacao situacao-aprovacao--${aprovacao.situacao}`}>
+              <BadgeCheck size={18} />
+              <div>
+                <strong>{aprovacao.situacao === 'pendente' ? `Aguardando aprovação${aprovacao.aprovador ? ` de ${aprovacao.aprovador}` : ''}` : aprovacao.situacao === 'aprovado' ? `Aprovado por ${aprovacao.respondido_por_nome}` : `Ajuste pedido por ${aprovacao.respondido_por_nome}`}</strong>
+                {aprovacao.resposta && <p>"{aprovacao.resposta}"</p>}
+                <span className="pequeno">{aprovacao.situacao === 'pendente' ? `enviado ${quando(aprovacao.enviado_em)}` : aprovacao.respondido_em ? quando(aprovacao.respondido_em) : ''}</span>
+              </div>
+              {aprovacao.situacao === 'ajuste' && <button type="button" className="botao botao--primario botao--mini" onClick={() => setEnviarAprovacao(true)}>Corrigido, reenviar</button>}
+            </div>
+          )}
 
           <section className="ficha-secao">
             <h4><AlignLeft size={16} /> Briefing</h4>
@@ -242,6 +258,7 @@ export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMov
           <span className="rotulo" style={{ marginTop: 8 }}>Ações</span>
           <button type="button" className="painel-propriedades__acao painel-propriedades__acao--destaque" onClick={() => { void definir(card.titulo, card.id); onFechar() }}>
             <Play size={15} /> {foco?.card_id === card.id ? 'Você está fazendo agora' : 'Fazer agora'}</button>
+          <button type="button" className="painel-propriedades__acao" onClick={() => setEnviarAprovacao(true)}><BadgeCheck size={15} /> {aprovacao?.situacao === 'pendente' ? 'Reenviar para aprovação' : 'Enviar para aprovação'}</button>
           <button type="button" className="painel-propriedades__acao" onClick={() => setEscolherCapa(!escolherCapa)}><ImagePlus size={15} /> Capa</button>
           {escolherCapa && (
             <div className="escolher-capa">
@@ -257,6 +274,7 @@ export function FichaCard({ card, quadroId, colunas, pessoas, onAtualizar, onMov
           <button type="button" className="painel-propriedades__acao painel-propriedades__acao--perigo" onClick={() => { if (confirm('Excluir este card? Esta ação não pode ser desfeita.')) void onExcluir() }}><Trash2 size={15} /> Excluir card</button>
         </aside>
       </div>
+      {enviarAprovacao && <EnviarAprovacao card={card} onFechar={() => setEnviarAprovacao(false)} onEnviado={setAprovacao} />}
       {/* Aviso flutuante no canto: não empurra o conteúdo da ficha */}
       <span className={`ficha-card__salvo${salvo ? ' visivel' : ''}`} role="status" aria-live="polite">{salvo && <><Check size={14} /> Salvo</>}</span>
     </Janela>

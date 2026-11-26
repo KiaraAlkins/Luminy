@@ -450,4 +450,41 @@ select t.ok(exists (select 1 from jsonb_array_elements(painel_tv(:'tvtk')->'conc
 select t.ok(exists (select 1 from jsonb_array_elements(painel_tv(:'tvtk')->'concluidos') c where c->>'titulo' = 'Ronda no hospital'), 'rotina concluída também aparece para a TV comemorar');
 reset role;
 
+-- ---------------------------------------------------------------- Aprovações (link público)
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+insert into aprovacoes (cliente_id, card_id, titulo, legenda) select '20000000-0000-0000-0000-000000000001', id, titulo, 'Legenda v1' from cards where titulo = 'Carrossel';
+select token as aptk1 from aprovacoes where legenda = 'Legenda v1' \gset
+set role anon;
+select t.ok(ver_aprovacao(:'aptk1')->>'titulo' = 'Carrossel', 'quem aprova vê o post pelo link, sem conta');
+do $$ begin
+  perform responder_aprovacao((select token from aprovacoes where legenda = 'Legenda v1'), false, 'Dra. Paula', '');
+  raise exception 'FALHOU: pediu ajuste sem dizer o quê';
+exception when check_violation then raise notice 'ok - pedir ajuste exige o comentário';
+end $$;
+select responder_aprovacao(:'aptk1', false, 'Dra. Paula', 'Trocar a foto da capa');
+select t.ok(ver_aprovacao(:'aptk1')->>'situacao' = 'ajuste', 'pedido de ajuste fica registrado');
+do $$ begin
+  perform responder_aprovacao((select token from aprovacoes where legenda = 'Legenda v1'), true, 'Outra pessoa');
+  raise exception 'FALHOU: respondeu duas vezes';
+exception when check_violation then raise notice 'ok - o mesmo link não é respondido duas vezes';
+end $$;
+reset role;
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+insert into aprovacoes (cliente_id, card_id, titulo, legenda) select '20000000-0000-0000-0000-000000000001', id, titulo, 'Legenda v2' from cards where titulo = 'Carrossel';
+insert into aprovacoes (cliente_id, card_id, titulo, legenda) select '20000000-0000-0000-0000-000000000001', id, titulo, 'Legenda v3' from cards where titulo = 'Carrossel';
+select token as aptk2 from aprovacoes where legenda = 'Legenda v2' \gset
+select token as aptk3 from aprovacoes where legenda = 'Legenda v3' \gset
+set role anon;
+select t.ok(ver_aprovacao(:'aptk2')->>'situacao' = 'inexistente', 'enviar de novo invalida o link anterior');
+select t.ok((select count(*) from aprovacoes) = 0, 'visitante não lê a tabela de aprovações direto');
+select responder_aprovacao(:'aptk3', true, 'Dra. Paula');
+reset role;
+select t.ok((select co.nome from cards c join colunas co on co.id = c.coluna_id where c.titulo = 'Carrossel') = 'Feito e aprovado', 'aprovado: o card vai sozinho para "Feito e aprovado"');
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
+select t.ok((select count(*) from aprovacoes) = 0, 'quem não é da equipe não vê as aprovações');
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'

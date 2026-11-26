@@ -29,6 +29,8 @@ import { MinhasTarefas } from './pages/MinhasTarefas'
 import { Demandas } from './pages/Demandas'
 import { OrdensServico } from './pages/OrdensServico'
 import { Rotinas } from './pages/Rotinas'
+import { Aprovacoes } from './pages/Aprovacoes'
+import { AprovarPost } from './pages/AprovarPost'
 import { PainelTv } from './pages/PainelTv'
 
 /** Campanhas e leads: quem não tem acesso a leads (ex.: jovem aprendiz) nem vê a tela. O banco também bloqueia. */
@@ -85,6 +87,7 @@ export default function App() {
           <Route path="/q/:slug" element={<FormularioPublico />} />
           <Route path="/convite/:token" element={<Convite />} />
           <Route path="/tv/:token" element={<PainelTv />} />
+          <Route path="/aprovar/:token" element={<AprovarPost />} />
           <Route element={<SoLogado />}>
             <Route path="/principal" element={<Principal />} />
           </Route>
@@ -107,6 +110,7 @@ export default function App() {
             <Route path="estoque" element={<Estoque />} />
             <Route path="ordens" element={<OrdensServico />} />
             <Route path="rotinas" element={<Rotinas />} />
+            <Route path="aprovacoes" element={<Aprovacoes />} />
             <Route path="configuracoes" element={<Equipe />} />
             <Route path="*" element={<EmConstrucao />} />
           </Route>

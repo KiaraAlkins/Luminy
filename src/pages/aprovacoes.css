@@ -1,0 +1,39 @@
+.grade-aprovacoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+.aprovacao { display: flex; flex-direction: column; border-radius: 20px; background: var(--superficie); border: 1px solid var(--borda); overflow: hidden; animation: pagina-entra .3s ease-out both; transition: transform .2s, box-shadow .2s; }
+.aprovacao:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -18px rgb(23 20 46 / .4); }
+.aprovacao__imagem { position: relative; height: 180px; flex: none; background: #0f0d1f; display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--texto-sobre-escuro); }
+.aprovacao__imagem img { width: 100%; height: 100%; object-fit: cover; }
+.aprovacao__quantas { position: absolute; right: 10px; bottom: 10px; padding: 2px 8px; border-radius: 999px; background: rgb(0 0 0 / .6); color: #fff; font-size: 12px; font-weight: 700; }
+.aprovacao__selo { position: absolute; left: 10px; top: 10px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; background: #fff; color: var(--texto-2); box-shadow: 0 4px 12px rgb(0 0 0 / .2); }
+.aprovacao__selo--pendente { color: var(--marca); }
+.aprovacao__selo--aprovado { background: var(--sucesso); color: #fff; }
+.aprovacao__selo--ajuste { background: var(--alerta); color: #fff; }
+.aprovacao__selo--expirada { background: var(--texto-3); color: #fff; }
+.aprovacao__corpo { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 4px; }
+.aprovacao__titulo { font-size: 16px; }
+.aprovacao__resposta { margin-top: 6px; padding: 8px 10px; border-radius: 12px; background: var(--fundo); }
+.aprovacao__resposta strong { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
+.aprovacao__resposta p { margin: 4px 0 0; font-size: 14px; }
+.aprovacao__resposta--aprovado strong { color: var(--sucesso); }
+.aprovacao__resposta--ajuste { background: rgb(232 137 12 / .1); }
+.aprovacao__resposta--ajuste strong { color: #8a5000; }
+.aprovacao__acoes { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.aprovacao__interna { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--borda); }
+
+.situacao-aprovacao { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--marca-suave); color: var(--marca-forte); }
+.situacao-aprovacao > div { flex: 1; }
+.situacao-aprovacao p { margin: 4px 0; color: var(--texto); }
+.situacao-aprovacao--aprovado { background: rgb(18 161 95 / .1); color: var(--sucesso); }
+.situacao-aprovacao--ajuste { background: rgb(232 137 12 / .12); color: #8a5000; }
+.escolher-imagens { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.escolher-imagem { position: relative; width: 96px; height: 96px; padding: 0; border-radius: 12px; overflow: hidden; border: 3px solid transparent; background: var(--fundo); cursor: pointer; opacity: .45; transition: opacity .15s, border-color .15s, transform .15s; }
+.escolher-imagem img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.escolher-imagem.marcada { opacity: 1; border-color: var(--marca); }
+.escolher-imagem:active { transform: scale(.95); }
+.escolher-imagem__ordem { position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; background: var(--marca); color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; }
+.aprovacao-pronta { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 8px 0; }
+.aprovacao-pronta__ok { width: 54px; height: 54px; border-radius: 50%; background: var(--sucesso); color: #fff; display: grid; place-items: center; animation: quica-fim .45s cubic-bezier(.34,1.56,.64,1); }
+.aprovacao-pronta code { padding: 8px 12px; border-radius: 10px; background: var(--fundo); font-size: 12px; word-break: break-all; }
+.selo--aprovacao { color: var(--marca); }
+.selo--aprovacao-ok { background: rgb(18 161 95 / .14); color: var(--sucesso); }
+.selo--aprovacao-ajuste { background: rgb(232 137 12 / .16); color: #8a5000; }

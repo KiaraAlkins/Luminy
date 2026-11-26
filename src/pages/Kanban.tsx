@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { AlertTriangle, AlignLeft, CalendarDays, CheckSquare, ChevronsLeft, Columns3, Clock, MessageSquare, Paperclip, Plus, Send, X } from 'lucide-react'
+import { AlertTriangle, AlignLeft, BadgeCheck, CalendarDays, CheckSquare, ChevronsLeft, Columns3, Clock, MessageSquare, Paperclip, Plus, Send, X } from 'lucide-react'
 import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
 import { COR_TIPO, iconeTipo } from '../components/opcoes'
@@ -13,6 +13,7 @@ import {
 import { FichaCard } from './kanban/FichaCard'
 import { Responsaveis } from './kanban/Pessoas'
 import { CalendarioKanban } from './kanban/CalendarioKanban'
+import { listarAprovacoes, type SituacaoAprovacao } from '../lib/aprovacoes'
 import { posicaoEntre, useArrastar, useColunasMinimizadas, type Vaga } from '../lib/arrastar'
 import { CardVoando, FaixaColuna, VagaCard } from '../components/Arrastar'
 import './kanban.css'
@@ -24,7 +25,7 @@ const COR_COLUNA: Record<string, string> = {
 
 type Pendente = { card: Card; coluna: Coluna; posicao: number }
 /** Card no jeito do Trello: capa, etiquetas coloridas, título e selos (prazo, briefing, checklist, anexos, comentários). */
-function CardConteudo({ card, ultima, pessoas = [] }: { card: Card; ultima?: boolean; pessoas?: Pessoa[] }) {
+function CardConteudo({ card, ultima, pessoas = [], aprovacao }: { card: Card; ultima?: boolean; pessoas?: Pessoa[]; aprovacao?: SituacaoAprovacao }) {
   const { foco } = useFoco()
   const feitos = card.checklist.filter((i) => i.feito).length
   const prazo = situacaoPrazo(card.entrega_em, ultima)
@@ -49,6 +50,9 @@ function CardConteudo({ card, ultima, pessoas = [] }: { card: Card; ultima?: boo
           {card.checklist.length > 0 && <span className={`selo${feitos === card.checklist.length ? ' selo--feito' : ''}`} title="Checklist"><CheckSquare size={13} /> {feitos}/{card.checklist.length}</span>}
           {card.anexos.length > 0 && <span className="selo" title="Anexos"><Paperclip size={13} /> {card.anexos.length}</span>}
           {(card.comentarios ?? 0) > 0 && <span className="selo" title="Comentários"><MessageSquare size={13} /> {card.comentarios}</span>}
+          {aprovacao === 'pendente' && <span className="selo selo--aprovacao" title="Aguardando aprovação"><BadgeCheck size={13} /> aguardando</span>}
+          {aprovacao === 'aprovado' && <span className="selo selo--aprovacao-ok" title="Aprovado"><BadgeCheck size={13} /> aprovado</span>}
+          {aprovacao === 'ajuste' && <span className="selo selo--aprovacao-ajuste" title="Pediram ajuste"><BadgeCheck size={13} /> ajuste</span>}
           {foco?.card_id === card.id && <span className="selo selo--agora" title="Você está fazendo agora">● agora</span>}
         </div>
         <Responsaveis ids={card.responsaveis} pessoas={pessoas} />
@@ -68,6 +72,7 @@ export function Kanban() {
   // ?card=… abre o card direto (vindo de Minhas tarefas ou de uma demanda)
   const [abertoId, setAbertoId] = useState<string | null>(() => params.get('card'))
   const [pessoas, setPessoas] = useState<Pessoa[]>([])
+  const [aprovacoes, setAprovacoes] = useState<Map<string, SituacaoAprovacao>>(new Map())
   const [visao, setVisao] = useState<'quadro' | 'calendario'>(() => { try { return localStorage.getItem('luminy.kanban.visao') === 'calendario' ? 'calendario' : 'quadro' } catch { return 'quadro' } })
   const trocarVisao = (v: 'quadro' | 'calendario') => { setVisao(v); try { localStorage.setItem('luminy.kanban.visao', v) } catch { /* sem armazenamento */ } }
   const [novoEm, setNovoEm] = useState<string | null>(null)
@@ -79,6 +84,11 @@ export function Kanban() {
 
   useEffect(() => { void Promise.resolve().then(recarregar) }, [recarregar])
   useEffect(() => { if (clienteId) void listarPessoas(clienteId).then(setPessoas) }, [clienteId])
+  // Situação da aprovação mais recente de cada card (a lista já vem da mais nova para a mais antiga)
+  useEffect(() => {
+    if (!clienteId) return
+    void listarAprovacoes(clienteId).then((l) => { const m = new Map<string, SituacaoAprovacao>(); l.forEach((a) => { if (!m.has(a.card_id)) m.set(a.card_id, a.situacao) }); setAprovacoes(m) }).catch(() => null)
+  }, [clienteId, abertoId])
 
   const porColuna = useMemo(() => {
     const m = new Map<string, Card[]>()
@@ -189,7 +199,7 @@ export function Kanban() {
                   onPointerDown={(e) => iniciar(e, card)}
                   onClick={() => { if (!acabouDeSoltar()) setAbertoId(card.id) }} tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter') setAbertoId(card.id) }}>
-                  <CardConteudo card={card} ultima={col.posicao >= 4 && !col.exige_motivo} pessoas={pessoas} />
+                  <CardConteudo card={card} ultima={col.posicao >= 4 && !col.exige_motivo} pessoas={pessoas} aprovacao={aprovacoes.get(card.id)} />
                 </article>,
               ])}
               {vagaAqui >= visiveis.length && slot}
