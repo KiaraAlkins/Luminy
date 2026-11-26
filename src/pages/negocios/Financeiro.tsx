@@ -11,6 +11,8 @@ import {
   type Contrato, type DadosNegocios, type Lancamento,
 } from '../../lib/negocios'
 import { CampoArquivo, CampoValor, SeletorFornecedor, opcoesCategoriaGasto, valorParaCampo } from './comum'
+import { ImportarGastos } from './ImportarGastos'
+import { MODELO_GASTOS } from '../../lib/modelos'
 import './negocios.css'
 
 const nomeMes = (d: Date) => { const t = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); return t.charAt(0).toUpperCase() + t.slice(1) }
@@ -22,6 +24,7 @@ export function Financeiro() {
   const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1) })
   const [editar, setEditar] = useState<Lancamento | Partial<Lancamento> | null>(null)
   const [editarVerba, setEditarVerba] = useState(false)
+  const [importar, setImportar] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [agora] = useState(() => Date.now())
 
@@ -71,7 +74,7 @@ export function Financeiro() {
       <div className="linha" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div><h2>Financeiro</h2><p className="pequeno">Verba e gastos do marketing. Só administradores veem esta página.</p></div>
         <div className="linha" style={{ gap: 8 }}>
-          <BotaoPlanilha nome={`gastos-marketing-${chave.slice(0, 7)}`} exportar={() => ({
+          <BotaoPlanilha nome={`gastos-marketing-${chave.slice(0, 7)}`} onImportar={() => setImportar(true)} modelo={MODELO_GASTOS} exportar={() => ({
             colunas: ['Data', 'Descrição', 'Categoria', 'Fornecedor', 'Valor', 'Situação'],
             linhas: doMes.map((l) => [new Date(`${l.data}T12:00:00`), l.descricao, l.categoria, fornecedor(l.fornecedor_id), l.valor, l.situacao === 'pago' ? 'Pago' : 'Previsto']),
           })} />
@@ -165,6 +168,7 @@ export function Financeiro() {
         )}
       </section>
 
+      {importar && dados && <ImportarGastos clienteId={cliente.id} fornecedores={dados.fornecedores} onFechar={() => setImportar(false)} onImportado={carregar} />}
       {editarVerba && <VerbaModal mes={mes} atual={verba} onFechar={() => setEditarVerba(false)} onSalvar={async (v) => { await definirVerba(cliente.id, chave, v); setEditarVerba(false); await carregar() }} />}
       {editar && dados && <LancamentoModal clienteId={cliente.id} lancamento={editar} dados={dados} onFechar={() => setEditar(null)}
         onSalvar={async (l) => { await salvar('lancamentos', cliente.id, 'id' in editar && editar.id ? editar.id : null, l); setEditar(null); await carregar() }}

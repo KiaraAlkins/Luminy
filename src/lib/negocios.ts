@@ -264,3 +264,27 @@ export async function abrirArquivo(caminho: string) {
   if (janela) { if (url) janela.location.href = url; else janela.close() }
 }
 export const nomeArquivo = (caminho: string) => caminho.split('/').pop()!.replace(/^\d+-/, '')
+
+// ---------------------------------------------------------------- importar gastos de planilha
+export type GastoImportado = { data: string; descricao: string; valor: number; categoria: string | null; fornecedor: string | null; situacao: 'pago' | 'previsto' }
+const normal = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+
+/** Lança os gastos da planilha. O fornecedor é ligado ao cadastrado com o mesmo nome; se não houver, fica na observação. */
+export async function importarGastos(clienteId: string, fornecedores: Fornecedor[], itens: GastoImportado[]) {
+  const linhas = itens.map((g) => {
+    const f = g.fornecedor ? fornecedores.find((x) => normal(x.nome) === normal(g.fornecedor!)) : null
+    return {
+      cliente_id: clienteId, data: g.data, descricao: g.descricao, valor: g.valor, categoria: g.categoria, situacao: g.situacao,
+      fornecedor_id: f?.id ?? null, observacao: g.fornecedor && !f ? `Fornecedor: ${g.fornecedor}` : null,
+    }
+  })
+  if (!supabase) {
+    demo.lancamentos = [...demo.lancamentos, ...linhas.map((l) => ({ id: novoId(), orcamento_id: null, contrato_id: null, comprovante_path: null, criado_em: new Date().toISOString(), ...l }))]
+    return linhas.length
+  }
+  for (let i = 0; i < linhas.length; i += 500) {
+    const { error } = await supabase.from('lancamentos').insert(linhas.slice(i, i + 500))
+    if (error) throw error
+  }
+  return linhas.length
+}
