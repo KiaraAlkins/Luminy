@@ -487,4 +487,22 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select t.ok((select count(*) from aprovacoes) = 0, 'quem não é da equipe não vê as aprovações');
 reset role;
 
+-- ---------------------------------------------------------------- Agendamento (contas das redes)
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+insert into contas_sociais (cliente_id, rede, usuario) values ('20000000-0000-0000-0000-000000000001', 'Instagram', '@hospitalsantamarta');
+select t.ok((select count(*) from contas_sociais) = 1, 'administrador cadastra a conta do Instagram do cliente');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+select t.ok((select count(*) from contas_sociais) = 1, 'equipe vê as contas das redes');
+do $$ begin
+  insert into contas_sociais (cliente_id, rede, usuario) values ('20000000-0000-0000-0000-000000000001', 'Facebook', 'x');
+  raise exception 'FALHOU: membro cadastrou conta';
+exception when insufficient_privilege then raise notice 'ok - só administradores mexem nas contas das redes';
+end $$;
+update cards set postado_em = now(), postado_por = '00000000-0000-0000-0000-00000000b2a1' where titulo = 'Carrossel';
+select t.ok((select postado_em is not null from cards where titulo = 'Carrossel'), 'equipe marca o post como publicado');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
+select t.ok((select count(*) from contas_sociais) = 0, 'quem não é da equipe não vê as contas das redes');
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'

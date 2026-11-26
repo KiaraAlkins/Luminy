@@ -29,6 +29,7 @@ import { MinhasTarefas } from './pages/MinhasTarefas'
 import { OrdensServico } from './pages/OrdensServico'
 import { Rotinas } from './pages/Rotinas'
 import { Demandas } from './pages/Demandas'
+import { Agendamento } from './pages/Agendamento'
 import { Aprovacoes } from './pages/Aprovacoes'
 import { AprovarPost } from './pages/AprovarPost'
 import { PainelTv } from './pages/PainelTv'
@@ -111,6 +112,7 @@ export default function App() {
             <Route path="ordens" element={<OrdensServico />} />
             <Route path="rotinas" element={<Rotinas />} />
             <Route path="aprovacoes" element={<Aprovacoes />} />
+            <Route path="agendamento" element={<Agendamento />} />
             <Route path="configuracoes" element={<Equipe />} />
             <Route path="*" element={<EmConstrucao />} />
           </Route>

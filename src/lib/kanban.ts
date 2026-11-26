@@ -21,6 +21,9 @@ export type Card = {
   checklist: ItemChecklist[]
   anexos: Anexo[]
   responsaveis: string[]
+  postado_em?: string | null
+  postado_por?: string | null
+  link_post?: string | null
   /** Link temporário da capa (o armazenamento é privado) */
   capa_url?: string | null
   comentarios?: number
@@ -96,7 +99,7 @@ export async function criarCard(quadroId: string, colunaId: string, titulo: stri
   if (error) throw error
 }
 
-export type EdicaoCard = Partial<Pick<Card, 'titulo' | 'briefing' | 'tipo_conteudo' | 'redes' | 'entrega_em' | 'postagem_em' | 'prioridade' | 'legenda' | 'capa_path' | 'capa_cor' | 'checklist' | 'anexos' | 'responsaveis'>>
+export type EdicaoCard = Partial<Pick<Card, 'titulo' | 'briefing' | 'tipo_conteudo' | 'redes' | 'entrega_em' | 'postagem_em' | 'prioridade' | 'legenda' | 'capa_path' | 'capa_cor' | 'checklist' | 'anexos' | 'responsaveis' | 'postado_em' | 'postado_por' | 'link_post'>>
 
 export async function salvarCard(id: string, edicao: EdicaoCard) {
   if (!supabase) { cardsDemo = cardsDemo.map((c) => (c.id === id ? { ...c, ...edicao } : c)); return }
