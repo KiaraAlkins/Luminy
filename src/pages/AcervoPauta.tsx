@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Archive, ArchiveRestore, ArrowRight, CalendarHeart, CalendarDays, CalendarPlus, Pencil, ExternalLink, Lightbulb, Link2, Plus, Repeat, ThumbsUp, Trash2, X } from 'lucide-react'
 import { Botao } from '../components/ui'
@@ -41,18 +41,6 @@ export function AcervoPauta() {
   const [proprias, setProprias] = useState<CampanhaPropria[]>([])
   const [editarCampanha, setEditarCampanha] = useState<CampanhaPropria | 'nova' | null>(null)
   const [verAno, setVerAno] = useState(false)
-  // Faixa fixa: mostra só as datas que cabem numa linha (o resto fica em "Ver o ano todo")
-  const faixa = useRef<HTMLElement>(null)
-  const [colunas, setColunas] = useState(5)
-  const carregou = pautas !== null
-  useEffect(() => {
-    const el = faixa.current; if (!el) return
-    const medir = () => setColunas(Math.max(1, Math.floor((el.clientWidth + 10) / (180 + 10))))
-    medir()
-    const ro = new ResizeObserver(medir); ro.observe(el)
-    return () => ro.disconnect()
-  }, [carregou])
-
   const carregar = useCallback(async () => {
     if (!cliente) return
     try {
@@ -63,8 +51,20 @@ export function AcervoPauta() {
   }, [cliente])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
 
-  const calendario: Calendario = useMemo(() => montarCalendario(new Date(agora), proprias), [agora, proprias])
-  const datas = calendario.proximas
+  const calendario: Calendario = useMemo(() => montarCalendario(new Date(agora), proprias, 61), [agora, proprias])
+  // Próximos 2 meses em colunas: o que já está acontecendo e depois mês a mês
+  const grupos = useMemo(() => {
+    const g: { titulo: string; datas: typeof calendario.proximas }[] = []
+    const agoraData = new Date(agora)
+    const ativas = calendario.proximas.filter((d) => d.inicio.getTime() <= agora)
+    if (ativas.length) g.push({ titulo: 'Acontecendo agora', datas: ativas })
+    calendario.proximas.filter((d) => d.inicio.getTime() > agora).forEach((d) => {
+      const titulo = d.inicio.toLocaleDateString('pt-BR', { month: 'long', ...(d.inicio.getFullYear() !== agoraData.getFullYear() ? { year: 'numeric' } : {}) })
+      const grupo = g.find((x) => x.titulo === titulo)
+      if (grupo) grupo.datas.push(d); else g.push({ titulo, datas: [d] })
+    })
+    return g
+  }, [calendario, agora])
   const abertas = (pautas ?? []).filter((p) => p.situacao === 'ideia')
   const contagem: Record<Aba, number> = {
     ideias: abertas.length,
@@ -122,27 +122,39 @@ export function AcervoPauta() {
           <button type="button" className="botao botao--secundario botao--mini" onClick={() => setEditarCampanha('nova')}><CalendarPlus size={14} /> Nova campanha</button>
         </span>
       </div>
-      <section ref={faixa} className="datas-saude" aria-label="Próximas datas e campanhas" style={{ gridTemplateColumns: `repeat(${colunas}, minmax(0, 1fr))` }}>
-        {datas.slice(0, colunas).map((d) => {
-          const n = abertas.filter((p) => p.data_ref === d.chave).length
-          const falta = Math.ceil((d.inicio.getTime() - agora) / DIA)
-          const agoraMesmo = falta <= 0
-          const marcado = dataFiltro === d.chave
-          return (
-            <div key={d.chave} className="data-saude-caixa">
-              <button type="button" className={`data-saude data-saude--${d.origem}${marcado ? ' marcada' : ''}`} style={{ '--cor': d.cor } as React.CSSProperties}
-                aria-pressed={marcado} onClick={() => setDataFiltro(marcado ? null : d.chave)}>
-                <span className="data-saude__quando">{agoraMesmo ? 'Acontecendo agora' : falta === 1 ? 'Amanhã' : `Em ${falta} dias`}</span>
-                <strong>{d.nome}</strong>
-                <span className="data-saude__desc">{d.descricao}</span>
-                <span className={`data-saude__ideias${n === 0 && falta <= 30 ? ' data-saude__ideias--alerta' : ''}`}>{n ? `${n} ${n === 1 ? 'ideia' : 'ideias'}` : 'Nenhuma ideia ainda'}</span>
-              </button>
-              {d.origem === 'propria' && (
-                <button type="button" className="data-saude__editar" aria-label={`Editar ${d.nome}`} onClick={() => setEditarCampanha(proprias.find((c) => c.id === d.id) ?? null)}><Pencil size={12} /></button>
-              )}
-            </div>
-          )
-        })}
+      <section className="datas-saude" aria-label="Próximas datas e campanhas" style={{ '--colunas': grupos.length } as React.CSSProperties}>
+        {grupos.map((g) => (
+          <div key={g.titulo} className="datas-saude__grupo">
+            <h4>{g.titulo}</h4>
+            <ul>
+              {g.datas.map((d) => {
+                const n = abertas.filter((p) => p.data_ref === d.chave).length
+                const falta = Math.ceil((d.inicio.getTime() - agora) / DIA)
+                const marcado = dataFiltro === d.chave
+                const unicoDia = d.fim.getTime() - d.inicio.getTime() < DIA
+                const quando = falta <= 0 ? (unicoDia ? 'Hoje' : `até ${d.fim.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`)
+                  : falta === 1 ? 'Amanhã' : unicoDia ? `Dia ${d.inicio.getDate()} · em ${falta} dias` : `A partir do dia ${d.inicio.getDate()} · em ${falta} dias`
+                return (
+                  <li key={d.chave} className="data-linha-caixa">
+                    <button type="button" className={`data-linha${marcado ? ' marcada' : ''}`} style={{ '--cor': d.cor } as React.CSSProperties}
+                      aria-pressed={marcado} title={d.descricao} onClick={() => setDataFiltro(marcado ? null : d.chave)}>
+                      <span className="data-linha__cor" />
+                      <span className="data-linha__texto">
+                        <strong>{d.nome}{d.origem === 'propria' && <em> · do cliente</em>}</strong>
+                        <small>{quando} · {d.descricao}</small>
+                      </span>
+                      {n > 0 ? <span className="data-linha__ideias">{n}</span>
+                        : falta <= 30 && <span className="data-linha__sem" title="Nenhuma ideia ainda" aria-label="Nenhuma ideia ainda" />}
+                    </button>
+                    {d.origem === 'propria' && (
+                      <button type="button" className="data-linha__editar" aria-label={`Editar ${d.nome}`} onClick={() => setEditarCampanha(proprias.find((c) => c.id === d.id) ?? null)}><Pencil size={12} /></button>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        ))}
       </section>
 
       <div className="linha pauta-filtros">
