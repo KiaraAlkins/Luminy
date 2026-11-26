@@ -137,7 +137,7 @@ function TextoComAtalhos({ id, valor, onMudar, atalhos, placeholder }: { id?: st
   return (
     <>
       <input id={id} className="entrada" value={valor} onChange={(e) => onMudar(e.target.value)} placeholder={placeholder} />
-      <div className="atalhos">{atalhos.slice(0, 8).map((a) => <button key={a} type="button" className={`opcao opcao--mini${valor === a ? ' marcada' : ''}`} onClick={() => onMudar(valor === a ? '' : a)}>{a}</button>)}</div>
+      <div className="atalhos">{atalhos.map((a) => <button key={a} type="button" className={`opcao opcao--mini${valor === a ? ' marcada' : ''}`} onClick={() => onMudar(valor === a ? '' : a)}>{a}</button>)}</div>
     </>
   )
 }
@@ -149,7 +149,7 @@ function NovaOSJanela({ pessoas, setores, onFechar, onCriar }: { pessoas: Pessoa
   const [erro, setErro] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const campo = (k: keyof NovaOS) => ({ value: (d[k] as string | null) ?? '', onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setD({ ...d, [k]: e.target.value || null }) })
-  const todosSetores = [...new Set([...setores, ...SETORES_OS])]
+  const todosSetores = [...new Set([...SETORES_OS, ...setores])]
 
   async function enviar(e: FormEvent) {
     e.preventDefault(); setErro(null); setSalvando(true)

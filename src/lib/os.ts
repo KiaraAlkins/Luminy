@@ -22,7 +22,7 @@ export const SITUACOES_OS: { id: SituacaoOS; nome: string; cor: string; motivo?:
 ]
 export const nomeSituacaoOS = (s: SituacaoOS) => SITUACOES_OS.find((x) => x.id === s)?.nome ?? s
 export const TIPOS_OS = ['Sinalização', 'Placa', 'Adesivo', 'Impressão', 'Banner', 'Ambientação', 'Comunicação visual', 'Outro']
-export const SETORES_OS = ['UTI', 'Pronto-socorro', 'Centro cirúrgico', 'Maternidade', 'Recepção', 'Internação', 'Ambulatório', 'Laboratório', 'Administração', 'Diretoria']
+export const SETORES_OS = ['RH', 'Diretoria', 'Nutrição', 'UTI', 'Pronto-socorro', 'Centro cirúrgico', 'Maternidade', 'Recepção', 'Internação', 'Ambulatório', 'Administração']
 export const MOTIVOS_AGUARDANDO = ['Material', 'Fornecedor / gráfica', 'Aprovação', 'Informações do setor', 'Liberação do local']
 export const NOME_FOTO: Record<TipoFoto, string> = { local: 'Local (antes)', referencia: 'Referência do pedido', resultado: 'Resultado (depois)' }
 
