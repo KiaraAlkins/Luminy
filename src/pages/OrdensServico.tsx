@@ -30,7 +30,7 @@ const quando = (iso: string) => {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 const opcoesPessoas = (pessoas: Pessoa[], vazio: string): Opcao[] => [{ valor: '', rotulo: vazio }, ...pessoas.map((p) => ({ valor: p.usuario_id, rotulo: p.nome, icone: <FotoPessoa pessoa={p} tamanho={26} /> }))]
-type Filtro = SituacaoOS | 'atrasadas' | 'ativas'
+type Filtro = SituacaoOS | 'atrasadas' | 'ativas' | 'todas' | 'pendentes'
 
 /** Ordens de serviço: os pedidos que chegam pelo Tasy, registrados à mão para o marketing acompanhar. */
 export function OrdensServico() {
@@ -49,7 +49,7 @@ export function OrdensServico() {
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
   useEffect(() => { if (cliente) void listarPessoas(cliente.id).then(setPessoas) }, [cliente])
 
-  const naSituacao = (o: OS, f: Filtro) => f === 'ativas' ? !['concluida', 'cancelada'].includes(o.situacao) : f === 'atrasadas' ? prazoDe(o) === 'atrasadas' : o.situacao === f
+  const naSituacao = (o: OS, f: Filtro) => f === 'todas' ? true : f === 'pendentes' ? o.situacao === 'aberta' || o.situacao === 'aguardando' : f === 'ativas' ? !['concluida', 'cancelada'].includes(o.situacao) : f === 'atrasadas' ? prazoDe(o) === 'atrasadas' : o.situacao === f
   const filtradas = useMemo(() => (lista ?? []).filter((o) => naSituacao(o, filtro) &&
     (!setor || o.setor === setor) && (!responsavel || (responsavel === 'ninguem' ? !o.responsavel_id : o.responsavel_id === responsavel)) &&
     (!busca || `${o.numero} ${o.titulo} ${o.solicitante ?? ''} ${o.setor ?? ''} ${o.local ?? ''}`.toLowerCase().includes(busca.toLowerCase())))
@@ -85,10 +85,15 @@ export function OrdensServico() {
       </div>
 
       <div className="filtros">
-        <label className="busca busca-local" style={{ width: 'auto' }}><Search size={16} aria-hidden />
-          <input aria-label="Buscar OS" placeholder="Buscar por número, resumo, solicitante, setor ou local" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ border: 0, outline: 0, background: 'none', flex: 1 }} /></label>
-        <Selecao rotulo="Setor" valor={setor} onMudar={setSetor} largura={200} opcoes={[{ valor: '', rotulo: 'Todos os setores' }, ...setores.map((s) => ({ valor: s, rotulo: s }))]} />
-        <Selecao rotulo="Responsável" valor={responsavel} onMudar={setResponsavel} largura={220} opcoes={[{ valor: '', rotulo: 'Todos os responsáveis' }, { valor: 'ninguem', rotulo: 'Sem responsável' }, ...pessoas.map((p) => ({ valor: p.usuario_id, rotulo: p.nome, icone: <FotoPessoa pessoa={p} tamanho={24} /> }))]} />
+        <div className="segmentos" role="radiogroup" aria-label="Filtro rápido">
+          {([['todas', 'Todas'], ['pendentes', 'Pendentes'], ['em_andamento', 'Em andamento'], ['concluida', 'Concluídas']] as [Filtro, string][]).map(([id, nome]) => (
+            <button key={id} type="button" role="radio" aria-checked={filtro === id} className={filtro === id ? 'marcado' : ''} onClick={() => setFiltro(id)}>{nome} <span>{conta(id)}</span></button>
+          ))}
+        </div>
+        <label className="busca busca-local" style={{ width: 'auto', minWidth: 180 }}><Search size={16} aria-hidden />
+          <input aria-label="Buscar OS" placeholder="Buscar" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ border: 0, outline: 0, background: 'none', flex: 1 }} /></label>
+        <Selecao rotulo="Setor" valor={setor} onMudar={setSetor} largura={175} opcoes={[{ valor: '', rotulo: 'Setores' }, ...setores.map((s) => ({ valor: s, rotulo: s }))]} />
+        <Selecao rotulo="Responsável" valor={responsavel} onMudar={setResponsavel} largura={190} opcoes={[{ valor: '', rotulo: 'Responsáveis' }, { valor: 'ninguem', rotulo: 'Sem responsável' }, ...pessoas.map((p) => ({ valor: p.usuario_id, rotulo: p.nome, icone: <FotoPessoa pessoa={p} tamanho={24} /> }))]} />
       </div>
 
       <div className="tabela-os">
