@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link as RouterLink, NavLink, useLocation } from 'react-router-dom'
 import {
   BadgeCheck, Boxes, Briefcase, Building2, CalendarDays, CalendarRange, ChevronDown, ClipboardList, Columns3, FileSignature, Handshake, HeartPulse, Home,
-  Inbox, LayoutGrid, Lightbulb, ListChecks, LogOut, Package, Palette, PanelLeftClose, PanelLeftOpen, QrCode, Send,
+  Inbox, LayoutGrid, Lightbulb, ListChecks, LogOut, Package, Palette, PanelLeftClose, PanelLeftOpen, QrCode, Repeat, Send,
   SlidersHorizontal, Ticket, Users, Wallet, Waypoints,
 } from 'lucide-react'
 import logo from '../assets/luminy-logo.svg'
@@ -48,6 +48,7 @@ const GUIAS: Guia[] = [
   },
   {
     id: 'organizacao', rotulo: 'Organização', icone: Boxes, itens: [
+      { para: '/rotinas', rotulo: 'Rotinas', icone: Repeat },
       { para: '/ordens', rotulo: 'Ordens de serviço', icone: ClipboardList },
       { para: '/estoque', rotulo: 'Estoque', icone: Package },
     ],

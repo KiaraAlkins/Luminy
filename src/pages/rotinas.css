@@ -1,0 +1,52 @@
+.progresso-dia { display: flex; align-items: center; gap: 14px; }
+.progresso-dia__barra { flex: 1; height: 10px; border-radius: 5px; background: var(--superficie); border: 1px solid var(--borda); overflow: hidden; }
+.progresso-dia__barra span { display: block; height: 100%; background: linear-gradient(90deg, var(--marca), var(--sucesso)); border-radius: 5px; transition: width .6s cubic-bezier(.34,1.4,.64,1); }
+.progresso-dia em { color: var(--perigo); font-style: normal; font-weight: 700; }
+.lista-rotinas-hoje { list-style: none; margin: 0; padding: 0; background: var(--superficie); border: 1px solid var(--borda); border-radius: 16px; overflow: hidden; }
+.rotina-hoje { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-top: 1px solid var(--borda); animation: pagina-entra .25s ease-out both; }
+.rotina-hoje:first-child { border-top: 0; }
+.rotina-hoje.feita { background: rgb(18 161 95 / .04); }
+.rotina-hoje.feita .tarefa__check { background: var(--sucesso); border-color: var(--sucesso); }
+.rotina-hoje.feita .rotina-hoje__texto > strong { color: var(--texto-3); text-decoration: line-through; }
+.rotina-hoje.atrasada .rotina-hoje__hora { color: var(--perigo); background: rgb(229 72 77 / .1); }
+.rotina-hoje .tarefa__check:disabled { opacity: .35; cursor: not-allowed; }
+.rotina-hoje__hora { font-family: var(--fonte-titulo); font-weight: 700; font-size: 14px; padding: 4px 8px; border-radius: 8px; background: var(--fundo); color: var(--texto-2); min-width: 62px; text-align: center; }
+.rotina-hoje__texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rotina-hoje__foto img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; display: block; }
+
+.grade-rotinas { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.rotina-cartao { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px; background: var(--superficie); border: 1px solid var(--borda); animation: pagina-entra .3s ease-out both; transition: box-shadow .2s, transform .2s; }
+.rotina-cartao:hover { box-shadow: 0 12px 28px -18px rgb(23 20 46 / .4); transform: translateY(-2px); }
+.rotina-cartao.pausada { opacity: .6; }
+.rotina-cartao header { display: flex; align-items: flex-start; gap: 10px; }
+.rotina-cartao__icone { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--marca-suave); color: var(--marca); flex: none; }
+.rotina-cartao__acoes { display: flex; gap: 4px; }
+.rotina-cartao__acoes .icone-botao { width: 30px; height: 30px; border: 0; }
+.rotina-cartao__desc { margin: 0; font-size: 14px; }
+.rotina-cartao__para { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rotina-cartao__semana { display: flex; align-items: center; gap: 5px; padding-top: 10px; border-top: 1px solid var(--borda); }
+.dia-rotina { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--fundo); color: var(--texto-3); font-weight: 700; }
+.dia-rotina small { font-size: 11px; }
+.dia-rotina.ok { background: var(--sucesso); color: #fff; }
+.dia-rotina.parcial { background: rgb(232 137 12 / .25); color: #8a5000; }
+.dia-rotina.falhou { background: rgb(229 72 77 / .15); color: var(--perigo); }
+
+.dias-semana { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.dia-chip { width: 46px; padding: 8px 0; border-radius: 10px; border: 1px solid var(--borda); background: var(--superficie); font: inherit; font-weight: 700; font-size: 13px; color: var(--texto-2); cursor: pointer; transition: background .15s, color .15s, transform .15s cubic-bezier(.34,1.56,.64,1); }
+.dia-chip:active { transform: scale(.92); }
+.dia-chip.marcado { background: var(--marca); border-color: var(--marca); color: #fff; }
+.dias-semana__atalhos { display: inline-flex; gap: 10px; margin-left: 8px; }
+.hora-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 6px 5px 10px; border-radius: 999px; background: var(--marca-suave); color: var(--marca-forte); font-weight: 700; font-size: 13px; }
+.hora-chip button { border: 0; background: none; color: inherit; cursor: pointer; display: grid; padding: 2px; border-radius: 50%; }
+.claro .escolher-responsaveis__mais { border-color: var(--marca-clara); color: var(--marca); }
+.claro .foto-pessoa { border-color: var(--superficie); }
+
+.concluir-rotina .checklist li { background: var(--fundo); }
+.foto-rotina { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; border: 2px dashed var(--borda); cursor: pointer; color: var(--marca); transition: background .15s, border-color .15s; }
+.foto-rotina:hover { background: var(--marca-suave); }
+.foto-rotina.obrigatoria { border-color: var(--marca-clara); }
+.foto-rotina.com-foto { border-style: solid; border-color: var(--sucesso); }
+.foto-rotina img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
+.foto-rotina span { display: flex; flex-direction: column; }
+.foto-rotina strong { color: var(--texto); font-size: 14px; }
+.foto-rotina small { color: var(--texto-3); }

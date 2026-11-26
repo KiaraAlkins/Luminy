@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CalendarClock, Check, ChevronDown, ClipboardList, Columns3, Flag, Inbox, Play, Plus, Sparkles, Trash2, User, X } from 'lucide-react'
+import { CalendarClock, Check, ChevronDown, ClipboardList, Columns3, Repeat, Flag, Inbox, Play, Plus, Sparkles, Trash2, User, X } from 'lucide-react'
 import { Selecao } from '../components/Selecao'
 import { OPCOES_PRIORIDADE } from '../components/opcoes'
 import { comemorar } from '../lib/comemorar'
@@ -10,6 +10,9 @@ import { useSessao } from '../lib/sessao'
 import { criarTarefa, excluirTarefa, meusItens, salvarTarefa, type MeuItem } from '../lib/tarefas'
 import { salvarDemanda } from '../lib/demandas'
 import { salvarOS } from '../lib/os'
+import { desmarcar, marcarFeito, type Ocorrencia } from '../lib/rotinas'
+import { ConcluirRotina } from '../components/ConcluirRotina'
+import { supabase } from '../lib/supabase'
 import type { Prioridade } from '../lib/kanban'
 import './tarefas.css'
 
@@ -19,7 +22,7 @@ const GRUPOS: { id: Grupo; nome: string }[] = [
 ]
 type Filtro = '' | MeuItem['origem']
 const ORIGEM: Record<MeuItem['origem'], { nome: string; icone: React.ElementType }> = {
-  tarefa: { nome: 'Pessoal', icone: User }, demanda: { nome: 'Demanda', icone: Inbox }, card: { nome: 'Kanban', icone: Columns3 }, os: { nome: 'OS', icone: ClipboardList },
+  tarefa: { nome: 'Pessoal', icone: User }, demanda: { nome: 'Demanda', icone: Inbox }, card: { nome: 'Kanban', icone: Columns3 }, os: { nome: 'OS', icone: ClipboardList }, rotina: { nome: 'Rotina', icone: Repeat },
 }
 const paraInput = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '')
 
@@ -39,9 +42,11 @@ export function MinhasTarefas() {
   const [saindo, setSaindo] = useState<Set<string>>(new Set())
   const [verFeitas, setVerFeitas] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [rotinaAberta, setRotinaAberta] = useState<Ocorrencia | null>(null)
+  const eu = supabase ? usuario.id : 'p1'
   const campo = useRef<HTMLInputElement>(null)
 
-  const carregar = useCallback(async () => { if (usuario.id) setItens(await meusItens(usuario.id)) }, [usuario.id])
+  const carregar = useCallback(async () => { if (usuario.id) setItens(await meusItens(eu)) }, [usuario.id, eu])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
 
   const lida = useMemo(() => lerData(texto), [texto])
@@ -61,6 +66,16 @@ export function MinhasTarefas() {
   async function concluir(i: MeuItem) {
     if (i.origem === 'card') { abrir(i); return }
     const feito = !i.concluida
+    if (i.origem === 'rotina' && i.ocorrencia) {
+      // Rotina com checklist ou foto abre a janela de concluir; as simples marcam direto
+      if (feito && (i.ocorrencia.rotina.checklist.length || i.ocorrencia.rotina.exige_foto)) { setRotinaAberta(i.ocorrencia); return }
+      try {
+        if (feito) { setSaindo((s) => new Set(s).add(i.id)); comemorar(); await marcarFeito(i.ocorrencia, {}, eu) }
+        else if (i.registroId) await desmarcar(i.registroId)
+      } catch (e) { setErro((e as Error).message) }
+      setTimeout(() => setSaindo((s) => { const n = new Set(s); n.delete(i.id); return n }), 900)
+      await carregar(); return
+    }
     if (feito) { setSaindo((s) => new Set(s).add(i.id)); comemorar() }
     setItens((l) => l && l.map((x) => (x.id === i.id ? { ...x, concluida: feito, concluida_em: feito ? new Date().toISOString() : null } : x)))
     try {
@@ -74,6 +89,7 @@ export function MinhasTarefas() {
 
   function abrir(i: MeuItem) {
     if (i.origem === 'tarefa') { setAberta(aberta === i.id ? null : i.id); return }
+    if (i.origem === 'rotina') { if (i.cliente_id && clientes.some((c) => c.id === i.cliente_id)) trocarCliente(i.cliente_id); navegar('/rotinas'); return }
     if (i.cliente_id && clientes.some((c) => c.id === i.cliente_id)) trocarCliente(i.cliente_id)
     navegar(i.origem === 'card' ? `/kanban?card=${i.id}` : i.origem === 'os' ? `/ordens?os=${i.id}` : `/demandas?d=${i.id}`)
   }
@@ -129,9 +145,9 @@ export function MinhasTarefas() {
       {erro && <p className="pequeno" style={{ color: 'var(--perigo)' }}>{erro}</p>}
 
       <div className="segmentos" role="radiogroup" aria-label="Mostrar">
-        {(['', 'tarefa', 'demanda', 'card', 'os'] as const).map((f) => (
+        {(['', 'tarefa', 'rotina', 'demanda', 'card', 'os'] as const).map((f) => (
           <button key={f} type="button" role="radio" aria-checked={filtro === f} className={filtro === f ? 'marcado' : ''} onClick={() => setFiltro(f)}>
-            {f ? { tarefa: 'Pessoais', demanda: 'Demandas', card: 'Kanban', os: 'OS' }[f] : 'Tudo'}
+            {f ? { tarefa: 'Pessoais', rotina: 'Rotinas', demanda: 'Demandas', card: 'Kanban', os: 'OS' }[f] : 'Tudo'}
             <span>{(itens ?? []).filter((i) => !i.concluida && (!f || i.origem === f)).length}</span>
           </button>
         ))}
@@ -161,6 +177,7 @@ export function MinhasTarefas() {
           {verFeitas && <ul>{feitas.map(linha)}</ul>}
         </section>
       )}
+      {rotinaAberta && <ConcluirRotina ocorrencia={rotinaAberta} usuarioId={eu} onFechar={() => setRotinaAberta(null)} onFeito={carregar} />}
     </div>
   )
 }

@@ -116,6 +116,11 @@ select t.ok(importar_leads('20000000-0000-0000-0000-000000000001',
   = '{"inseridos":1,"repetidos":1,"invalidos":1}'::jsonb, 'importar leads pula repetidos (mesmo WhatsApp) e linhas sem contato');
 select t.ok((select aceite_campanhas_em is not null and 'Hipertensão' = any (segmentos) from leads where nome = 'Ana Planilha'), 'lead importado guarda segmentos e o aceite de campanhas');
 select t.ok((select count(*) from eventos_lead e join leads l on l.id = e.lead_id where l.nome = 'Ana Planilha' and e.tipo = 'importado') = 1, 'importação fica no histórico do lead');
+insert into rotinas (id, cliente_id, titulo, responsaveis, cada_um) values
+  ('70000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Ronda no hospital', array['00000000-0000-0000-0000-00000000a9e1']::uuid[], false),
+  ('70000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', 'Responder comentários', '{}', false);
+insert into rotinas (id, cliente_id, titulo, exige_foto) values ('70000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000001', 'Foto da recepção', true);
+select t.ok((select count(*) from rotinas) = 3, 'administrador cria rotinas para a equipe');
 
 -- ---------------------------------------------------------------- Braion (membro)
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
@@ -142,6 +147,23 @@ do $$ begin
   perform importar_leads('20000000-0000-0000-0000-000000000001', '[{"nome":"X","whatsapp":"61911112222"}]', 'teste');
   raise exception 'FALHOU: membro comum importou leads';
 exception when insufficient_privilege then raise notice 'ok - só administradores importam leads';
+end $$;
+do $$ begin
+  insert into rotinas (cliente_id, titulo) values ('20000000-0000-0000-0000-000000000001', 'Rotina do membro');
+  raise exception 'FALHOU: membro criou rotina';
+exception when insufficient_privilege then raise notice 'ok - só administradores criam rotinas';
+end $$;
+do $$ begin
+  insert into rotina_registros (rotina_id, data) values ('70000000-0000-0000-0000-000000000001', current_date);
+  raise exception 'FALHOU: marcou rotina de outra pessoa';
+exception when insufficient_privilege then raise notice 'ok - só o responsável marca a rotina dele';
+end $$;
+insert into rotina_registros (rotina_id, data, horario) values ('70000000-0000-0000-0000-000000000002', current_date, '09:00');
+select t.ok((select count(*) from rotina_registros) = 1, 'rotina aberta: qualquer pessoa da equipe marca');
+do $$ begin
+  insert into rotina_registros (rotina_id, data) values ('70000000-0000-0000-0000-000000000003', current_date);
+  raise exception 'FALHOU: concluiu sem foto';
+exception when check_violation then raise notice 'ok - rotina com foto obrigatória pede a foto';
 end $$;
 do $$
 declare v_card uuid; v_imp uuid; v_faz uuid;
@@ -339,6 +361,13 @@ select t.ok((select arquivado_por = '00000000-0000-0000-0000-00000000a9e1' and q
 select t.ok((select count(*) from estoque_movimentos where item_id = '60000000-0000-0000-0000-000000000001') = 3, 'o histórico de movimentações continua guardado');
 insert into estoque_itens (cliente_id, nome, unidade) values ('20000000-0000-0000-0000-000000000001', 'fitas de glicemia', 'caixa');
 select t.ok(true, 'dá para recadastrar um item com o mesmo nome de um excluído');
+insert into rotina_registros (rotina_id, data) values ('70000000-0000-0000-0000-000000000001', current_date);
+select t.ok((select usuario_id = '00000000-0000-0000-0000-00000000a9e1' from rotina_registros where rotina_id = '70000000-0000-0000-0000-000000000001'), 'jovem aprendiz marca a ronda dele');
+do $$ begin
+  insert into rotina_registros (rotina_id, data, horario) values ('70000000-0000-0000-0000-000000000002', current_date, '09:00');
+  raise exception 'FALHOU: rotina feita duas vezes';
+exception when unique_violation then raise notice 'ok - basta uma pessoa fazer: não marca duas vezes o mesmo horário';
+end $$;
 select t.ok(importar_estoque('20000000-0000-0000-0000-000000000001',
   '[{"nome":"Fitas de glicemia","quantidade":"7"},{"nome":"Pilhas AA","quantidade":"4","unidade":"pacote"},{"nome":""}]')
   = '{"novos":1,"atualizados":1,"invalidos":1}'::jsonb, 'importar estoque cria os novos e atualiza os existentes pelo nome');
@@ -417,7 +446,8 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select concluir_foco((select id from focos where titulo = 'Carrossel Novembro Azul'));
 reset role;
 set role anon;
-select t.ok(jsonb_array_length(painel_tv(:'tvtk')->'concluidos') = 1, 'tarefa concluída aparece para a TV comemorar');
+select t.ok(exists (select 1 from jsonb_array_elements(painel_tv(:'tvtk')->'concluidos') c where c->>'titulo' <> 'Ronda no hospital' and c->>'titulo' <> 'Responder comentários'), 'tarefa concluída aparece para a TV comemorar');
+select t.ok(exists (select 1 from jsonb_array_elements(painel_tv(:'tvtk')->'concluidos') c where c->>'titulo' = 'Ronda no hospital'), 'rotina concluída também aparece para a TV comemorar');
 reset role;
 
 \warn 'Todos os testes de acesso passaram.'

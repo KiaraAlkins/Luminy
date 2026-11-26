@@ -49,3 +49,4 @@
 .tarefa__edicao { display: flex; flex-direction: column; gap: 8px; padding: 0 14px 14px 48px; animation: pagina-entra .2s ease-out; }
 .tarefa__edicao .entrada { background: var(--superficie); }
 @media (prefers-reduced-motion: reduce) { .tarefa, .tarefa--saindo, .tarefa--feita .tarefa__check, .nova-tarefa__data { animation: none; } }
+.tarefa__origem--rotina { color: var(--sucesso); }

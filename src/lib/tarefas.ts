@@ -1,13 +1,16 @@
 import { supabase } from './supabase'
 import type { Prioridade } from './kanban'
+import { dataIso, descreverRepeticao, feitoPor, listarRegistros, listarRotinas, minha, ocorrenciasNoDia, prazoDe, type Ocorrencia } from './rotinas'
 
 export type StatusTarefa = 'a_fazer' | 'em_andamento' | 'concluida' | 'cancelada' | 'impedida'
 export type Tarefa = { id: string; titulo: string; descricao: string | null; prazo: string | null; prioridade: Prioridade; status: StatusTarefa; concluida_em: string | null; criado_em: string }
 
 /** Tudo o que é "meu" para fazer: tarefa pessoal, demanda que aceitei ou card do Kanban em que sou responsável. */
 export type MeuItem = {
-  id: string; origem: 'tarefa' | 'demanda' | 'card' | 'os'; titulo: string; prazo: string | null; prioridade: Prioridade
+  id: string; origem: 'tarefa' | 'demanda' | 'card' | 'os' | 'rotina'; titulo: string; prazo: string | null; prioridade: Prioridade
   concluida: boolean; concluida_em: string | null; cliente_id: string | null; detalhe?: string; descricao?: string | null
+  /** Rotinas: a ocorrência de hoje e o registro (se já foi feita) */
+  ocorrencia?: Ocorrencia; registroId?: string
 }
 
 const agora = Date.now()
@@ -31,7 +34,8 @@ const deTarefa = (t: Tarefa): MeuItem => ({ id: t.id, origem: 'tarefa', titulo: 
 
 /** Junta tarefas pessoais, demandas e cards do Kanban de todos os clientes que a pessoa acessa. */
 export async function meusItens(usuarioId: string): Promise<MeuItem[]> {
-  if (!supabase) return [...tarefasDemo.map(deTarefa), ...extrasDemo]
+  const rotinas = await minhasRotinasHoje(usuarioId)
+  if (!supabase) return [...tarefasDemo.map(deTarefa), ...extrasDemo, ...rotinas]
   const semana = new Date(Date.now() - 7 * 86_400_000).toISOString()
   const [t, d, c, o] = await Promise.all([
     supabase.from('tarefas').select('*').or(`status.neq.concluida,concluida_em.gte.${semana}`).neq('status', 'cancelada').order('prazo', { nullsFirst: false }),
@@ -52,7 +56,7 @@ export async function meusItens(usuarioId: string): Promise<MeuItem[]> {
   ;((o.data ?? []) as { id: string; numero: string; titulo: string; prazo: string | null; prioridade: Prioridade; situacao: string; setor: string | null; cliente_id: string; concluida_em: string | null }[])
     .filter((x) => x.situacao !== 'concluida' || (x.concluida_em ?? '') >= semana)
     .forEach((x) => itens.push({ id: x.id, origem: 'os', titulo: `OS ${x.numero}: ${x.titulo}`, prazo: x.prazo ? `${x.prazo}T18:00:00` : null, prioridade: x.prioridade, concluida: x.situacao === 'concluida', concluida_em: x.concluida_em, cliente_id: x.cliente_id, detalhe: `OS${x.setor ? ` · ${x.setor}` : ''}${x.situacao === 'aguardando' ? ' · aguardando' : ''}` }))
-  return itens
+  return [...itens, ...rotinas]
 }
 
 export async function criarTarefa(titulo: string, prazo: string | null, prioridade: Prioridade = 'comum') {
@@ -74,4 +78,21 @@ export async function salvarTarefa(id: string, dados: Partial<Pick<Tarefa, 'titu
 export async function excluirTarefa(id: string) {
   if (!supabase) { tarefasDemo = tarefasDemo.filter((t) => t.id !== id); return }
   await supabase.from('tarefas').delete().eq('id', id)
+}
+
+/** Rotinas de hoje que são da pessoa (ou de qualquer um da equipe), de todos os clientes. */
+export async function minhasRotinasHoje(usuarioId: string): Promise<MeuItem[]> {
+  const rotinas = (await listarRotinas().catch(() => [])).filter((r) => minha(r, usuarioId))
+  const hoje = new Date()
+  const ocs = rotinas.flatMap((r) => ocorrenciasNoDia(r, hoje))
+  if (!ocs.length) return []
+  const registros = await listarRegistros([...new Set(ocs.map((o) => o.rotina.id))], dataIso(hoje)).catch(() => [])
+  return ocs.map((o) => {
+    const g = feitoPor(o, registros, o.rotina.cada_um ? usuarioId : undefined)
+    return {
+      id: o.chave, origem: 'rotina' as const, titulo: o.rotina.titulo, prazo: new Date(prazoDe(o)).toISOString(), prioridade: 'comum' as Prioridade,
+      concluida: !!g, concluida_em: g?.feito_em ?? null, cliente_id: o.rotina.cliente_id, detalhe: `Rotina · ${descreverRepeticao(o.rotina)}`,
+      ocorrencia: o, registroId: g?.id,
+    }
+  })
 }

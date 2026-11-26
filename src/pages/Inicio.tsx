@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  AlertTriangle, ArrowRight, CalendarDays, Check, ClipboardList, Columns3, Hand, Inbox, ListChecks, Package, Play, Send, Sparkles, User,
+  AlertTriangle, ArrowRight, CalendarDays, Check, ClipboardList, Columns3, Hand, Inbox, ListChecks, Package, Play, Repeat, Send, Sparkles, User,
 } from 'lucide-react'
 import { Cartao, Chip } from '../components/ui'
 import { COR_TIPO, iconeTipo } from '../components/opcoes'
@@ -22,7 +22,7 @@ function saudacao(d: Date) {
   const h = d.getHours()
   return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
 }
-const ICONE_ORIGEM: Record<MeuItem['origem'], React.ElementType> = { tarefa: User, demanda: Inbox, card: Columns3, os: ClipboardList }
+const ICONE_ORIGEM: Record<MeuItem['origem'], React.ElementType> = { tarefa: User, demanda: Inbox, card: Columns3, os: ClipboardList, rotina: Repeat }
 const chaveDia = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
 
@@ -80,7 +80,7 @@ export function Inicio() {
 
   async function aceitar(x: Demanda) { await aceitarDemanda(x.id, eu).catch(() => null); await carregar() }
   function abrirItem(i: MeuItem) {
-    navegar(i.origem === 'card' ? `/kanban?card=${i.id}` : i.origem === 'demanda' ? `/demandas?d=${i.id}` : i.origem === 'os' ? `/ordens?os=${i.id}` : '/tarefas')
+    navegar(i.origem === 'card' ? `/kanban?card=${i.id}` : i.origem === 'demanda' ? `/demandas?d=${i.id}` : i.origem === 'os' ? `/ordens?os=${i.id}` : i.origem === 'rotina' ? '/rotinas' : '/tarefas')
   }
 
   const dataLonga = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
