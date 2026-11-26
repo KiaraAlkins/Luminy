@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { AlertTriangle, ChevronsLeft, Clock, Play, Plus } from 'lucide-react'
-import { Botao, Chip } from '../components/ui'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AlertTriangle, AlignLeft, CheckSquare, ChevronsLeft, Clock, MessageSquare, Paperclip, Plus, Send, X } from 'lucide-react'
+import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
+import { COR_TIPO, iconeTipo } from '../components/opcoes'
 import { useFoco } from '../lib/foco'
 import { useSessao } from '../lib/sessao'
 import {
-  carregarQuadro, criarCard, dataCurta, excluirCard, moverCard, salvarCard, REDES, TIPOS,
+  carregarQuadro, criarCard, dataCurta, excluirCard, linksArquivos, moverCard, salvarCard, situacaoPrazo,
   type Card, type Coluna, type EdicaoCard, type Quadro,
 } from '../lib/kanban'
+import { FichaCard } from './kanban/FichaCard'
 import { posicaoEntre, useArrastar, useColunasMinimizadas, type Vaga } from '../lib/arrastar'
 import { CardVoando, FaixaColuna, VagaCard } from '../components/Arrastar'
 import './kanban.css'
@@ -18,23 +20,34 @@ const COR_COLUNA: Record<string, string> = {
 }
 
 type Pendente = { card: Card; coluna: Coluna; posicao: number }
-/** Conteúdo do card, usado na coluna e no card "voando" durante o arraste. */
-function CardConteudo({ card }: { card: Card }) {
+/** Card no jeito do Trello: capa, etiquetas coloridas, título e selos (prazo, briefing, checklist, anexos, comentários). */
+function CardConteudo({ card, ultima }: { card: Card; ultima?: boolean }) {
+  const { foco } = useFoco()
+  const feitos = card.checklist.filter((i) => i.feito).length
+  const prazo = situacaoPrazo(card.entrega_em, ultima)
   return (
     <>
-      <strong className="card__titulo">{card.titulo}</strong>
-      <div className="card__etiquetas">
-        {card.tipo_conteudo && <Chip tom="neutro">{card.tipo_conteudo}</Chip>}
-        {card.redes.map((r) => <Chip key={r}>{r}</Chip>)}
-        {card.prioridade === 'alta' && <Chip tom="perigo">Prioridade alta</Chip>}
+      {card.capa_url ? <img className="card__capa" src={card.capa_url} alt="" draggable={false} />
+        : card.capa_cor ? <div className="card__capa card__capa--cor" style={{ background: card.capa_cor }} /> : null}
+      <div className="card__corpo">
+        {(card.tipo_conteudo || card.prioridade === 'alta') && (
+          <div className="card__etiquetas">
+            {card.tipo_conteudo && <span className="etiqueta" style={{ '--cor': COR_TIPO[card.tipo_conteudo] ?? '#667085' } as React.CSSProperties}>{iconeTipo(card.tipo_conteudo, 12)} {card.tipo_conteudo}</span>}
+            {card.prioridade === 'alta' && <span className="etiqueta" style={{ '--cor': 'var(--perigo)' } as React.CSSProperties}>Alta</span>}
+          </div>
+        )}
+        <strong className="card__titulo">{card.titulo}</strong>
+        {card.motivo_impedimento && <p className="card__impedimento"><AlertTriangle size={14} aria-hidden /> {card.motivo_impedimento}</p>}
+        <div className="card__selos">
+          {card.entrega_em && <span className={`selo selo--${prazo}`} title="Entrega"><Clock size={13} /> {dataCurta(card.entrega_em)}</span>}
+          {card.postagem_em && <span className="selo" title="Postagem"><Send size={12} /> {dataCurta(card.postagem_em)}</span>}
+          {card.briefing && <span className="selo" title="Tem briefing"><AlignLeft size={13} /></span>}
+          {card.checklist.length > 0 && <span className={`selo${feitos === card.checklist.length ? ' selo--feito' : ''}`} title="Checklist"><CheckSquare size={13} /> {feitos}/{card.checklist.length}</span>}
+          {card.anexos.length > 0 && <span className="selo" title="Anexos"><Paperclip size={13} /> {card.anexos.length}</span>}
+          {(card.comentarios ?? 0) > 0 && <span className="selo" title="Comentários"><MessageSquare size={13} /> {card.comentarios}</span>}
+          {foco?.card_id === card.id && <span className="selo selo--agora" title="Você está fazendo agora">● agora</span>}
+        </div>
       </div>
-      {card.motivo_impedimento && (
-        <p className="card__impedimento"><AlertTriangle size={14} aria-hidden /> {card.motivo_impedimento}</p>
-      )}
-      {(card.entrega_em || card.postagem_em) && (
-        <p className="card__rodape pequeno"><Clock size={14} aria-hidden />
-          {card.entrega_em ? `Entrega ${dataCurta(card.entrega_em)}` : `Postagem ${dataCurta(card.postagem_em)}`}</p>
-      )}
     </>
   )
 }
@@ -45,7 +58,7 @@ export function Kanban() {
   const [quadro, setQuadro] = useState<Quadro | null | undefined>(undefined)
   const [erro, setErro] = useState<string | null>(null)
   const [motivoPara, setMotivoPara] = useState<Pendente | null>(null)
-  const [aberto, setAberto] = useState<Card | null>(null)
+  const [abertoId, setAbertoId] = useState<string | null>(null)
   const [novoEm, setNovoEm] = useState<string | null>(null)
 
   const recarregar = useCallback(async () => {
@@ -93,9 +106,19 @@ export function Kanban() {
     if (!quadro || !titulo.trim()) return
     const ultimo = porColuna.get(coluna.id)?.at(-1)?.posicao ?? 0
     try { await criarCard(quadro.id, coluna.id, titulo.trim(), ultimo + 1) } catch { setErro('Não foi possível criar o card.') }
-    setNovoEm(null)
+    // Como no Trello: o campo continua aberto para criar o próximo card
     await recarregar()
   }
+
+  /** Atualiza na tela na hora e salva no banco (a ficha do card salva sozinha). */
+  async function atualizarCard(id: string, parcial: EdicaoCard) {
+    let capa_url: string | null | undefined
+    if (parcial.capa_path) capa_url = (await linksArquivos([parcial.capa_path])).get(parcial.capa_path) ?? null
+    else if (parcial.capa_path === null) capa_url = null
+    setQuadro((q) => q && { ...q, cards: q.cards.map((c) => (c.id === id ? { ...c, ...parcial, ...(capa_url !== undefined ? { capa_url } : {}) } : c)) })
+    await salvarCard(id, parcial)
+  }
+  const aberto = quadro?.cards.find((c) => c.id === abertoId) ?? null
 
   if (quadro === undefined) return <div className="corpo"><p className="pequeno">Carregando quadro…</p></div>
   if (quadro === null) return <div className="corpo"><h2>Kanban · Redes sociais</h2><p className="texto-2">Este cliente ainda não tem um quadro oficial.</p></div>
@@ -134,11 +157,11 @@ export function Kanban() {
 
               {visiveis.map((card, i) => [
                 i === vagaAqui && slot,
-                <article key={card.id} data-card={card.id} className={`card${chegou === card.id ? ' card--chegou' : ''}`}
+                <article key={card.id} data-card={card.id} className={`card card--trello${chegou === card.id ? ' card--chegou' : ''}`}
                   onPointerDown={(e) => iniciar(e, card)}
-                  onClick={() => { if (!acabouDeSoltar()) setAberto(card) }} tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter') setAberto(card) }}>
-                  <CardConteudo card={card} />
+                  onClick={() => { if (!acabouDeSoltar()) setAbertoId(card.id) }} tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') setAbertoId(card.id) }}>
+                  <CardConteudo card={card} ultima={col.posicao >= 4 && !col.exige_motivo} />
                 </article>,
               ])}
               {vagaAqui >= visiveis.length && slot}
@@ -154,7 +177,7 @@ export function Kanban() {
       </div>
 
       {arraste && (
-        <CardVoando arraste={arraste} voandoRef={voandoRef}><CardConteudo card={arraste.item} /></CardVoando>
+        <CardVoando arraste={arraste} voandoRef={voandoRef} classe="card--trello"><CardConteudo card={arraste.item} /></CardVoando>
       )}
 
       {motivoPara && (
@@ -162,10 +185,10 @@ export function Kanban() {
           onConfirmar={(m) => { void executarMovimento(motivoPara, m); setMotivoPara(null) }} />
       )}
       {aberto && (
-        <EditarCard card={aberto} coluna={quadro.colunas.find((c) => c.id === aberto.coluna_id)!}
-          onFechar={() => setAberto(null)}
-          onSalvar={async (ed) => { await salvarCard(aberto.id, ed); setAberto(null); await recarregar() }}
-          onExcluir={async () => { await excluirCard(aberto.id); setAberto(null); await recarregar() }} />
+        <FichaCard card={aberto} quadroId={quadro.id} colunas={quadro.colunas} onFechar={() => { setAbertoId(null); void recarregar() }}
+          onAtualizar={(p) => atualizarCard(aberto.id, p)}
+          onMover={(colunaId) => soltarEm(aberto, { coluna: colunaId, indice: (porColuna.get(colunaId) ?? []).filter((c) => c.id !== aberto.id).length })}
+          onExcluir={async () => { await excluirCard(aberto.id); setAbertoId(null); await recarregar() }} />
       )}
     </div>
   )
@@ -174,11 +197,17 @@ export function Kanban() {
 function NovoCard({ onSalvar, onCancelar }: { onSalvar: (t: string) => void; onCancelar: () => void }) {
   const [titulo, setTitulo] = useState('')
   return (
-    <form className="novo-card" onSubmit={(e) => { e.preventDefault(); onSalvar(titulo) }}>
-      <textarea className="entrada" autoFocus rows={2} placeholder="Título do card" value={titulo}
+    <form className="novo-card" onSubmit={(e) => { e.preventDefault(); if (titulo.trim()) { onSalvar(titulo); setTitulo('') } }}>
+      <textarea className="entrada novo-card__texto" autoFocus rows={2} placeholder="Título do card (Enter adiciona)" value={titulo}
         onChange={(e) => setTitulo(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSalvar(titulo) } if (e.key === 'Escape') onCancelar() }} />
-      <div className="linha"><Botao type="submit">Adicionar</Botao><Botao type="button" variante="fantasma" onClick={onCancelar}>Cancelar</Botao></div>
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (titulo.trim()) { onSalvar(titulo); setTitulo('') } }
+          if (e.key === 'Escape') { e.preventDefault(); onCancelar() }
+        }} />
+      <div className="linha" style={{ gap: 6 }}>
+        <Botao type="submit" disabled={!titulo.trim()}>Adicionar card</Botao>
+        <button type="button" className="icone-botao" style={{ width: 36, height: 36, border: 0 }} aria-label="Cancelar" onClick={onCancelar}><X size={18} /></button>
+      </div>
     </form>
   )
 }
@@ -200,52 +229,3 @@ function Motivo({ card, onConfirmar, onCancelar }: { card: Card; onConfirmar: (m
   )
 }
 
-const paraInput = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '')
-const deInput = (v: string) => (v ? new Date(v).toISOString() : null)
-
-function EditarCard({ card, coluna, onFechar, onSalvar, onExcluir }:
-  { card: Card; coluna: Coluna; onFechar: () => void; onSalvar: (e: EdicaoCard) => Promise<void>; onExcluir: () => Promise<void> }) {
-  const [ed, setEd] = useState<EdicaoCard>({
-    titulo: card.titulo, briefing: card.briefing, tipo_conteudo: card.tipo_conteudo, redes: card.redes,
-    entrega_em: card.entrega_em, postagem_em: card.postagem_em, prioridade: card.prioridade,
-  })
-  const [salvando, setSalvando] = useState(false)
-  const { foco, definir } = useFoco()
-  async function enviar(e: FormEvent) { e.preventDefault(); setSalvando(true); await onSalvar(ed) }
-  const alternarRede = (r: string) => setEd({ ...ed, redes: ed.redes.includes(r) ? ed.redes.filter((x) => x !== r) : [...ed.redes, r] })
-
-  return (
-    <Janela titulo={coluna.nome} onFechar={onFechar} largura={720}>
-      <form className="janela__corpo editar-card" onSubmit={enviar}>
-        <input className="editar-card__titulo" value={ed.titulo} onChange={(e) => setEd({ ...ed, titulo: e.target.value })} aria-label="Título" required />
-        {card.motivo_impedimento && <p className="card__impedimento"><AlertTriangle size={14} aria-hidden /> {card.motivo_impedimento}</p>}
-        <div className="editar-card__grade">
-          <div className="campo"><label htmlFor="tipo">Tipo de conteúdo</label>
-            <select id="tipo" className="entrada" value={ed.tipo_conteudo ?? ''} onChange={(e) => setEd({ ...ed, tipo_conteudo: e.target.value || null })}>
-              <option value="">Sem tipo</option>{TIPOS.map((t) => <option key={t}>{t}</option>)}
-            </select></div>
-          <div className="campo"><label htmlFor="prioridade">Prioridade</label>
-            <select id="prioridade" className="entrada" value={ed.prioridade} onChange={(e) => setEd({ ...ed, prioridade: e.target.value as EdicaoCard['prioridade'] })}>
-              <option value="alta">Alta</option><option value="comum">Comum</option><option value="baixa">Baixa</option>
-            </select></div>
-          <div className="campo"><label htmlFor="entrega">Entrega</label>
-            <input id="entrega" type="datetime-local" className="entrada" value={paraInput(ed.entrega_em)} onChange={(e) => setEd({ ...ed, entrega_em: deInput(e.target.value) })} /></div>
-          <div className="campo"><label htmlFor="postagem">Postagem</label>
-            <input id="postagem" type="datetime-local" className="entrada" value={paraInput(ed.postagem_em)} onChange={(e) => setEd({ ...ed, postagem_em: deInput(e.target.value) })} /></div>
-        </div>
-        <div className="campo"><span className="pequeno" style={{ color: 'var(--texto-2)' }}>Redes</span>
-          <div className="linha">{REDES.map((r) => (
-            <button key={r} type="button" className={`opcao${ed.redes.includes(r) ? ' marcada' : ''}`} aria-pressed={ed.redes.includes(r)} onClick={() => alternarRede(r)}>{r}</button>
-          ))}</div></div>
-        <div className="campo"><label htmlFor="briefing">Briefing</label>
-          <textarea id="briefing" className="entrada" rows={5} value={ed.briefing ?? ''} onChange={(e) => setEd({ ...ed, briefing: e.target.value || null })} /></div>
-        <div className="linha" style={{ justifyContent: 'space-between' }}>
-          <Botao type="button" variante="secundario" icone={<Play size={14} />}
-            onClick={() => { void definir(card.titulo, card.id); onFechar() }}>{foco?.card_id === card.id ? 'Você está fazendo agora' : 'Fazer agora'}</Botao>
-          <Botao type="button" variante="fantasma" style={{ color: 'var(--perigo)' }} onClick={() => { if (confirm('Excluir este card? Esta ação não pode ser desfeita.')) void onExcluir() }}>Excluir</Botao>
-          <div className="linha"><Botao type="button" variante="secundario" onClick={onFechar}>Cancelar</Botao><Botao type="submit" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar'}</Botao></div>
-        </div>
-      </form>
-    </Janela>
-  )
-}

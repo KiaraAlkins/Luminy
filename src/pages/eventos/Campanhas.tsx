@@ -10,6 +10,8 @@ import {
   CAMPOS_BASE, CAMPOS_PRONTOS, criarCampanha, listarCampanhas,
   type Campanha, type Campo, type ResumoCampanha, type SituacaoCampanha,
 } from '../../lib/campanhas'
+import { Selecao } from '../../components/Selecao'
+import { opcaoEvento } from '../../components/opcoes'
 import './campanhas.css'
 
 const SITUACAO: Record<SituacaoCampanha, { nome: string; tom: 'sucesso' | 'neutro' | 'alerta' }> = {
@@ -142,9 +144,7 @@ function NovaCampanha({ empresas, eventos, onFechar, onCriar }: {
           <div className="campo"><label htmlFor="cp-emp">É para uma empresa parceira?</label>
             <SeletorEmpresa id="cp-emp" empresas={empresas} valor={empresaId} semEmpresa="Não, é aberta ao público" onMudar={(v) => { setEmpresaId(v); setEventoId('') }} /></div>
           <div className="campo"><label htmlFor="cp-ev">Ligada a um evento?</label>
-            <select id="cp-ev" className="entrada" value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
-              <option value="">Nenhum</option>{eventosDaEmpresa.map((v) => <option key={v.id} value={v.id}>{v.nome} · {dataBr(v.data)}</option>)}
-            </select></div>
+            <Selecao id="cp-ev" valor={eventoId} onMudar={setEventoId} opcoes={[{ valor: '', rotulo: 'Nenhum' }, ...eventosDaEmpresa.map((v) => opcaoEvento(v, dataBr))]} /></div>
         </div>
 
         <div className="campo"><span className="rotulo-campo">Começar com</span>

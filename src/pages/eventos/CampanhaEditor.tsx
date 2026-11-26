@@ -14,6 +14,8 @@ import {
 import { LogoConvenio } from '../../components/Convenio'
 import { useConvenios } from '../../lib/convenios'
 import '../formulario.css'
+import { Selecao } from '../../components/Selecao'
+import { opcoesTipoCampo } from '../../components/opcoes'
 import './campanhas.css'
 
 const MODOS: { id: ModoCampo; nome: string; dica: string }[] = [
@@ -240,9 +242,7 @@ function LinhaCampo({ campo: c, travado, primeiro, ultimo, empresa, onMudar, onR
             </div>
           ) : (
             <>
-              <select className="entrada entrada--mini" value={c.tipo} aria-label="Tipo de resposta" onChange={(e) => onMudar({ tipo: e.target.value as TipoCampo })}>
-                {TIPOS_CAMPO.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
-              </select>
+              <Selecao mini rotulo="Tipo de resposta" valor={c.tipo} onMudar={(t) => onMudar({ tipo: t as TipoCampo })} opcoes={opcoesTipoCampo(TIPOS_CAMPO)} largura={210} />
               {c.tipo === 'convenio' && <PlanosDoCampo />}
               {c.tipo === 'escolha' && (
                 <input className="entrada entrada--mini" style={{ flex: 1 }} value={opcoesTexto} placeholder="Opções separadas por vírgula"

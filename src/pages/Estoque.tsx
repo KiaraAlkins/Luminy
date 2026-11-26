@@ -8,6 +8,8 @@ import {
   CATEGORIAS, MOTIVOS_EXCLUSAO, UNIDADES, criarItem, editarItem, excluirItem, fmt, historicoItem, listarItens, movimentar, restaurarItem, situacao, venceEmDias,
   type DadosItem, type Item, type Movimento, type TipoMovimento,
 } from '../lib/estoque'
+import { Selecao } from '../components/Selecao'
+import { opcaoEvento, opcoesCategoria, opcoesUnidade } from '../components/opcoes'
 import './estoque.css'
 
 /** Estoque de materiais: brindes, papel, pilhas, fitas de glicemia, luvas… com entradas, saídas e avisos. */
@@ -64,9 +66,7 @@ export function Estoque() {
           <Search size={16} aria-hidden />
           <input aria-label="Buscar item" placeholder="Buscar item" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ border: 0, outline: 0, background: 'none', flex: 1 }} />
         </label>
-        <select className="entrada" style={{ width: 'auto', background: 'var(--superficie)' }} aria-label="Categoria" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
-          <option value="">Todas as categorias</option>{CATEGORIAS.map((c) => <option key={c}>{c}</option>)}
-        </select>
+        <Selecao rotulo="Categoria" valor={categoria} onMudar={setCategoria} largura={220} opcoes={opcoesCategoria(CATEGORIAS, 'Todas as categorias')} />
         <button type="button" className={`opcao${soBaixo ? ' marcada' : ''}`} aria-pressed={soBaixo} onClick={() => setSoBaixo(!soBaixo)}>Só o que precisa repor</button>
       </div>
 
@@ -147,8 +147,8 @@ function NovoItem({ onFechar, onCriar }: { onFechar: () => void; onCriar: (d: Om
       <form className="janela__corpo" onSubmit={enviar}>
         <div className="campo"><label htmlFor="it-nome">Nome do item</label><input id="it-nome" className="entrada" autoFocus required value={d.nome} onChange={(e) => setD({ ...d, nome: e.target.value })} placeholder="Ex.: Fitas de glicemia" /></div>
         <div className="grade-2">
-          <div className="campo"><label htmlFor="it-cat">Categoria</label><select id="it-cat" className="entrada" value={d.categoria} onChange={(e) => setD({ ...d, categoria: e.target.value })}>{CATEGORIAS.map((c) => <option key={c}>{c}</option>)}</select></div>
-          <div className="campo"><label htmlFor="it-un">Unidade</label><select id="it-un" className="entrada" value={d.unidade} onChange={(e) => setD({ ...d, unidade: e.target.value })}>{UNIDADES.map((u) => <option key={u}>{u}</option>)}</select></div>
+          <div className="campo"><label htmlFor="it-cat">Categoria</label><Selecao id="it-cat" valor={d.categoria} onMudar={(v) => setD({ ...d, categoria: v })} opcoes={opcoesCategoria(CATEGORIAS)} /></div>
+          <div className="campo"><label htmlFor="it-un">Unidade</label><Selecao id="it-un" valor={d.unidade} onMudar={(v) => setD({ ...d, unidade: v })} opcoes={opcoesUnidade(UNIDADES)} /></div>
           <div className="campo"><label htmlFor="it-ini">Quantidade que tem hoje</label><input id="it-ini" className="entrada" type="number" min={0} step="any" value={d.inicial} onChange={(e) => setD({ ...d, inicial: e.target.value })} /></div>
           <div className="campo"><label htmlFor="it-min">Avisar quando ficar abaixo de</label><input id="it-min" className="entrada" type="number" min={0} step="any" value={d.minimo} onChange={(e) => setD({ ...d, minimo: e.target.value })} /></div>
           <div className="campo"><label htmlFor="it-local">Onde fica</label><input id="it-local" className="entrada" value={d.local} onChange={(e) => setD({ ...d, local: e.target.value })} placeholder="Ex.: Armário 2" /></div>
@@ -183,9 +183,7 @@ function Movimentar({ item, tipo, eventos, onFechar, onFeito }: { item: Item; ti
           <input id="mv-qtd" className="entrada" type="number" min={tipo === 'ajuste' ? 0 : 0.01} step="any" required autoFocus value={qtd} onChange={(e) => setQtd(e.target.value)} /></div>
         {tipo === 'saida' && eventos.length > 0 && (
           <div className="campo"><label htmlFor="mv-ev">Para qual evento? (opcional)</label>
-            <select id="mv-ev" className="entrada" value={evento} onChange={(e) => setEvento(e.target.value)}>
-              <option value="">Nenhum</option>{eventos.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
-            </select></div>
+            <Selecao id="mv-ev" valor={evento} onMudar={setEvento} opcoes={[{ valor: '', rotulo: 'Nenhum' }, ...eventos.map((x) => opcaoEvento(x, (d) => new Date(`${d}T12:00:00`).toLocaleDateString('pt-BR')))]} /></div>
         )}
         <div className="campo"><label htmlFor="mv-mot">Motivo (opcional)</label><input id="mv-mot" className="entrada" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder={tipo === 'entrada' ? 'Ex.: compra, doação do fornecedor' : tipo === 'saida' ? 'Ex.: ação na recepção' : 'Ex.: inventário mensal'} /></div>
         {erro && <p className="pequeno" style={{ color: 'var(--perigo)' }}>{erro}</p>}
@@ -251,8 +249,8 @@ function EditarItem({ item, onFechar, onSalvar, onExcluir }: {
           <form onSubmit={salvar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="campo"><label htmlFor="ed-nome">Nome do item</label><input id="ed-nome" className="entrada" required {...campo('nome')} /></div>
             <div className="grade-2">
-              <div className="campo"><label htmlFor="ed-cat">Categoria</label><select id="ed-cat" className="entrada" {...campo('categoria')}><option value="">Sem categoria</option>{CATEGORIAS.map((c) => <option key={c}>{c}</option>)}</select></div>
-              <div className="campo"><label htmlFor="ed-un">Unidade</label><select id="ed-un" className="entrada" {...campo('unidade')}>{unidades.map((u) => <option key={u}>{u}</option>)}</select></div>
+              <div className="campo"><label htmlFor="ed-cat">Categoria</label><Selecao id="ed-cat" valor={d.categoria} onMudar={(v) => setD({ ...d, categoria: v })} opcoes={opcoesCategoria(CATEGORIAS, 'Sem categoria')} /></div>
+              <div className="campo"><label htmlFor="ed-un">Unidade</label><Selecao id="ed-un" valor={d.unidade} onMudar={(v) => setD({ ...d, unidade: v })} opcoes={opcoesUnidade(unidades)} /></div>
               <div className="campo"><label htmlFor="ed-min">Avisar quando ficar abaixo de</label><input id="ed-min" className="entrada" type="number" min={0} step="any" {...campo('minimo')} /></div>
               <div className="campo"><label htmlFor="ed-local">Onde fica</label><input id="ed-local" className="entrada" {...campo('local')} /></div>
               <div className="campo"><label htmlFor="ed-val">Validade</label><input id="ed-val" className="entrada" type="date" {...campo('validade')} /></div>

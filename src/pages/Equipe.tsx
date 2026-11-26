@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Copy, Link2, MessageCircle, RefreshCw, Trash2, Tv } from 'lucide-react'
 import { Avatar, Botao, Cartao, Chip } from '../components/ui'
 import { supabase } from '../lib/supabase'
+import { Selecao } from '../components/Selecao'
+import { OPCOES_PAPEL } from '../components/opcoes'
 import { useSessao } from '../lib/sessao'
 
 type Membro = { usuario_id: string; nome: string; papel: string; acesso_leads: boolean }
@@ -65,9 +67,7 @@ export function Equipe() {
               </div>
               <div className="campo">
                 <label htmlFor="papel">Papel</label>
-                <select id="papel" className="entrada" value={papel} onChange={(e) => setPapel(e.target.value as 'membro' | 'admin')}>
-                  <option value="membro">Membro</option><option value="admin">Administrador</option>
-                </select>
+                <Selecao id="papel" valor={papel} onMudar={(v) => setPapel(v as 'membro' | 'admin')} opcoes={OPCOES_PAPEL} largura={240} />
               </div>
               <Botao type="submit" icone={<Link2 size={16} />}>Gerar convite</Botao>
             </div>

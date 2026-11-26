@@ -10,6 +10,8 @@ import {
 import { LeadDetalhe } from './LeadDetalhe'
 import { LogoConvenio } from '../../components/Convenio'
 import { EnvioEmMassa } from './EnvioEmMassa'
+import { Selecao } from '../../components/Selecao'
+import { opcaoCampanha } from '../../components/opcoes'
 import './campanhas.css'
 
 /** Leads que chegaram pelos QR: funil, segmentos e envio de campanhas. Sigiloso: só quem tem acesso a leads. */
@@ -80,9 +82,8 @@ export function Leads() {
           <Search size={16} aria-hidden />
           <input aria-label="Buscar lead" placeholder="Buscar por nome, WhatsApp ou e-mail" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ border: 0, outline: 0, background: 'none', flex: 1 }} />
         </label>
-        <select className="entrada" aria-label="Campanha" value={campanhaId} onChange={(e) => mudarParam('campanha', e.target.value)}>
-          <option value="">Todas as campanhas</option>{campanhas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-        </select>
+        <Selecao rotulo="Campanha" valor={campanhaId} onMudar={(v) => mudarParam('campanha', v)} largura={260}
+          opcoes={[{ valor: '', rotulo: 'Todas as campanhas' }, ...campanhas.map(opcaoCampanha)]} />
         <button type="button" className={`opcao${soAceite ? ' marcada' : ''}`} aria-pressed={soAceite} onClick={() => setSoAceite(!soAceite)}>Só quem aceita campanhas</button>
       </div>
 

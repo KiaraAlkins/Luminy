@@ -9,7 +9,8 @@ import {
   type Empresa, type Etapa, type Resumo,
 } from '../../lib/parcerias'
 import { FotoEmpresa } from '../../components/Empresa'
-import { ChipConvenio, SeletorConvenios } from '../../components/Convenio'
+import { ChipConvenio, LogoConvenio, SeletorConvenios } from '../../components/Convenio'
+import { Selecao } from '../../components/Selecao'
 import { RegistroRapido } from './RegistroRapido'
 import { TrilhaMini } from './TrilhaEtapa'
 
@@ -78,9 +79,8 @@ export function Empresas() {
           <input aria-label="Buscar empresa" placeholder="Buscar empresa ou segmento" value={busca} onChange={(e) => setBusca(e.target.value)}
             style={{ border: 0, outline: 0, background: 'none', flex: 1 }} />
         </label>
-        <select className="entrada" aria-label="Filtrar por plano de saúde" value={convenio} onChange={(e) => setConvenio(e.target.value)}>
-          <option value="">Todos os planos de saúde</option>{convenios.map((c) => <option key={c}>{c}</option>)}
-        </select>
+        <Selecao rotulo="Plano de saúde" valor={convenio} onMudar={setConvenio} largura={240}
+          opcoes={[{ valor: '', rotulo: 'Todos os planos de saúde' }, ...convenios.map((c) => ({ valor: c, rotulo: c, icone: <LogoConvenio nome={c} tamanho={22} /> }))]} />
         <Botao icone={<Plus size={16} />} onClick={() => setNova(true)}>Nova empresa</Botao>
       </div>
 
@@ -175,7 +175,7 @@ function NovaEmpresa({ onFechar, onCriar }: { onFechar: () => void; onCriar: (d:
         </div>
         <SeletorConvenios valor={convenios} onMudar={setConvenios} />
         <div className="campo"><label htmlFor="emp-etapa">Etapa da parceria</label>
-          <select id="emp-etapa" className="entrada" value={etapa} onChange={(e) => setEtapa(e.target.value as Etapa)}>{ETAPAS.map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}</select></div>
+          <Selecao id="emp-etapa" valor={etapa} onMudar={(v) => setEtapa(v as Etapa)} opcoes={ETAPAS.map((x) => ({ valor: x.id, rotulo: x.nome, cor: x.cor }))} /></div>
         {erro && <p className="pequeno" style={{ color: 'var(--perigo)' }}>{erro}</p>}
         <div className="linha" style={{ justifyContent: 'flex-end' }}><Botao type="button" variante="fantasma" onClick={onFechar}>Cancelar</Botao><Botao type="submit">Cadastrar</Botao></div>
       </form>

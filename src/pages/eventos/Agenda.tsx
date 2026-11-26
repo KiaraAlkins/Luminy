@@ -5,8 +5,10 @@ import { Botao, Chip } from '../../components/ui'
 import { Janela } from '../../components/Janela'
 import { useSessao } from '../../lib/sessao'
 import { FotoEmpresa, SeletorEmpresa } from '../../components/Empresa'
+import { Selecao } from '../../components/Selecao'
 import { SITUACOES_EVENTO, hojeIso, listarEmpresas, listarEventos, salvarEvento, type Empresa, type Evento, type SituacaoEvento } from '../../lib/parcerias'
 
+const COR_SITUACAO: Record<SituacaoEvento, string> = { planejado: 'var(--texto-3)', confirmado: 'var(--marca)', realizado: 'var(--sucesso)', cancelado: 'var(--perigo)' }
 const TOM: Record<SituacaoEvento, 'marca' | 'sucesso' | 'neutro' | 'perigo'> = { planejado: 'neutro', confirmado: 'marca', realizado: 'sucesso', cancelado: 'perigo' }
 
 /** Eventos do cliente, ligados (ou não) a uma empresa parceira. */
@@ -88,9 +90,8 @@ function EditarEvento({ evento, empresas, onFechar, onSalvar }: {
           <SeletorEmpresa id="ev-emp" empresas={empresas} valor={v.empresa_id} semEmpresa="Sem empresa (evento do hospital)" onMudar={(id) => setV({ ...v, empresa_id: id })} /></div>
         <div className="campo"><label htmlFor="ev-local">Local</label><input id="ev-local" className="entrada" value={v.local} onChange={(e) => setV({ ...v, local: e.target.value })} /></div>
         <div className="campo"><label htmlFor="ev-sit">Situação</label>
-          <select id="ev-sit" className="entrada" value={v.situacao} onChange={(e) => setV({ ...v, situacao: e.target.value as SituacaoEvento })}>
-            {SITUACOES_EVENTO.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
-          </select></div>
+          <Selecao id="ev-sit" valor={v.situacao} onMudar={(s) => setV({ ...v, situacao: s as SituacaoEvento })}
+            opcoes={SITUACOES_EVENTO.map((s) => ({ valor: s.id, rotulo: s.nome, cor: COR_SITUACAO[s.id] }))} /></div>
         <div className="campo"><label htmlFor="ev-desc">Detalhes</label><textarea id="ev-desc" className="entrada" rows={3} value={v.descricao} onChange={(e) => setV({ ...v, descricao: e.target.value })} placeholder="Brindes, equipe, materiais, campanha QR…" /></div>
         <div className="linha" style={{ justifyContent: 'flex-end' }}><Botao type="button" variante="fantasma" onClick={onFechar}>Cancelar</Botao><Botao type="submit">Salvar</Botao></div>
       </form>

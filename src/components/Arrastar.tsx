@@ -5,13 +5,13 @@ export function VagaCard({ altura }: { altura?: number }) {
   return <div className="card-vaga" style={{ height: altura }} aria-hidden />
 }
 
-export function CardVoando({ arraste, voandoRef, children }: {
-  arraste: { largura: number; x: number; y: number; dx: number; dy: number }; voandoRef: React.RefObject<HTMLDivElement | null>; children: ReactNode
+export function CardVoando({ arraste, voandoRef, children, classe = '' }: {
+  arraste: { largura: number; x: number; y: number; dx: number; dy: number }; voandoRef: React.RefObject<HTMLDivElement | null>; children: ReactNode; classe?: string
 }) {
   return (
     <div ref={voandoRef} className="card-voando" aria-hidden
       style={{ width: arraste.largura, transform: `translate(${arraste.x - arraste.dx}px, ${arraste.y - arraste.dy}px) rotate(3deg)` }}>
-      <div className="card card--no-ar">{children}</div>
+      <div className={`card card--no-ar ${classe}`}>{children}</div>
     </div>
   )
 }

@@ -126,6 +126,9 @@ begin
   end;
   update cards set coluna_id = v_imp, motivo_impedimento = 'Aguardando autorização de imagem' where id = v_card;
   perform t.ok((select coluna_antes_impedimento = v_faz from cards where id = v_card), 'Impedimento guarda a coluna de origem');
+  update cards set checklist = '[{"id":"1","texto":"Roteiro","feito":true}]', legenda = 'Legenda do post' where id = v_card;
+  insert into card_comentarios (card_id, texto) values (v_card, 'Ficou ótimo!');
+  perform t.ok((select count(*) from card_comentarios where card_id = v_card) = 1, 'equipe comenta nos cards');
 end $$;
 do $$ begin
   insert into colunas (quadro_id, nome, posicao) select id, 'Coluna nova', 7 from quadros limit 1;
@@ -304,6 +307,7 @@ insert into estoque_itens (cliente_id, nome, unidade) values ('20000000-0000-000
 select t.ok(true, 'dá para recadastrar um item com o mesmo nome de um excluído');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
 select t.ok((select count(*) from estoque_itens) = 0, 'quem não é da equipe não vê o estoque');
+select t.ok((select count(*) from card_comentarios) = 0, 'quem não é da equipe não vê os comentários dos cards');
 select t.ok((select count(*) from convenios) = 0, 'quem não é da equipe não vê os planos de saúde do cliente');
 do $$ begin
   insert into convenios (cliente_id, nome) values ('20000000-0000-0000-0000-000000000001', 'Plano Intruso');
