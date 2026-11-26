@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Archive, ArchiveRestore, ArrowRight, CalendarHeart, ExternalLink, Lightbulb, Link2, Plus, Repeat, ThumbsUp, Trash2, X } from 'lucide-react'
+import { Archive, ArchiveRestore, ArrowRight, CalendarHeart, CalendarPlus, Pencil, ExternalLink, Lightbulb, Link2, Plus, Repeat, ThumbsUp, Trash2, X } from 'lucide-react'
 import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
 import { Selecao } from '../components/Selecao'
@@ -10,8 +10,8 @@ import { useSessao } from '../lib/sessao'
 import { supabase } from '../lib/supabase'
 import { TIPOS, listarPessoas, type Pessoa } from '../lib/kanban'
 import {
-  TEMAS, criarPauta, dataPorChave, excluirPauta, listarPautas, proximasDatas, salvarPauta, todasAsDatas, virarCard, votar,
-  type EdicaoPauta, type Pauta, type Referencia,
+  CORES_CAMPANHA, TEMAS, criarPauta, excluirCampanhaPauta, excluirPauta, listarCampanhasPauta, listarPautas, montarCalendario, salvarCampanhaPauta, salvarPauta, virarCard, votar,
+  type Calendario, type CampanhaPropria, type EdicaoCampanha, type EdicaoPauta, type Pauta, type Referencia,
 } from '../lib/pautas'
 import { FotoPessoa } from './kanban/Pessoas'
 import './pauta.css'
@@ -38,15 +38,21 @@ export function AcervoPauta() {
   const [abrir, setAbrir] = useState<Pauta | 'nova' | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [agora] = useState(() => Date.now())
+  const [proprias, setProprias] = useState<CampanhaPropria[]>([])
+  const [editarCampanha, setEditarCampanha] = useState<CampanhaPropria | 'nova' | null>(null)
 
   const carregar = useCallback(async () => {
     if (!cliente) return
-    try { const [p, g] = await Promise.all([listarPautas(cliente.id), listarPessoas(cliente.id)]); setPautas(p); setPessoas(g) }
+    try {
+      const [p, g, c] = await Promise.all([listarPautas(cliente.id), listarPessoas(cliente.id), listarCampanhasPauta(cliente.id)])
+      setPautas(p); setPessoas(g); setProprias(c)
+    }
     catch (e) { setErro((e as Error).message) }
   }, [cliente])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
 
-  const datas = useMemo(() => proximasDatas(new Date(agora)), [agora])
+  const calendario: Calendario = useMemo(() => montarCalendario(new Date(agora), proprias), [agora, proprias])
+  const datas = calendario.proximas
   const abertas = (pautas ?? []).filter((p) => p.situacao === 'ideia')
   const contagem: Record<Aba, number> = {
     ideias: abertas.length,
@@ -80,7 +86,7 @@ export function AcervoPauta() {
   }
   async function levarAoKanban(p: Pauta) {
     if (!cliente) return
-    try { const id = await virarCard(p, cliente.id); comemorar(); navegar(`/kanban?card=${id}`) }
+    try { const id = await virarCard(p, cliente.id, calendario.porChave(p.data_ref)); comemorar(); navegar(`/kanban?card=${id}`) }
     catch (e) { setErro((e as Error).message) }
   }
 
@@ -97,22 +103,36 @@ export function AcervoPauta() {
         {rapida.trim() && <button type="submit" className="botao botao--primario botao--mini">Guardar</button>}
       </form>
 
-      <section className="datas-saude" aria-label="Próximas datas da saúde">
+      <div className="datas-saude__topo">
+        <span className="rotulo">Próximas datas e campanhas</span>
+        <button type="button" className="contas-redes__info" onClick={() => setEditarCampanha('nova')}><CalendarPlus size={15} /> Criar campanha ou data</button>
+      </div>
+      <section className="datas-saude" aria-label="Próximas datas e campanhas">
         {datas.map((d) => {
           const n = abertas.filter((p) => p.data_ref === d.chave).length
           const falta = Math.ceil((d.inicio.getTime() - agora) / DIA)
           const agoraMesmo = falta <= 0
           const marcado = dataFiltro === d.chave
           return (
-            <button key={d.chave} type="button" className={`data-saude${marcado ? ' marcada' : ''}`} style={{ '--cor': d.cor } as React.CSSProperties}
-              aria-pressed={marcado} onClick={() => setDataFiltro(marcado ? null : d.chave)}>
-              <span className="data-saude__quando">{agoraMesmo ? 'Acontecendo agora' : falta === 1 ? 'Amanhã' : `Em ${falta} dias`}</span>
-              <strong>{d.nome}</strong>
-              <span className="data-saude__desc">{d.descricao}</span>
-              <span className={`data-saude__ideias${n === 0 && falta <= 30 ? ' data-saude__ideias--alerta' : ''}`}>{n ? `${n} ${n === 1 ? 'ideia' : 'ideias'}` : 'Nenhuma ideia ainda'}</span>
-            </button>
+            <div key={d.chave} className="data-saude-caixa">
+              <button type="button" className={`data-saude data-saude--${d.origem}${marcado ? ' marcada' : ''}`} style={{ '--cor': d.cor } as React.CSSProperties}
+                aria-pressed={marcado} onClick={() => setDataFiltro(marcado ? null : d.chave)}>
+                <span className="data-saude__quando">{agoraMesmo ? 'Acontecendo agora' : falta === 1 ? 'Amanhã' : `Em ${falta} dias`}</span>
+                <strong>{d.nome}</strong>
+                <span className="data-saude__desc">{d.descricao}</span>
+                <span className={`data-saude__ideias${n === 0 && falta <= 30 ? ' data-saude__ideias--alerta' : ''}`}>{n ? `${n} ${n === 1 ? 'ideia' : 'ideias'}` : 'Nenhuma ideia ainda'}</span>
+              </button>
+              {d.origem === 'propria' && (
+                <button type="button" className="data-saude__editar" aria-label={`Editar ${d.nome}`} onClick={() => setEditarCampanha(proprias.find((c) => c.id === d.id) ?? null)}><Pencil size={12} /></button>
+              )}
+            </div>
           )
         })}
+        <button type="button" className="data-saude data-saude--nova" onClick={() => setEditarCampanha('nova')}>
+          <CalendarPlus size={22} />
+          <strong>Nova campanha</strong>
+          <span className="data-saude__desc">Faltou alguma data? Crie aqui</span>
+        </button>
       </section>
 
       <div className="linha pauta-filtros">
@@ -130,7 +150,7 @@ export function AcervoPauta() {
       </div>
       {(temasUsados.length > 0 || dataFiltro) && (
         <div className="pauta-temas">
-          {dataFiltro && <button type="button" className="chip" onClick={() => setDataFiltro(null)}><CalendarHeart size={13} /> {dataPorChave(dataFiltro)?.nome} <X size={12} /></button>}
+          {dataFiltro && <button type="button" className="chip" onClick={() => setDataFiltro(null)}><CalendarHeart size={13} /> {calendario.porChave(dataFiltro)?.nome} <X size={12} /></button>}
           {temasUsados.map((t) => <button key={t} type="button" className={`chip${tema === t ? '' : ' chip--neutro'}`} aria-pressed={tema === t} onClick={() => setTema(tema === t ? null : t)}>{t}</button>)}
         </div>
       )}
@@ -144,7 +164,7 @@ export function AcervoPauta() {
       ) : (
         <ul className="pautas">
           {lista.map((p) => {
-            const data = dataPorChave(p.data_ref)
+            const data = calendario.porChave(p.data_ref)
             const autor = pessoas.find((x) => x.usuario_id === p.criado_por)
             const votei = p.votos.includes(eu)
             return (
@@ -178,8 +198,14 @@ export function AcervoPauta() {
         </ul>
       )}
 
+      {editarCampanha && (
+        <CampanhaModal campanha={editarCampanha === 'nova' ? null : editarCampanha} onFechar={() => setEditarCampanha(null)}
+          onSalvar={async (c) => { await salvarCampanhaPauta(cliente.id, editarCampanha === 'nova' ? null : editarCampanha.id, c); setEditarCampanha(null); await carregar() }}
+          onExcluir={editarCampanha !== 'nova' && (editarCampanha.criado_por === eu || ehAdminCliente)
+            ? async () => { await excluirCampanhaPauta(editarCampanha.id); if (dataFiltro === `campanha:${editarCampanha.id}`) setDataFiltro(null); setEditarCampanha(null); await carregar() } : undefined} />
+      )}
       {abrir && (
-        <FichaPauta pauta={abrir === 'nova' ? null : abrir} podeExcluir={abrir !== 'nova' && (abrir.criado_por === eu || ehAdminCliente)} padrao={{ data_ref: dataFiltro, tema }}
+        <FichaPauta datas={calendario.todas} pauta={abrir === 'nova' ? null : abrir} podeExcluir={abrir !== 'nova' && (abrir.criado_por === eu || ehAdminCliente)} padrao={{ data_ref: dataFiltro, tema }}
           onFechar={() => setAbrir(null)}
           onSalvar={async (e) => {
             if (abrir === 'nova') { const nova = await criarPauta(cliente.id, eu, { ...e, titulo: e.titulo ?? '' }); setPautas((ps) => [nova, ...(ps ?? [])]) }
@@ -193,8 +219,8 @@ export function AcervoPauta() {
   )
 }
 
-function FichaPauta({ pauta, padrao, podeExcluir, onFechar, onSalvar, onExcluir, onVirarCard }: {
-  pauta: Pauta | null; padrao: { data_ref: string | null; tema: string | null }; podeExcluir: boolean
+function FichaPauta({ datas, pauta, padrao, podeExcluir, onFechar, onSalvar, onExcluir, onVirarCard }: {
+  datas: Calendario['todas']; pauta: Pauta | null; padrao: { data_ref: string | null; tema: string | null }; podeExcluir: boolean
   onFechar: () => void; onSalvar: (e: EdicaoPauta) => Promise<void>; onExcluir: () => Promise<void>; onVirarCard?: () => void
 }) {
   const [titulo, setTitulo] = useState(pauta?.titulo ?? '')
@@ -237,9 +263,9 @@ function FichaPauta({ pauta, padrao, podeExcluir, onFechar, onSalvar, onExcluir,
           <div className="campo"><label htmlFor="pa-tema">Tema</label>
             <Selecao id="pa-tema" valor={tema} onMudar={setTema} opcoes={[{ valor: '', rotulo: 'Sem tema' }, ...TEMAS.map((t) => ({ valor: t, rotulo: t }))]} /></div>
         </div>
-        <div className="campo"><label htmlFor="pa-data">Data da saúde (opcional)</label>
+        <div className="campo"><label htmlFor="pa-data">Campanha ou data (opcional)</label>
           <Selecao id="pa-data" valor={dataRef} onMudar={setDataRef} busca
-            opcoes={[{ valor: '', rotulo: 'Nenhuma' }, ...todasAsDatas().map((d) => ({ valor: d.chave, rotulo: d.nome, descricao: d.descricao, cor: d.cor }))]} /></div>
+            opcoes={[{ valor: '', rotulo: 'Nenhuma' }, ...datas.map((d) => ({ valor: d.chave, rotulo: d.nome, descricao: d.descricao, cor: d.cor }))]} /></div>
         <div className="campo">
           <span className="rotulo-campo">Referências</span>
           {refs.length > 0 && (
@@ -269,6 +295,60 @@ function FichaPauta({ pauta, padrao, podeExcluir, onFechar, onSalvar, onExcluir,
           <div className="linha" style={{ gap: 8 }}>
             {onVirarCard && <Botao type="button" variante="secundario" onClick={onVirarCard}>Virar card <ArrowRight size={14} /></Botao>}
             <Botao type="submit" disabled={salvando}>{salvando ? 'Salvando…' : pauta ? 'Salvar' : 'Guardar ideia'}</Botao>
+          </div>
+        </div>
+      </form>
+    </Janela>
+  )
+}
+
+const hojeIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` }
+
+/** Campanha ou data própria do cliente (ex.: aniversário do hospital, semana da enfermagem do hospital). */
+function CampanhaModal({ campanha, onFechar, onSalvar, onExcluir }: { campanha: CampanhaPropria | null; onFechar: () => void; onSalvar: (c: EdicaoCampanha) => Promise<void>; onExcluir?: () => Promise<void> }) {
+  const [nome, setNome] = useState(campanha?.nome ?? '')
+  const [descricao, setDescricao] = useState(campanha?.descricao ?? '')
+  const [inicio, setInicio] = useState(campanha?.inicio ?? hojeIso)
+  const [fim, setFim] = useState(campanha?.fim ?? campanha?.inicio ?? hojeIso)
+  const [cor, setCor] = useState(campanha?.cor ?? CORES_CAMPANHA[0])
+  const [anual, setAnual] = useState(campanha?.anual ?? false)
+  const [erro, setErro] = useState<string | null>(null)
+  const [salvando, setSalvando] = useState(false)
+  const [confirmar, setConfirmar] = useState(false)
+  async function salvar() {
+    if (!nome.trim()) { setErro('Dê um nome para a campanha.'); return }
+    if (fim < inicio) { setErro('O fim não pode ser antes do começo.'); return }
+    setSalvando(true); setErro(null)
+    try { await onSalvar({ nome: nome.trim(), descricao: descricao.trim() || null, inicio, fim, cor, anual }) } catch (e) { setErro((e as Error).message); setSalvando(false) }
+  }
+  return (
+    <Janela titulo={campanha ? 'Campanha' : 'Nova campanha'} onFechar={onFechar}>
+      <form className="janela__corpo" onSubmit={(e) => { e.preventDefault(); void salvar() }}>
+        <div className="campo"><label htmlFor="cp-nome">Nome</label>
+          <input id="cp-nome" className="entrada" autoFocus={!campanha} value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Semana da Prematuridade, Aniversário do hospital" /></div>
+        <div className="campo"><label htmlFor="cp-desc">Sobre (opcional)</label>
+          <input id="cp-desc" className="entrada" value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex.: Campanha com a maternidade" /></div>
+        <div className="grade-2">
+          <div className="campo"><label htmlFor="cp-ini">Começa</label><input id="cp-ini" type="date" className="entrada" value={inicio} onChange={(e) => { setInicio(e.target.value); if (fim < e.target.value) setFim(e.target.value) }} /></div>
+          <div className="campo"><label htmlFor="cp-fim">Termina</label><input id="cp-fim" type="date" className="entrada" min={inicio} value={fim} onChange={(e) => setFim(e.target.value)} /></div>
+        </div>
+        <div className="campo"><span className="rotulo-campo">Cor</span>
+          <div className="cores-campanha" role="radiogroup" aria-label="Cor">
+            {CORES_CAMPANHA.map((c) => <button key={c} type="button" role="radio" aria-checked={cor === c} aria-label={c} className={cor === c ? 'marcada' : ''} style={{ background: c }} onClick={() => setCor(c)} />)}
+          </div>
+        </div>
+        <label className="pauta-repetir-opcao">
+          <input type="checkbox" checked={anual} onChange={(e) => setAnual(e.target.checked)} />
+          <span><strong>Repete todo ano</strong><small>Depois que passar, volta a aparecer nas próximas datas no ano seguinte.</small></span>
+        </label>
+        {erro && <p className="importar__erro">{erro}</p>}
+        <div className="linha" style={{ justifyContent: 'space-between' }}>
+          <div>{onExcluir && (confirmar
+            ? <Botao type="button" variante="fantasma" className="texto-perigo" onClick={() => void onExcluir()}>Confirmar exclusão</Botao>
+            : <Botao type="button" variante="fantasma" icone={<Trash2 size={15} />} onClick={() => setConfirmar(true)}>Excluir</Botao>)}</div>
+          <div className="linha" style={{ gap: 8 }}>
+            <Botao type="button" variante="fantasma" onClick={onFechar}>Cancelar</Botao>
+            <Botao type="submit" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar'}</Botao>
           </div>
         </div>
       </form>

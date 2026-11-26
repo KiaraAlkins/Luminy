@@ -49,16 +49,34 @@ function ocorrencia(r: Regra, ano: number): DataSaude {
   else { inicio = new Date(ano, r.mes - 1, 1); fim = new Date(ano, r.mes, 0, 23, 59) }
   return { chave: r.chave, nome: r.nome, descricao: r.descricao, cor: r.cor, inicio, fim }
 }
-/** Datas da saúde acontecendo agora ou nos próximos `dias`, em ordem. */
-export function proximasDatas(agora: Date, dias = 75): DataSaude[] {
+export type CampanhaPropria = { id: string; cliente_id: string; nome: string; descricao: string | null; cor: string; inicio: string; fim: string; anual: boolean; criado_por: string; criado_em: string }
+export type DataCalendario = DataSaude & { origem: 'saude' | 'propria'; id?: string }
+export type Calendario = { proximas: DataCalendario[]; todas: { chave: string; nome: string; descricao: string; cor: string; origem: DataCalendario['origem'] }[]; porChave: (chave: string | null) => { nome: string; descricao: string; cor: string } | null }
+export const CORES_CAMPANHA = ['#3D2EF9', '#7A5AF8', '#EE46BC', '#E5484D', '#F79009', '#EAAA08', '#12A15F', '#2E90FA']
+
+const dia = (iso: string, fimDoDia = false) => { const [a, m, d] = iso.slice(0, 10).split('-').map(Number); return new Date(a, m - 1, d, fimDoDia ? 23 : 0, fimDoDia ? 59 : 0) }
+
+/** Junta as datas da saúde e as campanhas/datas criadas pela equipe. `proximas`: acontecendo agora ou nos próximos `dias`. */
+export function montarCalendario(agora: Date, proprias: CampanhaPropria[] = [], dias = 75): Calendario {
+  const ano = agora.getFullYear()
+  const saude: DataCalendario[] = REGRAS.map((r) => {
+    const esta = ocorrencia(r, ano)
+    return { ...(esta.fim.getTime() >= agora.getTime() ? esta : ocorrencia(r, ano + 1)), origem: 'saude' as const }
+  })
+  const minhas: DataCalendario[] = proprias.map((c) => {
+    let inicio = dia(c.inicio); let fim = dia(c.fim, true)
+    while (c.anual && fim.getTime() < agora.getTime()) { inicio = new Date(inicio.getFullYear() + 1, inicio.getMonth(), inicio.getDate()); fim = new Date(fim.getFullYear() + 1, fim.getMonth(), fim.getDate(), 23, 59) }
+    return { chave: `campanha:${c.id}`, id: c.id, nome: c.nome, descricao: c.descricao ?? (c.anual ? 'Campanha do cliente · todo ano' : 'Campanha do cliente'), cor: c.cor, inicio, fim, origem: 'propria' as const }
+  })
+  const todas = [...minhas, ...saude]
   const limite = agora.getTime() + dias * 86_400_000
-  return REGRAS.map((r) => {
-    const esta = ocorrencia(r, agora.getFullYear())
-    return esta.fim.getTime() >= agora.getTime() ? esta : ocorrencia(r, agora.getFullYear() + 1)
-  }).filter((d) => d.inicio.getTime() <= limite).sort((a, b) => a.inicio.getTime() - b.inicio.getTime())
+  return {
+    proximas: todas.filter((d) => d.fim.getTime() >= agora.getTime() && d.inicio.getTime() <= limite).sort((a, b) => a.inicio.getTime() - b.inicio.getTime()),
+    todas: [...minhas, ...REGRAS.map((r) => ({ chave: r.chave, nome: r.nome, descricao: r.descricao, cor: r.cor, origem: 'saude' as const }))]
+      .map(({ chave, nome, descricao, cor, origem }) => ({ chave, nome, descricao, cor, origem })),
+    porChave: (chave) => (chave ? todas.find((d) => d.chave === chave) ?? null : null),
+  }
 }
-export const todasAsDatas = () => REGRAS.map((r) => ({ chave: r.chave, nome: r.nome, descricao: r.descricao, cor: r.cor, mes: r.mes }))
-export const dataPorChave = (chave: string | null) => (chave ? REGRAS.find((r) => r.chave === chave) ?? null : null)
 
 // ---------------------------------------------------------------- dados
 let demo: Pauta[] = (() => {
@@ -74,6 +92,32 @@ let demo: Pauta[] = (() => {
     p({ id: 'i6', titulo: 'Depoimento: paciente que venceu o câncer de próstata', tipo_conteudo: 'Vídeo', tema: 'Depoimentos', data_ref: 'novembro-azul', situacao: 'usada', card_id: 'k4', usada_em: d(12), votos: ['p3'], criado_em: d(30) }),
   ]
 })()
+
+let demoCampanhas: CampanhaPropria[] = [
+  { id: 'cp1', cliente_id: 'hospital', nome: 'Aniversário de 40 anos do hospital', descricao: 'Campanha do cliente · todo ano', cor: '#7A5AF8', inicio: '2026-12-10', fim: '2026-12-10', anual: true, criado_por: 'p1', criado_em: new Date().toISOString() },
+]
+
+export async function listarCampanhasPauta(clienteId: string): Promise<CampanhaPropria[]> {
+  if (!supabase) return [...demoCampanhas]
+  const { data, error } = await supabase.from('campanhas_pauta').select('*').eq('cliente_id', clienteId).order('inicio')
+  if (error) throw error
+  return data as CampanhaPropria[]
+}
+export type EdicaoCampanha = Pick<CampanhaPropria, 'nome' | 'descricao' | 'cor' | 'inicio' | 'fim' | 'anual'>
+export async function salvarCampanhaPauta(clienteId: string, id: string | null, c: EdicaoCampanha) {
+  if (!supabase) {
+    demoCampanhas = id ? demoCampanhas.map((x) => (x.id === id ? { ...x, ...c } : x))
+      : [...demoCampanhas, { id: crypto.randomUUID(), cliente_id: clienteId, criado_por: 'p1', criado_em: new Date().toISOString(), ...c }]
+    return
+  }
+  const { error } = id ? await supabase.from('campanhas_pauta').update(c).eq('id', id) : await supabase.from('campanhas_pauta').insert({ cliente_id: clienteId, ...c })
+  if (error) throw error
+}
+export async function excluirCampanhaPauta(id: string) {
+  if (!supabase) { demoCampanhas = demoCampanhas.filter((x) => x.id !== id); return }
+  const { error } = await supabase.from('campanhas_pauta').delete().eq('id', id)
+  if (error) throw error
+}
 
 export async function listarPautas(clienteId: string): Promise<Pauta[]> {
   if (!supabase) return demo.map((p) => ({ ...p }))
@@ -111,14 +155,13 @@ export async function votar(p: Pauta, usuarioId: string, dar: boolean) {
 }
 
 /** Leva a ideia para a primeira coluna do Kanban, com briefing e referências. Devolve o id do card. */
-export async function virarCard(p: Pauta, clienteId: string): Promise<string> {
+export async function virarCard(p: Pauta, clienteId: string, data: { nome: string; descricao: string } | null): Promise<string> {
   const quadro = await carregarQuadro(clienteId)
   if (!quadro || !quadro.colunas.length) throw new Error('O cliente ainda não tem um Kanban de redes sociais.')
   const coluna = quadro.colunas[0]
   const posicao = quadro.cards.filter((c) => c.coluna_id === coluna.id).length + 1
   const id = await criarCard(quadro.id, coluna.id, p.titulo, posicao)
-  const data = dataPorChave(p.data_ref)
-  const briefing = [p.descricao, data && `Data: ${data.nome} (${data.descricao})`, p.tema && `Tema: ${p.tema}`, 'Ideia vinda do Acervo de Pauta.'].filter(Boolean).join('\n\n')
+  const briefing = [p.descricao, data && `Data/campanha: ${data.nome} (${data.descricao})`, p.tema && `Tema: ${p.tema}`, 'Ideia vinda do Acervo de Pauta.'].filter(Boolean).join('\n\n')
   await salvarCard(id, {
     briefing, tipo_conteudo: p.tipo_conteudo,
     anexos: p.referencias.map((r) => ({ id: r.id, tipo: 'link' as const, nome: r.nome, url: r.url, criado_em: new Date().toISOString() })),

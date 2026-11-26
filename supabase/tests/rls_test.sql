@@ -529,4 +529,18 @@ exception when insufficient_privilege then raise notice 'ok - só a equipe cria 
 end $$;
 reset role;
 
+-- ---------------------------------------------------------------- Acervo de Pauta (campanhas próprias)
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+insert into campanhas_pauta (cliente_id, nome, inicio, fim, anual) values ('20000000-0000-0000-0000-000000000001', 'Aniversário do hospital', '2026-12-10', '2026-12-10', true);
+select t.ok((select count(*) from campanhas_pauta) = 1, 'equipe cria campanhas próprias no acervo');
+do $$ begin
+  insert into campanhas_pauta (cliente_id, nome, inicio, fim) values ('20000000-0000-0000-0000-000000000001', 'Ao contrário', '2026-12-10', '2026-12-01');
+  raise exception 'FALHOU: campanha terminando antes de começar';
+exception when check_violation then raise notice 'ok - campanha não termina antes de começar';
+end $$;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
+select t.ok((select count(*) from campanhas_pauta) = 0, 'quem não é da equipe não vê as campanhas próprias');
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'
