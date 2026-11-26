@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Archive, ArchiveRestore, ArrowRight, CalendarHeart, CalendarDays, CalendarPlus, Pencil, ExternalLink, Lightbulb, Link2, Plus, Repeat, ThumbsUp, Trash2, X } from 'lucide-react'
 import { Botao } from '../components/ui'
@@ -41,18 +41,6 @@ export function AcervoPauta() {
   const [proprias, setProprias] = useState<CampanhaPropria[]>([])
   const [editarCampanha, setEditarCampanha] = useState<CampanhaPropria | 'nova' | null>(null)
   const [verAno, setVerAno] = useState(false)
-  // Faixa fixa: mostra só as datas que cabem numa linha (o resto fica em "Ver o ano todo")
-  const faixa = useRef<HTMLElement>(null)
-  const [colunas, setColunas] = useState(5)
-  const carregou = pautas !== null
-  useEffect(() => {
-    const el = faixa.current; if (!el) return
-    const medir = () => setColunas(Math.max(1, Math.floor((el.clientWidth + 10) / (180 + 10))))
-    medir()
-    const ro = new ResizeObserver(medir); ro.observe(el)
-    return () => ro.disconnect()
-  }, [carregou])
-
   const carregar = useCallback(async () => {
     if (!cliente) return
     try {
@@ -63,7 +51,7 @@ export function AcervoPauta() {
   }, [cliente])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
 
-  const calendario: Calendario = useMemo(() => montarCalendario(new Date(agora), proprias), [agora, proprias])
+  const calendario: Calendario = useMemo(() => montarCalendario(new Date(agora), proprias, 61), [agora, proprias])
   const datas = calendario.proximas
   const abertas = (pautas ?? []).filter((p) => p.situacao === 'ideia')
   const contagem: Record<Aba, number> = {
@@ -122,8 +110,8 @@ export function AcervoPauta() {
           <button type="button" className="botao botao--secundario botao--mini" onClick={() => setEditarCampanha('nova')}><CalendarPlus size={14} /> Nova campanha</button>
         </span>
       </div>
-      <section ref={faixa} className="datas-saude" aria-label="Próximas datas e campanhas" style={{ gridTemplateColumns: `repeat(${colunas}, minmax(0, 1fr))` }}>
-        {datas.slice(0, colunas).map((d) => {
+      <section className="datas-saude" aria-label="Próximas datas e campanhas">
+        {datas.map((d) => {
           const n = abertas.filter((p) => p.data_ref === d.chave).length
           const falta = Math.ceil((d.inicio.getTime() - agora) / DIA)
           const agoraMesmo = falta <= 0

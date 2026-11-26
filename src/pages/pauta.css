@@ -3,11 +3,11 @@
 .pauta-rapida input { flex: 1; border: 0; outline: 0; background: none; font: inherit; font-size: 15px; padding: 12px 0; color: var(--texto); min-width: 0; }
 
 /* Faixa fixa: uma linha só, com quantas datas couberem; o resto fica em "Ver o ano todo" */
-.datas-saude { display: grid; gap: 10px; }
-.data-saude { width: 100%; min-width: 0; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--borda);
+.datas-saude { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
+.data-saude { width: 190px; flex: none; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--borda);
   background: linear-gradient(180deg, color-mix(in srgb, var(--cor) 12%, var(--superficie)), var(--superficie) 70%); font: inherit; color: var(--texto); cursor: pointer; position: relative; overflow: hidden; transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s; }
 .data-saude::before { content: ''; position: absolute; inset: 0 0 auto; height: 4px; background: var(--cor); }
-.data-saude:hover { transform: translateY(-1px); box-shadow: var(--sombra-1, 0 6px 16px rgb(0 0 0 / .08)); }
+.data-saude:hover { transform: translateY(-2px); box-shadow: var(--sombra-1, 0 6px 16px rgb(0 0 0 / .08)); }
 .data-saude.marcada { border-color: var(--cor); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cor) 25%, transparent); }
 .data-saude__quando { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--cor); }
 .data-saude strong { font-size: 15px; }
@@ -49,7 +49,7 @@
 @media (max-width: 640px) { .janela .grade-2 { grid-template-columns: 1fr; } }
 .botao.texto-perigo { color: var(--perigo); }
 
-.data-saude-caixa { position: relative; display: flex; min-width: 0; }
+.data-saude-caixa { position: relative; display: flex; flex: none; scroll-snap-align: start; }
 .data-saude__editar { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--superficie); color: var(--texto-2); cursor: pointer; opacity: 0; transition: opacity .15s; box-shadow: 0 1px 4px rgb(0 0 0 / .12); }
 .data-saude-caixa:hover .data-saude__editar, .data-saude__editar:focus-visible { opacity: 1; }
 @media (hover: none) { .data-saude__editar { opacity: 1; } }
