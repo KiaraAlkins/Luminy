@@ -30,3 +30,8 @@
 .banco-inicio strong { font-family: var(--fonte-titulo); font-size: 18px; color: var(--sucesso); }
 .banco-inicio.negativo { border-color: rgb(229 72 77 / .35); box-shadow: inset 4px 0 0 var(--perigo); }
 .banco-inicio.negativo > svg, .banco-inicio.negativo strong { color: var(--perigo); }
+.banco-inicio--reuniao { border-color: rgb(214 41 122 / .3); box-shadow: inset 4px 0 0 #D6297A; max-width: 340px; }
+.banco-inicio--reuniao > svg { color: #D6297A; }
+.banco-inicio--reuniao strong { color: var(--texto); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.saudacao__lado { display: flex; gap: 10px; justify-content: flex-end; align-items: stretch; flex-shrink: 0; }
+@media (max-width: 1100px) { .saudacao__lado { flex-wrap: wrap; justify-content: flex-start; } }

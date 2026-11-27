@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { meusEncaminhamentos } from './reunioes'
 import type { Prioridade } from './kanban'
 import { dataIso, descreverRepeticao, feitoPor, listarRegistros, listarRotinas, minha, ocorrenciasNoDia, prazoDe, type Ocorrencia } from './rotinas'
 
@@ -7,10 +8,12 @@ export type Tarefa = { id: string; titulo: string; descricao: string | null; pra
 
 /** Tudo o que é "meu" para fazer: tarefa pessoal, demanda que aceitei ou card do Kanban em que sou responsável. */
 export type MeuItem = {
-  id: string; origem: 'tarefa' | 'demanda' | 'card' | 'os' | 'rotina'; titulo: string; prazo: string | null; prioridade: Prioridade
+  id: string; origem: 'tarefa' | 'demanda' | 'card' | 'os' | 'rotina' | 'reuniao'; titulo: string; prazo: string | null; prioridade: Prioridade
   concluida: boolean; concluida_em: string | null; cliente_id: string | null; detalhe?: string; descricao?: string | null
   /** Rotinas: a ocorrência de hoje e o registro (se já foi feita) */
   ocorrencia?: Ocorrencia; registroId?: string
+  /** Encaminhamento de reunião: a reunião de onde veio */
+  reuniaoId?: string
   /** Tarefas pessoais: em que coluna do Meu Kanban está e se veio da Minha rotina */
   status?: StatusTarefa; rotinaPessoal?: boolean
 }
@@ -46,7 +49,7 @@ const deTarefa = (t: Tarefa): MeuItem => ({ id: t.id, origem: 'tarefa', titulo: 
 export async function meusItens(usuarioId: string): Promise<MeuItem[]> {
   await gerarRotinasPessoais()
   const rotinas = await minhasRotinasHoje(usuarioId)
-  if (!supabase) return [...tarefasDemo.map(deTarefa), ...extrasDemo, ...rotinas]
+  if (!supabase) return [...tarefasDemo.map(deTarefa), ...extrasDemo, ...rotinas, ...(await encaminhamentos(usuarioId))]
   const semana = new Date(Date.now() - 7 * 86_400_000).toISOString()
   const [t, d, c, o] = await Promise.all([
     supabase.from('tarefas').select('*').or(`status.neq.concluida,concluida_em.gte.${semana}`).neq('status', 'cancelada').order('prazo', { nullsFirst: false }),
@@ -67,7 +70,18 @@ export async function meusItens(usuarioId: string): Promise<MeuItem[]> {
   ;((o.data ?? []) as { id: string; numero: string; titulo: string; prazo: string | null; prioridade: Prioridade; situacao: string; setor: string | null; cliente_id: string; concluida_em: string | null }[])
     .filter((x) => x.situacao !== 'concluida' || (x.concluida_em ?? '') >= semana)
     .forEach((x) => itens.push({ id: x.id, origem: 'os', titulo: `OS ${x.numero}: ${x.titulo}`, prazo: x.prazo ? `${x.prazo}T18:00:00` : null, prioridade: x.prioridade, concluida: x.situacao === 'concluida', concluida_em: x.concluida_em, cliente_id: x.cliente_id, detalhe: `OS${x.setor ? ` · ${x.setor}` : ''}${x.situacao === 'aguardando' ? ' · aguardando' : ''}` }))
-  return [...itens, ...rotinas]
+  return [...itens, ...rotinas, ...(await encaminhamentos(usuarioId))]
+}
+
+/** Encaminhamentos de reunião em que a pessoa é responsável (os feitos há mais de 7 dias saem da lista). */
+async function encaminhamentos(usuarioId: string): Promise<MeuItem[]> {
+  const semana = new Date(Date.now() - 7 * 86_400_000).toISOString()
+  return (await meusEncaminhamentos(usuarioId).catch(() => []))
+    .filter(({ enc }) => !enc.feito || (enc.feito_em ?? '') >= semana)
+    .map(({ reuniao, enc }) => ({
+      id: `${reuniao.id}:${enc.id}`, origem: 'reuniao' as const, titulo: enc.texto, prazo: enc.prazo ? `${enc.prazo}T18:00:00` : null, prioridade: 'comum' as Prioridade,
+      concluida: enc.feito, concluida_em: enc.feito_em ?? null, cliente_id: reuniao.cliente_id, detalhe: `Reunião · ${reuniao.titulo}`, reuniaoId: reuniao.id,
+    }))
 }
 
 export async function criarTarefa(titulo: string, prazo: string | null, prioridade: Prioridade = 'comum') {

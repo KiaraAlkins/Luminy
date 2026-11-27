@@ -36,6 +36,7 @@ import { Calendario } from './pages/Calendario'
 import { MeuKanban } from './pages/MeuKanban'
 import { MinhaRotina } from './pages/MinhaRotina'
 import { PaginaPonto } from './pages/PaginaPonto'
+import { Reunioes } from './pages/Reunioes'
 import { Comercial } from './pages/negocios/Comercial'
 import { Financeiro } from './pages/negocios/Financeiro'
 import { Contratos } from './pages/negocios/Contratos'
@@ -128,6 +129,7 @@ export default function App() {
             <Route path="ordens" element={<OrdensServico />} />
             <Route path="rotinas" element={<Rotinas />} />
             <Route path="ponto" element={<PaginaPonto />} />
+            <Route path="reunioes" element={<Reunioes />} />
             <Route path="aprovacoes" element={<Aprovacoes />} />
             <Route path="agendamento" element={<Agendamento />} />
             <Route path="pauta" element={<AcervoPauta />} />

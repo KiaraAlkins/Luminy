@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  CalendarHeart, Check, CheckSquare, Repeat, ChevronLeft, ChevronRight, ClipboardList, Columns3, Inbox, ListChecks, Plus, Send, Ticket, Trash2,
+  CalendarHeart, Check, CheckSquare, Presentation, Repeat, ChevronLeft, ChevronRight, ClipboardList, Columns3, Inbox, ListChecks, Plus, Send, Ticket, Trash2,
 } from 'lucide-react'
 import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
@@ -14,9 +14,10 @@ import { DIAS_GERADOS, criarTarefa, diasDaRotina, excluirTarefa, listarRotinasPe
 import { carregarQuadro, type Prioridade } from '../lib/kanban'
 import { listarEventos } from '../lib/parcerias'
 import { listarCampanhasPauta, montarCalendario } from '../lib/pautas'
+import { minhasReunioes } from '../lib/reunioes'
 import './calendario.css'
 
-type Fonte = 'tarefa' | 'rotina' | 'trabalho' | 'entrega' | 'postagem' | 'evento' | 'data'
+type Fonte = 'tarefa' | 'rotina' | 'reuniao' | 'trabalho' | 'entrega' | 'postagem' | 'evento' | 'data'
 type ItemCal = {
   id: string; fonte: Fonte; titulo: string; inicio: Date; fim?: Date; temHora: boolean; detalhe?: string; concluida?: boolean
   prioridade?: Prioridade; cor?: string; link?: string; clienteId?: string | null; tarefa?: MeuItem
@@ -26,6 +27,7 @@ type ItemCal = {
 const FONTES: { id: Fonte; nome: string; icone: React.ElementType; cor: string }[] = [
   { id: 'tarefa', nome: 'Minhas tarefas', icone: ListChecks, cor: '#3D2EF9' },
   { id: 'rotina', nome: 'Minha rotina', icone: Repeat, cor: '#12A15F' },
+  { id: 'reuniao', nome: 'Reuniões', icone: Presentation, cor: '#D6297A' },
   { id: 'trabalho', nome: 'Demandas e OS', icone: ClipboardList, cor: '#7A5AF8' },
   { id: 'entrega', nome: 'Entregas do Kanban', icone: Columns3, cor: '#E8890C' },
   { id: 'postagem', nome: 'Postagens', icone: Send, cor: '#D6297A' },
@@ -67,9 +69,13 @@ export function Calendario() {
         id: `${m.origem}-${m.id}`, fonte: m.origem === 'tarefa' ? (m.rotinaPessoal ? 'rotina' : 'tarefa') : m.origem === 'card' ? 'entrega' : 'trabalho', titulo: m.titulo, inicio: d,
         temHora: !(d.getHours() === 23 && d.getMinutes() === 59), detalhe: m.detalhe ?? (m.origem === 'tarefa' ? 'Tarefa pessoal' : undefined), concluida: m.concluida,
         prioridade: m.prioridade, clienteId: m.cliente_id, tarefa: m.origem === 'tarefa' ? m : undefined, rotina: m.rotinaPessoal,
-        link: m.origem === 'demanda' ? '/demandas' : m.origem === 'os' ? '/ordens' : m.origem === 'card' ? `/kanban?card=${m.id}` : undefined,
+        link: m.origem === 'demanda' ? '/demandas' : m.origem === 'os' ? '/ordens' : m.origem === 'card' ? `/kanban?card=${m.id}` : m.origem === 'reuniao' ? `/reunioes?r=${m.reuniaoId}` : undefined,
       })
     })
+    // Reuniões em que participo (de todos os clientes)
+    const reunioes = await minhasReunioes(eu, new Date(hoje.getFullYear(), hoje.getMonth() - 3, 1).toISOString(), new Date(hoje.getFullYear(), hoje.getMonth() + 6, 0).toISOString()).catch(() => [])
+    reunioes.forEach((r) => lista.push({ id: `reu-${r.id}`, fonte: 'reuniao', titulo: r.titulo, inicio: new Date(r.inicio), temHora: true,
+      detalhe: [r.local, r.pauta.length ? `${r.pauta.length} na pauta` : null].filter(Boolean).join(' · ') || undefined, concluida: r.situacao === 'realizada', link: `/reunioes?r=${r.id}`, clienteId: r.cliente_id }))
     // Repetições da Minha rotina depois dos dias que já viraram tarefa
     const rotinas = await listarRotinasPessoais().catch(() => [])
     const de = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + DIAS_GERADOS)
@@ -117,7 +123,7 @@ export function Calendario() {
   const visiveis = (itens ?? []).filter((i) => fontes.includes(i.fonte))
   const porDia = useMemo(() => {
     const m = new Map<string, ItemCal[]>()
-    const ordem: Fonte[] = ['data', 'evento', 'postagem', 'entrega', 'trabalho', 'tarefa', 'rotina']
+    const ordem: Fonte[] = ['data', 'reuniao', 'evento', 'postagem', 'entrega', 'trabalho', 'tarefa', 'rotina']
     visiveis.forEach((i) => {
       // Campanhas de mês inteiro aparecem só no primeiro dia de cada semana visível e no começo, para não poluir
       if (i.fim && i.fim.getTime() - i.inicio.getTime() > 86_400_000) {

@@ -639,4 +639,21 @@ select t.ok((select nome = 'Maria Souza' and foto_url = 'https://lh3.googleuserc
 insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-00000000600f', 'outro@exemplo.com', '{"name": "Outro", "picture": "https://site-qualquer.com/x.png"}');
 select t.ok((select foto_url is null from perfis where id = '00000000-0000-0000-0000-00000000600f'), 'foto de fora do Google não é guardada');
 
+-- ---------------------------------------------------------------- Reuniões
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+insert into reunioes (id, cliente_id, titulo, inicio, participantes, encaminhamentos) values ('b0000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'Alinhamento semanal', now() + interval '1 day',
+  '{00000000-0000-0000-0000-00000000b2a1}', '[{"id": "e1", "texto": "Mandar o cronograma", "responsavel": "00000000-0000-0000-0000-00000000b2a1", "feito": false}]');
+select t.ok((select count(*) from reunioes) = 1, 'equipe agenda reunião');
+select marcar_encaminhamento('b0000000-0000-0000-0000-000000000001', 'e1', true);
+select t.ok((select (encaminhamentos->0->>'feito')::boolean from reunioes), 'responsável marca o encaminhamento como feito');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+insert into reunioes (id, cliente_id, titulo, inicio, restrita, participantes) values ('b0000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000001', 'Diretoria: orçamento 2027', now() + interval '2 days', true, '{00000000-0000-0000-0000-00000000c1a2}');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+select t.ok((select count(*) from reunioes) = 1, 'reunião restrita não aparece para quem não participa');
+select t.ok(not pode_ver_reuniao('b0000000-0000-0000-0000-000000000002'), 'nem os anexos da reunião restrita');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
+select t.ok((select count(*) from reunioes) = 0, 'quem não é da equipe não vê reuniões');
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock, Presentation } from 'lucide-react'
 import { useSessao } from '../lib/sessao'
 import { supabase } from '../lib/supabase'
 import { comemorar } from '../lib/comemorar'
@@ -9,6 +9,7 @@ import {
   carregarConfig, cicloDe, deMinutos, definirLembretes, diaIso, saldoPeriodo, saldoTexto, ignorarHoje, ignoradosHoje, jornadaDoDia, lembretesLigados, listarPontos, minutos, salvarPonto,
   type ConfigPonto, type Ponto,
 } from '../lib/ponto'
+import { minhasReunioes, type Reuniao } from '../lib/reunioes'
 import './ponto.css'
 
 /** Horário com setinhas: ▲▼ nas horas e nos minutos (segurar acelera). Também aceita as setas do teclado. */
@@ -165,6 +166,29 @@ export function BancoDeHoras() {
       <Clock size={18} />
       <span><small>Banco de horas · {info.ciclo}</small><strong>{info.saldo === 0 ? 'Tudo certo' : `${saldoTexto(info.saldo)} ${info.saldo > 0 ? 'de extra' : 'devendo'}`}</strong>
         <small>{info.hoje?.entrada ? `Hoje: entrou ${info.hoje.entrada}${info.hoje.saida ? `, saiu ${info.hoje.saida}` : ''}` : `Zera em ${info.zera}`}</small></span>
+    </Link>
+  )
+}
+
+/** Caixinha do Início: a próxima reunião de hoje ou amanhã em que a pessoa participa. */
+export function ProximaReuniao() {
+  const { cliente, usuario } = useSessao()
+  const eu = supabase ? usuario.id : 'p1'
+  const [r, setR] = useState<Reuniao | null>(null)
+  const [hojeTexto] = useState(() => new Date().toDateString())
+  useEffect(() => {
+    if (!cliente) return
+    const agora = new Date(); const ate = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 2)
+    void minhasReunioes(eu, new Date(agora.getTime() - 60 * 60_000).toISOString(), ate.toISOString())
+      .then((l) => setR(l.filter((x) => x.situacao === 'agendada' && x.cliente_id === cliente.id).sort((a, b) => a.inicio.localeCompare(b.inicio))[0] ?? null)).catch(() => setR(null))
+  }, [cliente, eu])
+  if (!r) return null
+  const d = new Date(r.inicio); const hoje = d.toDateString() === hojeTexto
+  return (
+    <Link to={`/reunioes?r=${r.id}`} className="banco-inicio banco-inicio--reuniao">
+      <Presentation size={18} />
+      <span><small>Próxima reunião · {hoje ? 'hoje' : 'amanhã'} às {d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>
+        <strong>{r.titulo}</strong><small>{r.pauta.length ? `${r.pauta.length} ${r.pauta.length === 1 ? 'assunto' : 'assuntos'} na pauta` : 'Pauta vazia: coloque os assuntos'}{r.local ? ` · ${r.local}` : ''}</small></span>
     </Link>
   )
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   AlertTriangle, ArrowRight, CalendarDays, Check, ClipboardList, Columns3, Inbox, ListChecks, Package, Play, Repeat, Send, Sparkles, User,
+  Presentation,
 } from 'lucide-react'
 import { Cartao, Chip } from '../components/ui'
 import { COR_TIPO, iconeTipo } from '../components/opcoes'
@@ -10,7 +11,7 @@ import { supabase } from '../lib/supabase'
 import { tempoDesde, useFoco } from '../lib/foco'
 import { grupoDe, rotuloPrazo } from '../lib/datas'
 import { meusItens, semRotinaFora, type MeuItem } from '../lib/tarefas'
-import { BancoDeHoras } from '../components/Ponto'
+import { BancoDeHoras, ProximaReuniao } from '../components/Ponto'
 import { listarAprovacoes, type Aprovacao } from '../lib/aprovacoes'
 import { listarCampanhas, listarLeads, type Campanha, type Lead } from '../lib/campanhas'
 import { carregarQuadro, type Card } from '../lib/kanban'
@@ -23,7 +24,7 @@ function saudacao(d: Date) {
   const h = d.getHours()
   return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
 }
-const ICONE_ORIGEM: Record<MeuItem['origem'], React.ElementType> = { tarefa: User, demanda: Inbox, card: Columns3, os: ClipboardList, rotina: Repeat }
+const ICONE_ORIGEM: Record<MeuItem['origem'], React.ElementType> = { tarefa: User, demanda: Inbox, card: Columns3, os: ClipboardList, rotina: Repeat, reuniao: Presentation }
 const chaveDia = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
 
@@ -128,7 +129,7 @@ export function Inicio() {
           <h1>{saudacao(agora)}, {primeiroNome}</h1>
           <p className="texto-2">{dados === null ? 'Carregando o seu dia…' : `Você tem ${resumo.length > 1 ? `${resumo.slice(0, -1).join(', ')} e ${resumo.at(-1)}` : resumo[0]}.`}</p>
         </div>
-        <BancoDeHoras />
+        <div className="saudacao__lado"><ProximaReuniao /><BancoDeHoras /></div>
       </div>
 
       <div className="bento">

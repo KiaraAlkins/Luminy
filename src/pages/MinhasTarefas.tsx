@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CalendarClock, Check, ChevronDown, ClipboardList, Columns3, Repeat, Flag, Inbox, Play, Plus, Sparkles, Trash2, User, X } from 'lucide-react'
+import { CalendarClock, Check, ChevronDown, ClipboardList, Columns3, Repeat, Flag, Inbox, Play, Plus, Presentation, Sparkles, Trash2, User, X } from 'lucide-react'
 import { Selecao } from '../components/Selecao'
 import { OPCOES_PRIORIDADE } from '../components/opcoes'
 import { comemorar } from '../lib/comemorar'
@@ -11,6 +11,7 @@ import { NavMeuEspaco } from '../components/NavMeuEspaco'
 import { criarTarefa, excluirTarefa, meusItens, salvarTarefa, semRotinaFora, type MeuItem } from '../lib/tarefas'
 import { salvarDemanda } from '../lib/demandas'
 import { salvarOS } from '../lib/os'
+import { marcarEncaminhamento } from '../lib/reunioes'
 import { desmarcar, marcarFeito, type Ocorrencia } from '../lib/rotinas'
 import { ConcluirRotina } from '../components/ConcluirRotina'
 import { supabase } from '../lib/supabase'
@@ -23,7 +24,7 @@ const GRUPOS: { id: Grupo; nome: string }[] = [
 ]
 type Filtro = '' | MeuItem['origem']
 const ORIGEM: Record<MeuItem['origem'], { nome: string; icone: React.ElementType }> = {
-  tarefa: { nome: 'Pessoal', icone: User }, demanda: { nome: 'Demanda', icone: Inbox }, card: { nome: 'Kanban', icone: Columns3 }, os: { nome: 'OS', icone: ClipboardList }, rotina: { nome: 'Rotina', icone: Repeat },
+  tarefa: { nome: 'Pessoal', icone: User }, demanda: { nome: 'Demanda', icone: Inbox }, card: { nome: 'Kanban', icone: Columns3 }, os: { nome: 'OS', icone: ClipboardList }, rotina: { nome: 'Rotina', icone: Repeat }, reuniao: { nome: 'Reunião', icone: Presentation },
 }
 const paraInput = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '')
 
@@ -82,6 +83,7 @@ export function MinhasTarefas() {
     try {
       if (i.origem === 'tarefa') await salvarTarefa(i.id, { status: feito ? 'concluida' : 'a_fazer' })
       else if (i.origem === 'os') await salvarOS(i.id, { situacao: feito ? 'concluida' : 'em_andamento' })
+      else if (i.origem === 'reuniao') await marcarEncaminhamento(i.reuniaoId!, i.id.split(':')[1], feito)
       else await salvarDemanda(i.id, { status: feito ? 'concluida' : 'em_andamento' })
     } catch (e) { setErro((e as Error).message); await carregar() }
     // Deixa a pessoa ver o risco e a animação antes de sair da lista
@@ -92,7 +94,7 @@ export function MinhasTarefas() {
     if (i.origem === 'tarefa') { setAberta(aberta === i.id ? null : i.id); return }
     if (i.origem === 'rotina') { if (i.cliente_id && clientes.some((c) => c.id === i.cliente_id)) trocarCliente(i.cliente_id); navegar('/rotinas'); return }
     if (i.cliente_id && clientes.some((c) => c.id === i.cliente_id)) trocarCliente(i.cliente_id)
-    navegar(i.origem === 'card' ? `/kanban?card=${i.id}` : i.origem === 'os' ? `/ordens?os=${i.id}` : `/demandas?d=${i.id}`)
+    navegar(i.origem === 'card' ? `/kanban?card=${i.id}` : i.origem === 'os' ? `/ordens?os=${i.id}` : i.origem === 'reuniao' ? `/reunioes?r=${i.reuniaoId}` : `/demandas?d=${i.id}`)
   }
 
   const linha = (i: MeuItem) => {
@@ -147,9 +149,9 @@ export function MinhasTarefas() {
       {erro && <p className="pequeno" style={{ color: 'var(--perigo)' }}>{erro}</p>}
 
       <div className="segmentos" role="radiogroup" aria-label="Mostrar">
-        {(['', 'tarefa', 'rotina', 'demanda', 'card', 'os'] as const).map((f) => (
+        {(['', 'tarefa', 'rotina', 'demanda', 'card', 'os', 'reuniao'] as const).filter((f) => f !== 'reuniao' || (itens ?? []).some((i) => i.origem === 'reuniao')).map((f) => (
           <button key={f} type="button" role="radio" aria-checked={filtro === f} className={filtro === f ? 'marcado' : ''} onClick={() => setFiltro(f)}>
-            {f ? { tarefa: 'Pessoais', rotina: 'Rotinas', demanda: 'Demandas', card: 'Kanban', os: 'OS' }[f] : 'Tudo'}
+            {f ? { tarefa: 'Pessoais', rotina: 'Rotinas', demanda: 'Demandas', card: 'Kanban', os: 'OS', reuniao: 'Reuniões' }[f] : 'Tudo'}
             <span>{(itens ?? []).filter((i) => !i.concluida && (!f || i.origem === f)).length}</span>
           </button>
         ))}
