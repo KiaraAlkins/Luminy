@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Archive, ArchiveRestore, ArrowRight, CalendarHeart, CalendarDays, CalendarPlus, Pencil, ExternalLink, Lightbulb, Link2, Plus, Repeat, ThumbsUp, Trash2, X } from 'lucide-react'
+import { Archive, ArchiveRestore, ArrowRight, CalendarHeart, CalendarDays, CalendarPlus, Pencil, Tv, ExternalLink, Lightbulb, Link2, Plus, Repeat, ThumbsUp, Trash2, X } from 'lucide-react'
 import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
 import { Selecao } from '../components/Selecao'
@@ -10,7 +10,7 @@ import { useSessao } from '../lib/sessao'
 import { supabase } from '../lib/supabase'
 import { TIPOS, listarPessoas, type Pessoa } from '../lib/kanban'
 import {
-  CORES_CAMPANHA, TEMAS, anoTodo, criarPauta, excluirCampanhaPauta, excluirPauta, listarCampanhasPauta, listarPautas, montarCalendario, salvarCampanhaPauta, salvarPauta, virarCard, votar,
+  CORES_CAMPANHA, TEMAS, anoTodo, definirCampanhasNaTv, mostrarCampanhasNaTv, criarPauta, excluirCampanhaPauta, excluirPauta, listarCampanhasPauta, listarPautas, montarCalendario, salvarCampanhaPauta, salvarPauta, virarCard, votar,
   type Calendario, type CampanhaPropria, type EdicaoCampanha, type EdicaoPauta, type Pauta, type Referencia,
 } from '../lib/pautas'
 import { FotoPessoa } from './kanban/Pessoas'
@@ -41,14 +41,16 @@ export function AcervoPauta() {
   const [proprias, setProprias] = useState<CampanhaPropria[]>([])
   const [editarCampanha, setEditarCampanha] = useState<CampanhaPropria | 'nova' | null>(null)
   const [verAno, setVerAno] = useState(false)
+  const [naTv, setNaTv] = useState<boolean | null>(null)
   const carregar = useCallback(async () => {
     if (!cliente) return
     try {
       const [p, g, c] = await Promise.all([listarPautas(cliente.id), listarPessoas(cliente.id), listarCampanhasPauta(cliente.id)])
       setPautas(p); setPessoas(g); setProprias(c)
+      if (ehAdminCliente) setNaTv(await mostrarCampanhasNaTv(cliente.id))
     }
     catch (e) { setErro((e as Error).message) }
-  }, [cliente])
+  }, [cliente, ehAdminCliente])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
 
   const calendario: Calendario = useMemo(() => montarCalendario(new Date(agora), proprias, 61), [agora, proprias])
@@ -106,6 +108,12 @@ export function AcervoPauta() {
       <div className="datas-saude__topo">
         <span className="rotulo">Próximas datas e campanhas</span>
         <span className="linha" style={{ gap: 4 }}>
+          {naTv !== null && (
+            <button type="button" role="switch" aria-checked={naTv} className={`chave-tv${naTv ? ' ligada' : ''}`} title={naTv ? 'Aparecendo na TV do marketing' : 'Escondido da TV do marketing'}
+              onClick={() => { const v = !naTv; setNaTv(v); void definirCampanhasNaTv(cliente.id, v).catch((e) => { setNaTv(!v); setErro((e as Error).message) }) }}>
+              <Tv size={14} /> Mostrar na TV <span className="chave-tv__trilho"><span /></span>
+            </button>
+          )}
           <button type="button" className="contas-redes__info" onClick={() => setVerAno(true)}><CalendarDays size={15} /> Ver o ano todo</button>
           <button type="button" className="botao botao--secundario botao--mini" onClick={() => setEditarCampanha('nova')}><CalendarPlus size={14} /> Nova campanha</button>
         </span>

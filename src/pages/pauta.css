@@ -76,3 +76,10 @@
 .ano-todo__texto strong { font-size: 13px; font-weight: 600; }
 .ano-todo__texto small { font-size: 11px; color: var(--texto-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ano-todo__ideias { font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; display: grid; place-items: center; background: var(--marca); color: #fff; }
+
+.chave-tv { display: inline-flex; align-items: center; gap: 7px; padding: 5px 6px 5px 10px; border-radius: 999px; border: 1px solid var(--borda); background: var(--superficie); font: inherit; font-size: 13px; font-weight: 600; color: var(--texto-2); cursor: pointer; }
+.chave-tv.ligada { color: var(--marca); border-color: color-mix(in srgb, var(--marca) 35%, transparent); background: var(--marca-suave); }
+.chave-tv__trilho { width: 30px; height: 18px; border-radius: 999px; background: var(--borda); position: relative; transition: background .2s; }
+.chave-tv__trilho span { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .2); transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+.chave-tv.ligada .chave-tv__trilho { background: var(--marca); }
+.chave-tv.ligada .chave-tv__trilho span { transform: translateX(12px); }

@@ -585,4 +585,13 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select t.ok((select count(*) from notas_fiscais) = 0, 'quem não é da equipe não vê as notas fiscais');
 reset role;
 
+-- ---------------------------------------------------------------- TV: campanhas
+reset role;
+select t.ok(jsonb_array_length(painel_tv(:'tvtk')->'campanhas') = 1 and (painel_tv(:'tvtk')->>'mostrar_campanhas')::boolean, 'TV mostra as campanhas criadas pela equipe');
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+update paineis_tv set mostrar_campanhas = false where cliente_id = '20000000-0000-0000-0000-000000000001';
+reset role;
+select t.ok(not (painel_tv(:'tvtk')->>'mostrar_campanhas')::boolean and jsonb_array_length(painel_tv(:'tvtk')->'campanhas') = 0, 'administrador desliga as campanhas da TV');
+
 \warn 'Todos os testes de acesso passaram.'

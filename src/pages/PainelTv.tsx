@@ -5,11 +5,12 @@ import logo from '../assets/luminy-logo.svg'
 import { supabase } from '../lib/supabase'
 import { tempoDesde } from '../lib/foco'
 import { comemorar } from '../lib/comemorar'
+import { montarCalendario, type CampanhaPropria } from '../lib/pautas'
 import './tv.css'
 
 type Pessoa = { id: string; nome: string; titulo: string | null; desde: string | null }
 type Concluido = { id: string; nome: string; titulo: string; em: string }
-type Painel = { cliente: string; cor: string; agora: string; pessoas: Pessoa[]; concluidos: Concluido[] }
+type Painel = { cliente: string; cor: string; agora: string; pessoas: Pessoa[]; concluidos: Concluido[]; mostrar_campanhas?: boolean; campanhas?: Omit<CampanhaPropria, 'cliente_id' | 'criado_por' | 'criado_em'>[] }
 
 const minutos = (n: number) => new Date(Date.now() - n * 60_000).toISOString()
 const DEMO: Painel = {
@@ -22,6 +23,8 @@ const DEMO: Painel = {
     { id: '5', nome: 'Délly', titulo: null, desde: null },
     { id: '6', nome: 'Beatriz', titulo: 'Separar brindes do mutirão', desde: minutos(25) },
   ],
+  mostrar_campanhas: true,
+  campanhas: [{ id: 'cp1', nome: 'Aniversário de 40 anos do hospital', descricao: 'Campanha do cliente · todo ano', cor: '#7A5AF8', inicio: '2026-12-10', fim: '2026-12-10', anual: true }],
   concluidos: [{ id: 'c1', nome: 'Beatriz', titulo: 'Legendas da semana', em: minutos(50) }, { id: 'c2', nome: 'Kiara', titulo: 'Aprovação com a diretoria', em: minutos(120) }],
 }
 
@@ -66,6 +69,9 @@ export function PainelTv() {
   if (painel === undefined) return <main className="tv"><p className="tv__aviso">Carregando painel…</p></main>
   if (painel === null) return <main className="tv"><p className="tv__aviso">Link do painel inválido ou desativado.</p></main>
 
+  const DIA = 86_400_000
+  const campanhas = painel.mostrar_campanhas === false ? [] : montarCalendario(new Date(agora),
+    (painel.campanhas ?? []).map((c) => ({ ...c, cliente_id: '', criado_por: '', criado_em: '' })), 61).proximas.slice(0, 6)
   const ativos = painel.pessoas.filter((p) => p.titulo)
   const livres = painel.pessoas.filter((p) => !p.titulo)
   const dataLonga = new Date(agora).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -92,6 +98,21 @@ export function PainelTv() {
         ))}
         {ativos.length === 0 && <p className="tv__aviso">Ninguém marcou o que está fazendo agora.</p>}
       </section>
+
+      {campanhas.length > 0 && (
+        <section className="tv__campanhas" aria-label="Campanhas e próximas datas">
+          {campanhas.map((d) => {
+            const falta = Math.ceil((d.inicio.getTime() - agora) / DIA)
+            return (
+              <article key={d.chave} className={`tv__campanha${falta <= 0 ? ' agora' : ''}`} style={{ '--cor': d.cor } as React.CSSProperties}>
+                <span className="tv__campanha-quando">{falta <= 0 ? 'Acontecendo agora' : falta === 1 ? 'Amanhã' : `Em ${falta} dias`}</span>
+                <strong>{d.nome}</strong>
+                <span className="tv__campanha-desc">{d.descricao}</span>
+              </article>
+            )
+          })}
+        </section>
+      )}
 
       <footer className="tv__rodape">
         {livres.length > 0 && <p><span className="tv__rotulo">Sem tarefa marcada</span> {livres.map((p) => p.nome).join(', ')}</p>}

@@ -6,6 +6,7 @@ import { Selecao } from '../components/Selecao'
 import { OPCOES_PAPEL } from '../components/opcoes'
 import { useSessao } from '../lib/sessao'
 import { MeuPerfil } from '../components/MeuPerfil'
+import { definirCampanhasNaTv, mostrarCampanhasNaTv } from '../lib/pautas'
 
 type Membro = { usuario_id: string; nome: string; papel: string; acesso_leads: boolean }
 type Convite = { id: string; token: string; email: string | null; papel: string; acesso_leads: boolean; expira_em: string; aceito_em: string | null }
@@ -126,11 +127,13 @@ export function Equipe() {
 /** Link secreto do painel da TV do marketing (abre sem login, em tela cheia). */
 function LinkTv({ clienteId }: { clienteId: string }) {
   const [token, setToken] = useState<string | null | undefined>(undefined)
+  const [naTv, setNaTv] = useState<boolean | null>(null)
   const [copiado, setCopiado] = useState(false)
   const carregar = useCallback(async () => {
-    if (!supabase) { setToken('demonstracao'); return }
-    const { data } = await supabase.from('paineis_tv').select('token').eq('cliente_id', clienteId).maybeSingle()
+    if (!supabase) { setToken('demonstracao'); setNaTv(await mostrarCampanhasNaTv(clienteId)); return }
+    const { data } = await supabase.from('paineis_tv').select('token, mostrar_campanhas').eq('cliente_id', clienteId).maybeSingle()
     setToken((data?.token as string | undefined) ?? null)
+    setNaTv(data ? Boolean(data.mostrar_campanhas) : null)
   }, [clienteId])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
 
@@ -144,7 +147,7 @@ function LinkTv({ clienteId }: { clienteId: string }) {
   const link = token ? `${window.location.origin}/tv/${token}` : ''
   return (
     <Cartao titulo="Painel da TV do marketing">
-      <p className="texto-2">Mostra o "Fazendo agora" de cada pessoa e comemora quando alguém conclui. Abra o link no navegador da TV e deixe em tela cheia. Quem tiver o link vê só o primeiro nome e a tarefa marcada.</p>
+      <p className="texto-2">Mostra o "Fazendo agora" de cada pessoa, comemora quando alguém conclui e, se você quiser, as campanhas do momento. Abra o link no navegador da TV e deixe em tela cheia. Quem tiver o link vê só o primeiro nome e a tarefa marcada.</p>
       {token === undefined ? <p className="pequeno">Carregando…</p> : token ? (
         <div className="convite-gerado">
           <code>{link}</code>
@@ -155,6 +158,12 @@ function LinkTv({ clienteId }: { clienteId: string }) {
           </div>
         </div>
       ) : <Botao icone={<Tv size={16} />} onClick={() => void gerar()}>Criar link da TV</Botao>}
+      {token && naTv !== null && (
+        <label className="aceite" style={{ marginTop: 4 }}>
+          <input type="checkbox" checked={naTv} onChange={(e) => { const v = e.target.checked; setNaTv(v); void definirCampanhasNaTv(clienteId, v).catch(() => setNaTv(!v)) }} />
+          <span>Mostrar as campanhas acontecendo agora e as próximas datas (do Acervo de Pauta)</span>
+        </label>
+      )}
     </Cartao>
   )
 }

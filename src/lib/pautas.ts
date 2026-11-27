@@ -227,3 +227,17 @@ export async function virarCard(p: Pauta, clienteId: string, data: { nome: strin
   await salvarPauta(p.id, { situacao: p.reutilizavel ? 'ideia' : 'usada', card_id: id, usada_em: new Date().toISOString() })
   return id
 }
+
+// ---------------------------------------------------------------- TV do marketing
+let demoMostrarNaTv = true
+/** Se as campanhas aparecem na TV. null = o cliente ainda não tem link da TV (ou quem pergunta não é administrador). */
+export async function mostrarCampanhasNaTv(clienteId: string): Promise<boolean | null> {
+  if (!supabase) return demoMostrarNaTv
+  const { data } = await supabase.from('paineis_tv').select('mostrar_campanhas').eq('cliente_id', clienteId).maybeSingle()
+  return data ? Boolean(data.mostrar_campanhas) : null
+}
+export async function definirCampanhasNaTv(clienteId: string, mostrar: boolean) {
+  if (!supabase) { demoMostrarNaTv = mostrar; return }
+  const { error } = await supabase.from('paineis_tv').update({ mostrar_campanhas: mostrar }).eq('cliente_id', clienteId)
+  if (error) throw error
+}
