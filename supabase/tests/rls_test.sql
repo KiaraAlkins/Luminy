@@ -607,4 +607,28 @@ select t.ok((select count(*) from rotinas_pessoais) = 0 and (select count(*) fro
 select t.ok(gerar_rotinas_pessoais(7) = 0, 'gerar não cria nada com a rotina dos outros');
 reset role;
 
+-- ---------------------------------------------------------------- Ponto
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+insert into pontos (cliente_id, dia, entrada, almoco_saida, almoco_volta, saida) values ('20000000-0000-0000-0000-000000000001', '2026-11-26', '08:05', '12:00', '13:00', '18:30');
+update pontos set esquecidos = '{saida}', justificativa = 'Relógio sem papel' where dia = '2026-11-26';
+select t.ok((select count(*) from pontos) = 1, 'membro registra o próprio ponto e justifica');
+do $$ begin
+  insert into pontos (cliente_id, usuario_id, dia, entrada) values ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-00000000c1a2', '2026-11-26', '08:00');
+  raise exception 'FALHOU: registrou ponto de outra pessoa';
+exception when insufficient_privilege then raise notice 'ok - ninguém registra o ponto de outra pessoa';
+end $$;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+insert into pontos (cliente_id, dia, entrada) values ('20000000-0000-0000-0000-000000000001', '2026-11-26', '07:55');
+select t.ok((select count(*) from pontos) = 2, 'administrador vê o ponto de todos');
+update pontos set entrada = '08:00' where usuario_id = '00000000-0000-0000-0000-00000000b2a1';
+select t.ok((select entrada = '08:05' from pontos where usuario_id = '00000000-0000-0000-0000-00000000b2a1'), 'administrador não altera o ponto dos outros');
+insert into ponto_config (cliente_id, tolerancia_min) values ('20000000-0000-0000-0000-000000000001', 15);
+select t.ok((select count(*) from ponto_config) = 1, 'administrador define a jornada');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+select t.ok((select count(*) from pontos) = 1, 'membro vê só o próprio ponto');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e1e1e"}', false);
+select t.ok((select count(*) from pontos) = 0, 'quem não é da equipe não vê ponto nenhum');
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'

@@ -24,6 +24,7 @@ import { PrimeiroAcesso } from './pages/PrimeiroAcesso'
 import { ProvedorSessao, useSessao } from './lib/sessao'
 import { ProvedorFoco } from './lib/foco'
 import { FocoFlutuante } from './components/FocoFlutuante'
+import { PontoLembrete } from './components/Ponto'
 import { Estoque } from './pages/Estoque'
 import { MinhasTarefas } from './pages/MinhasTarefas'
 import { OrdensServico } from './pages/OrdensServico'
@@ -34,6 +35,7 @@ import { AcervoPauta } from './pages/AcervoPauta'
 import { Calendario } from './pages/Calendario'
 import { MeuKanban } from './pages/MeuKanban'
 import { MinhaRotina } from './pages/MinhaRotina'
+import { PaginaPonto } from './pages/PaginaPonto'
 import { Comercial } from './pages/negocios/Comercial'
 import { Financeiro } from './pages/negocios/Financeiro'
 import { Contratos } from './pages/negocios/Contratos'
@@ -88,6 +90,7 @@ function Painel() {
         </div>
       </div>
       <FocoFlutuante />
+      <PontoLembrete />
     </ProvedorConvenios></ProvedorFoco>
   )
 }
@@ -124,6 +127,7 @@ export default function App() {
             <Route path="estoque" element={<Estoque />} />
             <Route path="ordens" element={<OrdensServico />} />
             <Route path="rotinas" element={<Rotinas />} />
+            <Route path="ponto" element={<PaginaPonto />} />
             <Route path="aprovacoes" element={<Aprovacoes />} />
             <Route path="agendamento" element={<Agendamento />} />
             <Route path="pauta" element={<AcervoPauta />} />

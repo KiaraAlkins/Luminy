@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase'
 import { tempoDesde, useFoco } from '../lib/foco'
 import { grupoDe, rotuloPrazo } from '../lib/datas'
 import { meusItens, semRotinaFora, type MeuItem } from '../lib/tarefas'
+import { BancoDeHoras } from '../components/Ponto'
 import { listarAprovacoes, type Aprovacao } from '../lib/aprovacoes'
 import { listarCampanhas, listarLeads, type Campanha, type Lead } from '../lib/campanhas'
 import { carregarQuadro, type Card } from '../lib/kanban'
@@ -127,6 +128,7 @@ export function Inicio() {
           <h1>{saudacao(agora)}, {primeiroNome}</h1>
           <p className="texto-2">{dados === null ? 'Carregando o seu dia…' : `Você tem ${resumo.length > 1 ? `${resumo.slice(0, -1).join(', ')} e ${resumo.at(-1)}` : resumo[0]}.`}</p>
         </div>
+        <BancoDeHoras />
       </div>
 
       <div className="bento">

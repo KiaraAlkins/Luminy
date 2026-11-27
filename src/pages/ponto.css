@@ -1,0 +1,60 @@
+/* Página do Ponto */
+.ponto .grade-2, .janela .grade-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.janela .grade-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 640px) { .janela .grade-3 { grid-template-columns: 1fr 1fr; } }
+.ponto-resumo { display: grid; grid-template-columns: minmax(260px, 1fr) 2fr; gap: 12px; }
+@media (max-width: 900px) { .ponto-resumo { grid-template-columns: 1fr; } }
+.ponto-banco { padding: 18px 22px; border-radius: 22px; color: #fff; display: flex; flex-direction: column; gap: 2px; }
+.ponto-banco.positivo { background: radial-gradient(120% 140% at 0% 0%, #22c38a 0%, #12A15F 50%, #0b7a48 100%); box-shadow: 0 14px 30px rgb(18 161 95 / .22); }
+.ponto-banco.negativo { background: radial-gradient(120% 140% at 0% 0%, #ff7a7e 0%, #E5484D 50%, #b42328 100%); box-shadow: 0 14px 30px rgb(229 72 77 / .22); }
+.ponto-banco .rotulo { color: rgb(255 255 255 / .8); }
+.ponto-banco strong { font-family: var(--fonte-titulo); font-size: 40px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ponto-banco > span:last-child { font-size: 13px; color: rgb(255 255 255 / .85); }
+.ponto-numeros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; border-radius: 22px; overflow: hidden; background: var(--borda); border: 1px solid var(--borda); }
+@media (max-width: 640px) { .ponto-numeros { grid-template-columns: 1fr 1fr; } }
+.ponto-numeros > div { background: var(--superficie); padding: 16px 18px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.ponto-numeros small { font-size: 12px; color: var(--texto-3); }
+.ponto-numeros strong { font-family: var(--fonte-titulo); font-size: 24px; font-variant-numeric: tabular-nums; }
+.ponto .pos { color: var(--sucesso); } .ponto .neg { color: var(--perigo); }
+.ponto-hoje { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 18px; background: var(--superficie); border: 1px solid var(--borda); flex-wrap: wrap; }
+.ponto-hoje__marcas { display: grid; grid-template-columns: repeat(4, minmax(110px, 1fr)); gap: 8px; flex: 1; }
+@media (max-width: 640px) { .ponto-hoje__marcas { grid-template-columns: 1fr 1fr; } }
+.ponto-marca { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 12px; border-radius: 14px; border: 1.5px dashed var(--borda); background: none; font: inherit; color: var(--texto-3); cursor: pointer; text-align: left; transition: all .15s; }
+.ponto-marca:hover { border-color: var(--marca); color: var(--marca); background: var(--marca-suave); }
+.ponto-marca small { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.ponto-marca strong { font-family: var(--fonte-titulo); font-size: 22px; font-variant-numeric: tabular-nums; }
+.ponto-marca span { font-size: 11px; }
+.ponto-marca.feita { border-style: solid; border-color: rgb(18 161 95 / .35); background: rgb(18 161 95 / .06); color: var(--sucesso); }
+.ponto-marca.feita strong { color: var(--texto); }
+.ponto-lembretes { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--texto-2); cursor: pointer; }
+.ponto-lembretes input { width: 16px; height: 16px; accent-color: var(--marca); }
+.ponto .mes-nav { display: inline-flex; align-items: center; gap: 10px; padding: 4px; border-radius: 14px; background: var(--superficie); border: 1px solid var(--borda); }
+.ponto .mes-nav strong { min-width: 170px; text-align: center; }
+.ponto .mes-nav .icone-botao { border: 0; width: 34px; height: 34px; }
+.ponto-tabela-caixa { overflow-x: auto; border-radius: 18px; border: 1px solid var(--borda); background: var(--superficie); }
+.ponto-tabela { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 720px; }
+.ponto-tabela th { text-align: left; padding: 10px 14px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--texto-3); background: var(--fundo); border-bottom: 1px solid var(--borda); }
+.ponto-tabela td { padding: 10px 14px; border-bottom: 1px solid var(--borda); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ponto-tabela tr:last-child td { border-bottom: 0; }
+.ponto-tabela tbody tr:hover { background: color-mix(in srgb, var(--fundo) 60%, transparent); }
+.ponto-tabela tr.sem-registro td { color: var(--texto-3); }
+.ponto-tabela tr.hoje td:first-child { box-shadow: inset 3px 0 0 var(--marca); }
+.ponto-avisos { white-space: normal; display: flex; gap: 4px; flex-wrap: wrap; }
+.ponto-tabela td:last-child { white-space: normal; }
+.ponto-avisos .chip { font-size: 11px; }
+.ponto-vazio { color: var(--texto-3); }
+.ponto-esquecido { font-size: 11.5px; font-weight: 700; color: #b86a00; background: rgb(232 137 12 / .14); padding: 2px 7px; border-radius: 999px; }
+.ponto-atraso { color: var(--perigo); margin-left: 4px; vertical-align: -2px; }
+.ponto-pessoa { display: inline-flex; align-items: center; gap: 8px; }
+.ponto-pessoa img, .ponto-pessoa > span { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: var(--marca); color: #fff; font-weight: 700; font-size: 12px; }
+.ponto-editar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 560px) { .ponto-editar { grid-template-columns: 1fr; } }
+.ponto-editar__marca { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px; border-radius: 16px; background: var(--fundo); }
+.ponto-editar__marca .hora { background: var(--superficie); }
+.ponto-editar__marca .hora__numero { font-size: 30px; min-width: 44px; }
+.ponto-editar__marca.esquecida { background: rgb(232 137 12 / .08); }
+.ponto-editar__vazio { display: inline-flex; align-items: center; gap: 6px; padding: 18px 16px; border-radius: 14px; border: 1.5px dashed var(--borda); background: none; font: inherit; font-weight: 600; color: var(--marca); cursor: pointer; }
+.ponto-editar__opcoes { display: flex; gap: 8px; }
+.ponto-editar__opcoes button { border: 0; background: none; font: inherit; font-size: 12px; color: var(--texto-3); cursor: pointer; text-decoration: underline; }
+.ponto-editar__opcoes button.ativo { color: #b86a00; }
+.ponto-foto { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; }

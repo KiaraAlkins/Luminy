@@ -1,0 +1,32 @@
+/* Ponto: seletor de hora com setinhas e a janelinha de lembrete */
+.hora { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 18px; background: var(--fundo); outline: none; }
+.hora:focus-visible { box-shadow: 0 0 0 3px var(--marca-suave); }
+.hora__coluna { display: flex; flex-direction: column; align-items: center; }
+.hora__numero { font-family: var(--fonte-titulo); font-size: 40px; font-weight: 700; line-height: 1.1; min-width: 58px; text-align: center; font-variant-numeric: tabular-nums; }
+.hora__dois-pontos { font-family: var(--fonte-titulo); font-size: 36px; font-weight: 700; color: var(--texto-3); margin-top: -4px; }
+.hora-seta { width: 44px; height: 30px; border-radius: 10px; border: 0; background: none; color: var(--texto-3); display: grid; place-items: center; cursor: pointer; touch-action: manipulation; user-select: none; transition: background .12s, color .12s, transform .12s; }
+.hora-seta:hover { background: var(--marca-suave); color: var(--marca); }
+.hora-seta:active { transform: scale(.9); }
+.ponto-lembrete__fundo { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: rgb(16 12 48 / .35); backdrop-filter: blur(3px); animation: pl-fundo .2s ease-out; }
+.ponto-lembrete { width: min(380px, 100%); background: var(--superficie); border-radius: 26px; padding: 24px 22px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; box-shadow: 0 30px 80px rgb(16 12 48 / .35); animation: pl-entra .45s cubic-bezier(.34,1.56,.64,1); }
+.ponto-lembrete__icone { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: var(--marca-suave); color: var(--marca); }
+.ponto-lembrete h2 { margin: 2px 0 0; font-size: 22px; }
+.ponto-lembrete p { margin: 0; font-size: 13.5px; color: var(--texto-2); }
+.ponto-lembrete__horas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 6px 0; }
+.ponto-lembrete__horas > .ponto-lembrete__campo { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ponto-lembrete__horas .hora__numero { font-size: 36px; min-width: 50px; }
+.ponto-lembrete__acoes { display: flex; gap: 8px; width: 100%; }
+.ponto-lembrete__acoes .botao { flex: 1; justify-content: center; }
+.ponto-lembrete__desligar { border: 0; background: none; font: inherit; font-size: 12px; color: var(--texto-3); cursor: pointer; text-decoration: underline; margin-top: 4px; }
+@keyframes pl-fundo { from { opacity: 0; } }
+@keyframes pl-entra { from { opacity: 0; transform: translateY(14px) scale(.94); } }
+@media (prefers-reduced-motion: reduce) { .ponto-lembrete, .ponto-lembrete__fundo { animation: none; } }
+
+.banco-inicio { display: inline-flex; align-items: center; gap: 12px; padding: 10px 16px 10px 12px; border-radius: 18px; text-decoration: none; color: var(--texto); background: var(--superficie); border: 1px solid rgb(18 161 95 / .35); box-shadow: inset 4px 0 0 var(--sucesso); transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s; }
+.banco-inicio:hover { transform: translateY(-2px); }
+.banco-inicio > svg { color: var(--sucesso); flex: none; }
+.banco-inicio span { display: flex; flex-direction: column; }
+.banco-inicio small { font-size: 11.5px; color: var(--texto-3); }
+.banco-inicio strong { font-family: var(--fonte-titulo); font-size: 18px; color: var(--sucesso); }
+.banco-inicio.negativo { border-color: rgb(229 72 77 / .35); box-shadow: inset 4px 0 0 var(--perigo); }
+.banco-inicio.negativo > svg, .banco-inicio.negativo strong { color: var(--perigo); }
