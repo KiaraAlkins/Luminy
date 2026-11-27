@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlignLeft, CalendarClock, ChevronsLeft, Plus, Repeat, Trash2 } from 'lucide-react'
+import { AlignLeft, CalendarClock, Plus, Repeat, Trash2 } from 'lucide-react'
 import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
 import { Selecao } from '../components/Selecao'
 import { OPCOES_PRIORIDADE } from '../components/opcoes'
 import { NavMeuEspaco } from '../components/NavMeuEspaco'
-import { CardVoando, FaixaColuna, VagaCard } from '../components/Arrastar'
-import { useArrastar, useColunasMinimizadas, type Vaga } from '../lib/arrastar'
+import { CardVoando, VagaCard } from '../components/Arrastar'
+import { useArrastar, type Vaga } from '../lib/arrastar'
 import { lerData, rotuloPrazo } from '../lib/datas'
 import { dataIso } from '../lib/rotinas'
 import { criarTarefa, excluirTarefa, listarTarefasPessoais, salvarTarefa, type StatusTarefa, type Tarefa } from '../lib/tarefas'
@@ -54,7 +54,6 @@ export function MeuKanban() {
     void salvarTarefa(t.id, { status }).catch((e) => { setErro((e as Error).message); void carregar() })
   }
   const { arraste, vaga, chegou, quadroRef, voandoRef, iniciar, acabouDeSoltar, quicar } = useArrastar<Tarefa>({ idDe: (t) => t.id, aoSoltar: soltarEm })
-  const colunas = useColunasMinimizadas('luminy.meu-kanban.colunas', vaga)
 
   const lida = useMemo(() => lerData(texto), [texto])
   async function adicionar() {
@@ -96,15 +95,11 @@ export function MeuKanban() {
             const semArraste = lista.filter((x) => x.id !== arraste?.id)
             const vagaAqui = arraste && vaga?.coluna === col.id ? vaga.indice : -1
             const slot = <VagaCard key="vaga" altura={arraste?.altura} />
-            if (colunas.recolhida(col.id, lista.length) && col.id !== 'a_fazer') {
-              return <FaixaColuna key={col.id} id={col.id} nome={col.nome} cor={col.cor} total={lista.length} arrastando={!!arraste} onAbrir={() => colunas.alternar(col.id, lista.length)} />
-            }
             return (
               <section key={col.id} data-coluna={col.id} className={`coluna${vagaAqui >= 0 ? ' coluna--alvo' : ''}`} aria-label={col.nome}>
                 <header className="coluna__topo">
                   <span className="coluna__ponto" style={{ background: col.cor }} />
                   <strong>{col.nome}</strong><span className="pequeno">{lista.length}</span>
-                  {col.id !== 'a_fazer' && <button className="coluna__mais" type="button" aria-label={`Minimizar coluna ${col.nome}`} title="Minimizar coluna" onClick={() => colunas.alternar(col.id, lista.length)}><ChevronsLeft size={16} /></button>}
                 </header>
                 {semArraste.map((t, i) => [
                   i === vagaAqui && slot,

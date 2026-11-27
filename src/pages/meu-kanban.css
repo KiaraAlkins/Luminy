@@ -1,5 +1,6 @@
 /* Meu Kanban (tarefas pessoais) */
-.meu-kanban .coluna { flex-basis: 290px; }
+.meu-kanban { padding-right: 0; }
+.meu-kanban .coluna { flex: 1 1 260px; min-width: 240px; max-width: 360px; }
 .mk-card { gap: 8px; padding: 12px 14px; }
 .mk-card__topo { display: flex; align-items: flex-start; gap: 8px; }
 .mk-card__titulo { font-size: 14px; line-height: 1.35; font-weight: 600; }
