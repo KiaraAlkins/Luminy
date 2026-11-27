@@ -9,7 +9,7 @@ import { useSessao } from '../lib/sessao'
 import { supabase } from '../lib/supabase'
 import { tempoDesde, useFoco } from '../lib/foco'
 import { grupoDe, rotuloPrazo } from '../lib/datas'
-import { meusItens, type MeuItem } from '../lib/tarefas'
+import { meusItens, semRotinaFora, type MeuItem } from '../lib/tarefas'
 import { listarAprovacoes, type Aprovacao } from '../lib/aprovacoes'
 import { listarCampanhas, listarLeads, type Campanha, type Lead } from '../lib/campanhas'
 import { carregarQuadro, type Card } from '../lib/kanban'
@@ -42,7 +42,7 @@ export function Inicio() {
     if (!cliente) return
     const seguro = <T,>(p: Promise<T>, padrao: T) => p.catch(() => padrao)
     const [itens, aprovacoes, leads, campanhas, quadro, os, estoque, eventos] = await Promise.all([
-      seguro(meusItens(eu), []), seguro(listarAprovacoes(cliente.id), []),
+      seguro(meusItens(eu).then((l) => semRotinaFora(l)), []), seguro(listarAprovacoes(cliente.id), []),
       acessoLeads ? seguro(listarLeads(cliente.id), []) : Promise.resolve([]),
       acessoLeads ? seguro(listarCampanhas(cliente.id).then((r) => r.campanhas), []) : Promise.resolve([]),
       seguro(carregarQuadro(cliente.id), null), seguro(listarOS(cliente.id), []),

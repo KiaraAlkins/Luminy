@@ -16,6 +16,8 @@ const MEU_ESPACO: Item[] = [
   { para: '/', rotulo: 'Início', icone: Home, fim: true },
   { para: '/tarefas', rotulo: 'Minhas tarefas', icone: ListChecks },
   { para: '/calendario', rotulo: 'Calendário', icone: CalendarDays },
+  { para: '/meu-kanban', rotulo: 'Meu Kanban', icone: Columns3 },
+  { para: '/minha-rotina', rotulo: 'Minha rotina', icone: Repeat },
 ]
 
 /** Guias do cliente: cada uma abre e fecha no menu lateral. */

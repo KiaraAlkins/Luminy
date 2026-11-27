@@ -594,4 +594,17 @@ update paineis_tv set mostrar_campanhas = false where cliente_id = '20000000-000
 reset role;
 select t.ok(not (painel_tv(:'tvtk')->>'mostrar_campanhas')::boolean and jsonb_array_length(painel_tv(:'tvtk')->'campanhas') = 0, 'administrador desliga as campanhas da TV');
 
+-- ---------------------------------------------------------------- Rotina pessoal
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000b2a1"}', false);
+insert into rotinas_pessoais (id, titulo, repeticao, dias_semana, horario) values ('a0000000-0000-0000-0000-000000000001', 'Responder e-mails', 'semana', '{0,1,2,3,4,5,6}', '09:00');
+select gerar_rotinas_pessoais(7) as geradas \gset
+select t.ok(:geradas = 7, 'rotina pessoal gera uma tarefa por dia');
+select t.ok(gerar_rotinas_pessoais(7) = 0, 'gerar de novo não duplica as tarefas da rotina');
+select t.ok((select count(*) from tarefas where rotina_pessoal_id = 'a0000000-0000-0000-0000-000000000001') = 7, 'as tarefas da rotina aparecem nas tarefas da pessoa');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-00000000c1a2"}', false);
+select t.ok((select count(*) from rotinas_pessoais) = 0 and (select count(*) from tarefas where rotina_pessoal_id is not null) = 0, 'rotina pessoal é privada, nem o administrador vê');
+select t.ok(gerar_rotinas_pessoais(7) = 0, 'gerar não cria nada com a rotina dos outros');
+reset role;
+
 \warn 'Todos os testes de acesso passaram.'

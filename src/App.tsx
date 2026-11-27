@@ -32,6 +32,8 @@ import { Demandas } from './pages/Demandas'
 import { Agendamento } from './pages/Agendamento'
 import { AcervoPauta } from './pages/AcervoPauta'
 import { Calendario } from './pages/Calendario'
+import { MeuKanban } from './pages/MeuKanban'
+import { MinhaRotina } from './pages/MinhaRotina'
 import { Comercial } from './pages/negocios/Comercial'
 import { Financeiro } from './pages/negocios/Financeiro'
 import { Contratos } from './pages/negocios/Contratos'
@@ -126,6 +128,8 @@ export default function App() {
             <Route path="agendamento" element={<Agendamento />} />
             <Route path="pauta" element={<AcervoPauta />} />
             <Route path="calendario" element={<Calendario />} />
+            <Route path="meu-kanban" element={<MeuKanban />} />
+            <Route path="minha-rotina" element={<MinhaRotina />} />
             <Route path="comercial" element={<SoAdmin><Comercial /></SoAdmin>} />
             <Route path="financeiro" element={<SoAdmin><Financeiro /></SoAdmin>} />
             <Route path="contratos" element={<SoAdmin><Contratos /></SoAdmin>} />

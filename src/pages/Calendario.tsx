@@ -1,27 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  CalendarHeart, Check, CheckSquare, ChevronLeft, ChevronRight, ClipboardList, Columns3, Inbox, ListChecks, Plus, Send, Ticket, Trash2,
+  CalendarHeart, Check, CheckSquare, Repeat, ChevronLeft, ChevronRight, ClipboardList, Columns3, Inbox, ListChecks, Plus, Send, Ticket, Trash2,
 } from 'lucide-react'
 import { Botao } from '../components/ui'
 import { Janela } from '../components/Janela'
 import { Selecao } from '../components/Selecao'
 import { OPCOES_PRIORIDADE } from '../components/opcoes'
 import { useSessao } from '../lib/sessao'
+import { NavMeuEspaco } from '../components/NavMeuEspaco'
 import { supabase } from '../lib/supabase'
-import { criarTarefa, excluirTarefa, meusItens, salvarTarefa, type MeuItem } from '../lib/tarefas'
+import { DIAS_GERADOS, criarTarefa, diasDaRotina, excluirTarefa, listarRotinasPessoais, meusItens, salvarTarefa, type MeuItem } from '../lib/tarefas'
 import { carregarQuadro, type Prioridade } from '../lib/kanban'
 import { listarEventos } from '../lib/parcerias'
 import { listarCampanhasPauta, montarCalendario } from '../lib/pautas'
 import './calendario.css'
 
-type Fonte = 'tarefa' | 'trabalho' | 'entrega' | 'postagem' | 'evento' | 'data'
+type Fonte = 'tarefa' | 'rotina' | 'trabalho' | 'entrega' | 'postagem' | 'evento' | 'data'
 type ItemCal = {
   id: string; fonte: Fonte; titulo: string; inicio: Date; fim?: Date; temHora: boolean; detalhe?: string; concluida?: boolean
   prioridade?: Prioridade; cor?: string; link?: string; clienteId?: string | null; tarefa?: MeuItem
+  /** Veio da Minha rotina (previsto = repetição futura que ainda não virou tarefa) */
+  rotina?: boolean; previsto?: boolean
 }
 const FONTES: { id: Fonte; nome: string; icone: React.ElementType; cor: string }[] = [
   { id: 'tarefa', nome: 'Minhas tarefas', icone: ListChecks, cor: '#3D2EF9' },
+  { id: 'rotina', nome: 'Minha rotina', icone: Repeat, cor: '#12A15F' },
   { id: 'trabalho', nome: 'Demandas e OS', icone: ClipboardList, cor: '#7A5AF8' },
   { id: 'entrega', nome: 'Entregas do Kanban', icone: Columns3, cor: '#E8890C' },
   { id: 'postagem', nome: 'Postagens', icone: Send, cor: '#D6297A' },
@@ -33,8 +37,9 @@ const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 const chave = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 const inicioDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
 const hora = (d: Date) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-const CHAVE_FILTRO = 'luminy.calendario.fontes'
-function lerFiltro(): Fonte[] { try { const v = JSON.parse(localStorage.getItem(CHAVE_FILTRO) ?? 'null') as Fonte[] | null; return v ?? FONTES.map((f) => f.id) } catch { return FONTES.map((f) => f.id) } }
+// Guarda o que a pessoa escondeu (assim, tipos novos aparecem ligados)
+const CHAVE_FILTRO = 'luminy.calendario.ocultas'
+function lerFiltro(): Fonte[] { try { const v = JSON.parse(localStorage.getItem(CHAVE_FILTRO) ?? '[]') as Fonte[]; return FONTES.map((f) => f.id).filter((f) => !v.includes(f)) } catch { return FONTES.map((f) => f.id) } }
 const paraInput = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 
 /** Calendário do Meu espaço: tudo o que tem data, de todos os lugares, num lugar só. */
@@ -59,12 +64,21 @@ export function Calendario() {
     meus.filter((m) => m.prazo && m.origem !== 'rotina' && !(m.origem === 'card' && m.cliente_id === cliente?.id)).forEach((m) => {
       const d = new Date(m.prazo!)
       lista.push({
-        id: `${m.origem}-${m.id}`, fonte: m.origem === 'tarefa' ? 'tarefa' : m.origem === 'card' ? 'entrega' : 'trabalho', titulo: m.titulo, inicio: d,
+        id: `${m.origem}-${m.id}`, fonte: m.origem === 'tarefa' ? (m.rotinaPessoal ? 'rotina' : 'tarefa') : m.origem === 'card' ? 'entrega' : 'trabalho', titulo: m.titulo, inicio: d,
         temHora: !(d.getHours() === 23 && d.getMinutes() === 59), detalhe: m.detalhe ?? (m.origem === 'tarefa' ? 'Tarefa pessoal' : undefined), concluida: m.concluida,
-        prioridade: m.prioridade, clienteId: m.cliente_id, tarefa: m.origem === 'tarefa' ? m : undefined,
+        prioridade: m.prioridade, clienteId: m.cliente_id, tarefa: m.origem === 'tarefa' ? m : undefined, rotina: m.rotinaPessoal,
         link: m.origem === 'demanda' ? '/demandas' : m.origem === 'os' ? '/ordens' : m.origem === 'card' ? `/kanban?card=${m.id}` : undefined,
       })
     })
+    // Repetições da Minha rotina depois dos dias que já viraram tarefa
+    const rotinas = await listarRotinasPessoais().catch(() => [])
+    const de = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + DIAS_GERADOS)
+    const ate = new Date(hoje.getFullYear(), hoje.getMonth() + 4, 0)
+    rotinas.forEach((r) => diasDaRotina(r, de, ate).forEach((d) => {
+      const [h, mi] = (r.horario ?? '23:59').split(':').map(Number)
+      lista.push({ id: `rv-${r.id}-${d.getTime()}`, fonte: 'rotina', titulo: r.titulo, inicio: new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, mi), temHora: !!r.horario,
+        detalhe: 'Minha rotina · prevista', prioridade: r.prioridade, rotina: true, previsto: true, link: '/minha-rotina' })
+    }))
     if (cliente) {
       const [quadro, eventos, proprias] = await Promise.all([carregarQuadro(cliente.id).catch(() => null), listarEventos(cliente.id).catch(() => []), listarCampanhasPauta(cliente.id).catch(() => [])])
       quadro?.cards.forEach((c) => {
@@ -88,7 +102,7 @@ export function Calendario() {
 
   function alternarFonte(f: Fonte) {
     const n = fontes.includes(f) ? fontes.filter((x) => x !== f) : [...fontes, f]
-    setFontes(n); try { localStorage.setItem(CHAVE_FILTRO, JSON.stringify(n)) } catch { /* sem armazenamento */ }
+    setFontes(n); try { localStorage.setItem(CHAVE_FILTRO, JSON.stringify(FONTES.map((x) => x.id).filter((x) => !n.includes(x)))) } catch { /* sem armazenamento */ }
   }
 
   // Dias visíveis
@@ -103,7 +117,7 @@ export function Calendario() {
   const visiveis = (itens ?? []).filter((i) => fontes.includes(i.fonte))
   const porDia = useMemo(() => {
     const m = new Map<string, ItemCal[]>()
-    const ordem: Fonte[] = ['data', 'evento', 'postagem', 'entrega', 'trabalho', 'tarefa']
+    const ordem: Fonte[] = ['data', 'evento', 'postagem', 'entrega', 'trabalho', 'tarefa', 'rotina']
     visiveis.forEach((i) => {
       // Campanhas de mês inteiro aparecem só no primeiro dia de cada semana visível e no começo, para não poluir
       if (i.fim && i.fim.getTime() - i.inicio.getTime() > 86_400_000) {
@@ -123,7 +137,7 @@ export function Calendario() {
     setBase(visao === 'mes' ? new Date(base.getFullYear(), base.getMonth() + n, 1) : new Date(base.getFullYear(), base.getMonth(), base.getDate() + 7 * n))
   }
   function abrir(i: ItemCal) {
-    if (i.fonte === 'tarefa') { setAbrirTarefa(i); return }
+    if (i.tarefa) { setAbrirTarefa(i); return }
     if (!i.link) return
     if (i.clienteId && i.clienteId !== cliente?.id && clientes.some((c) => c.id === i.clienteId)) trocarCliente(i.clienteId)
     navegar(i.link)
@@ -145,6 +159,7 @@ export function Calendario() {
 
   return (
     <div className="corpo calendario">
+      <NavMeuEspaco />
       <div className="linha" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div><h2>Calendário</h2><p className="pequeno">Suas tarefas, demandas, OS e entregas, e{cliente ? ` do ${cliente.nome}` : ''} as postagens, eventos e datas, tudo num lugar só.</p></div>
         <Botao icone={<Plus size={16} />} onClick={() => setNova(new Date(selecionado.getFullYear(), selecionado.getMonth(), selecionado.getDate(), 9))}>Nova tarefa</Botao>
@@ -191,11 +206,11 @@ export function Calendario() {
                 </div>
                 <ul className="mc-dia__itens">
                   {lista.slice(0, limite).map((i) => {
-                    const f = fonte(i.fonte); const I = f.icone
+                    const f = fonte(i.fonte); const I = i.rotina ? Repeat : f.icone
                     return (
                       <li key={i.id}>
                         <button type="button" draggable={!!i.tarefa} onDragStart={(e) => { setArrastando(i.id); e.dataTransfer.effectAllowed = 'move' }} onDragEnd={() => { setArrastando(null); setAlvo(null) }}
-                          className={`mc-item mc-item--${i.fonte}${i.concluida ? ' feito' : ''}${arrastando === i.id ? ' arrastando' : ''}`} style={{ '--cor': i.cor ?? f.cor } as React.CSSProperties}
+                          className={`mc-item mc-item--${i.fonte}${i.previsto ? ' previsto' : ''}${i.concluida ? ' feito' : ''}${arrastando === i.id ? ' arrastando' : ''}`} style={{ '--cor': i.cor ?? f.cor } as React.CSSProperties}
                           title={`${i.titulo}${i.detalhe ? ` · ${i.detalhe}` : ''}`} onClick={(e) => { e.stopPropagation(); setSelecionado(d); abrir(i) }}>
                           <I size={11} aria-hidden />
                           {i.temHora && <span className="mc-item__hora">{hora(i.inicio)}</span>}
@@ -221,13 +236,13 @@ export function Calendario() {
           ) : (
             <ul className="mc-painel__lista">
               {doDia.map((i) => {
-                const f = fonte(i.fonte); const I = f.icone
+                const f = fonte(i.fonte); const I = i.rotina ? Repeat : f.icone
                 return (
                   <li key={i.id}>
                     <button type="button" className={`mc-agenda${i.concluida ? ' feito' : ''}`} style={{ '--cor': i.cor ?? f.cor } as React.CSSProperties} onClick={() => abrir(i)}>
                       <span className="mc-agenda__hora">{i.temHora ? hora(i.inicio) : i.fim && i.fim.getTime() - i.inicio.getTime() > 86_400_000 ? 'Mês' : 'Dia'}</span>
                       <span className="mc-agenda__icone"><I size={14} /></span>
-                      <span className="mc-agenda__texto"><strong>{i.concluida && <Check size={13} />} {i.titulo}</strong><small>{f.nome}{i.detalhe ? ` · ${i.detalhe}` : ''}</small></span>
+                      <span className="mc-agenda__texto"><strong>{i.concluida && <Check size={13} />} {i.titulo}</strong><small>{f.nome}{i.detalhe && i.detalhe !== f.nome ? ` · ${i.detalhe.replace(/^Minha rotina · /, '')}` : ''}</small></span>
                     </button>
                   </li>
                 )

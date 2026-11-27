@@ -33,7 +33,7 @@
 .mc-item svg { flex: none; }
 .mc-item__hora { font-weight: 700; font-variant-numeric: tabular-nums; flex: none; }
 .mc-item__titulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.mc-item--tarefa { background: var(--cor); color: #fff; cursor: grab; }
+.mc-item--tarefa, .mc-item--rotina { background: var(--cor); color: #fff; cursor: grab; }
 .mc-item--data { background: none; border: 1px dashed color-mix(in srgb, var(--cor) 45%, transparent); }
 .mc-item.feito { opacity: .5; }
 .mc-item.feito .mc-item__titulo { text-decoration: line-through; }
@@ -71,3 +71,4 @@
 .mc-grade--mes .mc-item__hora { display: none; }
 .mc-grade--semana .mc-item { flex-wrap: wrap; white-space: normal; padding: 5px 7px; }
 .mc-grade--semana .mc-item__titulo { white-space: normal; flex-basis: 100%; }
+.mc-item--rotina.previsto { background: none; color: var(--cor); border: 1px dashed color-mix(in srgb, var(--cor) 50%, transparent); cursor: pointer; }

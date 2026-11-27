@@ -7,7 +7,8 @@ import { comemorar } from '../lib/comemorar'
 import { grupoDe, lerData, rotuloPrazo, type Grupo } from '../lib/datas'
 import { useFoco } from '../lib/foco'
 import { useSessao } from '../lib/sessao'
-import { criarTarefa, excluirTarefa, meusItens, salvarTarefa, type MeuItem } from '../lib/tarefas'
+import { NavMeuEspaco } from '../components/NavMeuEspaco'
+import { criarTarefa, excluirTarefa, meusItens, salvarTarefa, semRotinaFora, type MeuItem } from '../lib/tarefas'
 import { salvarDemanda } from '../lib/demandas'
 import { salvarOS } from '../lib/os'
 import { desmarcar, marcarFeito, type Ocorrencia } from '../lib/rotinas'
@@ -46,7 +47,7 @@ export function MinhasTarefas() {
   const eu = supabase ? usuario.id : 'p1'
   const campo = useRef<HTMLInputElement>(null)
 
-  const carregar = useCallback(async () => { if (usuario.id) setItens(await meusItens(eu)) }, [usuario.id, eu])
+  const carregar = useCallback(async () => { if (usuario.id) setItens(semRotinaFora(await meusItens(eu))) }, [usuario.id, eu])
   useEffect(() => { void Promise.resolve().then(carregar) }, [carregar])
 
   const lida = useMemo(() => lerData(texto), [texto])
@@ -126,6 +127,7 @@ export function MinhasTarefas() {
   const total = (itens ?? []).filter((i) => !i.concluida).length
   return (
     <div className="corpo minhas-tarefas">
+      <NavMeuEspaco />
       <div className="linha" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div><h2>Minhas tarefas</h2><p className="pequeno">Suas tarefas pessoais, rotinas, demandas, OS e cards do Kanban de todos os clientes · as pessoais só você vê</p></div>
         <div className="resumo-tarefas">
