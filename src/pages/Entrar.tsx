@@ -1,10 +1,20 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import logo from '../assets/luminy-logo.svg'
 import { supabase } from '../lib/supabase'
 import './entrar.css'
 
-// Liga quando o Google estiver configurado no Supabase (Authentication > Providers > Google)
-const LOGIN_GOOGLE = import.meta.env.VITE_LOGIN_GOOGLE === 'true'
+// O botão do Google aparece sozinho quando o provedor está ligado no Supabase (Authentication › Sign In / Providers › Google)
+const FORCAR_GOOGLE = import.meta.env.VITE_LOGIN_GOOGLE === 'true'
+async function googleLigado(): Promise<boolean> {
+  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
+  const chave = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+  if (!url || !chave) return false
+  try {
+    const r = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: chave } })
+    const d = (await r.json()) as { external?: { google?: boolean } }
+    return !!d.external?.google
+  } catch { return false }
+}
 
 export function Entrar() {
   const [modo, setModo] = useState<'entrar' | 'criar' | 'esqueci'>('entrar')
@@ -13,11 +23,14 @@ export function Entrar() {
   const [senha, setSenha] = useState('')
   const [aviso, setAviso] = useState<{ tipo: 'erro' | 'ok'; texto: string } | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const [LOGIN_GOOGLE, setLoginGoogle] = useState(FORCAR_GOOGLE)
+  useEffect(() => { if (!FORCAR_GOOGLE) void googleLigado().then(setLoginGoogle) }, [])
 
   async function entrarComGoogle() {
     if (!supabase) return
     setAviso(null)
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })
+    // O convite aberto antes (se houver) fica guardado no navegador e é aceito quando a pessoa volta do Google
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin, queryParams: { prompt: 'select_account' } } })
     if (error) setAviso({ tipo: 'erro', texto: /not enabled|unsupported provider/i.test(error.message)
       ? 'O login com Google ainda está sendo configurado. Use o e-mail por enquanto.' : traduzir(error.message) })
   }

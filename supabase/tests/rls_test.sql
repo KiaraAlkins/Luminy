@@ -631,4 +631,12 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select t.ok((select count(*) from pontos) = 0, 'quem não é da equipe não vê ponto nenhum');
 reset role;
 
+-- ---------------------------------------------------------------- Login com Google
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-00000000600e', 'maria.google@exemplo.com',
+  '{"full_name": "Maria Souza", "avatar_url": "https://lh3.googleusercontent.com/a/foto123"}');
+select t.ok((select nome = 'Maria Souza' and foto_url = 'https://lh3.googleusercontent.com/a/foto123' from perfis where id = '00000000-0000-0000-0000-00000000600e'), 'quem entra pelo Google chega com nome e foto');
+insert into auth.users (id, email, raw_user_meta_data) values ('00000000-0000-0000-0000-00000000600f', 'outro@exemplo.com', '{"name": "Outro", "picture": "https://site-qualquer.com/x.png"}');
+select t.ok((select foto_url is null from perfis where id = '00000000-0000-0000-0000-00000000600f'), 'foto de fora do Google não é guardada');
+
 \warn 'Todos os testes de acesso passaram.'
